@@ -1,0 +1,16 @@
+Page:
+   page1:
+      Title: Page 1
+      Content: Text content in the page
+   page2:
+      Title: Page 2
+      Content: Text content in the page
+   page3:
+      Title: Page 4
+      Content: More Text content in the page
+   page4:
+      Title: Page 4
+      Content: Text content in the page
+   home:
+      Title: Home
+      URLSegment: home
