@@ -123,6 +123,19 @@ class SolrSearchService
 	{
 		$this->getSolr()->deleteById($type.'_'.$id);
 	}
+
+	/**
+	 * Parse a raw user search string into a query appropriate for
+	 * execution.
+	 *
+	 * @param String $query
+	 */
+	public function parseSearch($query)
+	{
+		$escaped = str_replace(array('"', "'"), array('\"', "\'"), $query);
+
+		return 'title:"'.$escaped.'" content_t:"'.$escaped.'"';
+	}
 	
 	/**
 	 * Perform a raw query against the search index
@@ -166,10 +179,33 @@ class SolrSearchService
 	 * 			A set of parameters to be passed along with the query
 	 * @return Array
 	 */
-        public function queryDataObjects($query, $offset = 0, $limit = 10, $params = array())
-        {
+	public function queryDataObjects($query, $offset = 0, $limit = 10, $params = array())
+	{
+		$items = new DataObjectSet();
+	    $documents = $this->queryLucene($query, $offset, $limit, $params);
+	    if (count($documents)) {
+			
+			foreach ($documents->docs as $doc) {
+				list($type, $id) = explode('_', $doc->id);
+				if (!$type || !$id) {
+					SS_Log::log("Invalid solr document ID $doc->id", SS_Log::ERR);
+					continue;
+				}
 
-        }
+				$object = DataObject::get_by_id($type, $id);
+				if ($object && $object->ID) {
+					// check that the user has permission
+					if ($object->canView()) {
+						$items->push($object);
+					}
+				} else {
+					SS_Log::log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
+					$this->unindex($type, $id);
+				}
+			}
+	    }
+		return $items;
+	}
 	
 	protected $client;
 	

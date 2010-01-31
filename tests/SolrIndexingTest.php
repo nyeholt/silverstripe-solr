@@ -77,6 +77,28 @@ class SolrIndexingTest extends SapphireTest
 		
 	}
 
+	public function testQueryForObjects()
+	{
+	    global $_SINGLETONS;
+		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		// we should be able to perform a query for documents with 'text content'
+		// and receive back some valid data
+		$search = singleton('SolrSearchService');
+		// clear everything out, then index content
+		/* @var $search SolrSearchService */
+		$search->getSolr()->deleteByQuery('*:*');
+
+		$item = $this->objFromFixture('Page','page1');
+		$item->extend('onAfterPublish', $item);
+		$results = $search->queryDataObjects('content_t:"Text Content"');
+
+		$this->assertTrue($results instanceof DataObjectSet);
+		$this->assertEquals(1, $results->Count());
+		$items = $results->toArray();
+		$this->assertEquals('Page', $items[0]->ClassName);
+		$this->assertEquals(1, $items[0]->ID);
+	}
+
 	public function testFacetQuery()
 	{
 		global $_SINGLETONS;
