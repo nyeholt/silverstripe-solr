@@ -123,7 +123,7 @@ class SolrIndexingTest extends SapphireTest
 		$item = $this->objFromFixture('Page','page4');
 		$item->extend('onAfterPublish', $item);
 		
-		$results = $search->queryLucene('content_t:"Text Content"', 0, 10, array('facet'=>'true', 'facet.field' => 'content_t'));
+		$results = $search->queryLucene('content_t:"Text Content"', 1, 10, array('facet'=>'true', 'facet.field' => 'content_t'));
 		
 		$this->assertNotNull($results->docs);
 		$this->assertEquals(4, count($results->docs));

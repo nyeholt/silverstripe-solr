@@ -142,16 +142,17 @@ class SolrSearchService
 	 * 
 	 * @param String $query
 	 * 			The lucene query to execute. 
-	 * @param int $offset
-	 * 			What offset from the start of the result set should we use? 
+	 * @param int $page
+	 * 			What result page are we on?
 	 * @param int $limit
 	 * 			How many items to limit the query to
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
 	 * @return Array
 	 */
-	public function queryLucene($query, $offset = 0, $limit = 10, $params = array())
+	public function queryLucene($query, $page = 1, $limit = 10, $params = array())
 	{
+		$offset = ($page - 1) * $limit;
 		// execute the query, and return the results, then map them back to 
 		// data objects
 		$response = $this->getSolr()->search($query, $offset, $limit, $params);
@@ -171,17 +172,18 @@ class SolrSearchService
 	 *
 	 * @param String $query
 	 * 			The lucene query to execute.
-	 * @param int $offset
-	 * 			What offset from the start of the result set should we use?
+	 * @param int $page
+	 * 			What result page are we on?
 	 * @param int $limit
 	 * 			How many items to limit the query to
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
 	 * @return Array
 	 */
-	public function queryDataObjects($query, $offset = 0, $limit = 10, $params = array())
+	public function queryDataObjects($query, $page = 1, $limit = 10, $params = array())
 	{
 		$items = new DataObjectSet();
+		$offset = ($page - 1) * $limit;
 	    $documents = $this->queryLucene($query, $offset, $limit, $params);
 	    if (count($documents)) {
 			
