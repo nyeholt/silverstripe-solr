@@ -83,6 +83,14 @@ class SolrSearchService
 	public function index($object)
 	{
 		$document = new Apache_Solr_Document();
+
+		if (is_object($object)) {
+			$o = $object;
+			$object = $this->objectToFields($object);
+			$object['ID'] = $o->ID;
+			$object['ClassName'] = $o->class;
+			unset($o);
+		}
 		
 		$id = isset($object['ID']) ? $object['ID'] : false;
 		unset($object['ID']);
@@ -93,6 +101,7 @@ class SolrSearchService
 			if (!is_array($valueDesc)) {
 				continue;
 			}
+
 			$type = $valueDesc['Type'];
 			$value = $valueDesc['Value'];
 
@@ -118,10 +127,45 @@ class SolrSearchService
 				$this->getSolr()->commit();
 				$this->getSolr()->optimize();
 			} catch (Exception $ie) {
-				error_log($ie->getMessage());
-				error_log($ie->getTraceAsString());
+				SS_Log::log($ie->getMessage(), SS_Log::ERR);
+				SS_Log::log($ie->getTraceAsString(), SS_Log::ERR);
 			}
 		}
+	}
+
+
+	/**
+	 * Pull out all the fields that should be indexed for a particular object
+	 *
+	 * This mapping is done to make it easier to
+	 *
+	 * @param DataObject $dataObject
+	 * @return array
+	 */
+	protected function objectToFields($dataObject)
+	{
+		$ret = array();
+
+		$fieldsToIndex = $dataObject->searchableFields();
+
+		foreach (ClassInfo::ancestry($dataObject->class, true) as $class) {
+			$fields = DataObject::database_fields($class);
+			if ($fields) {
+				foreach($fields as $name => $type) {
+					if (preg_match('/^(\w+)\(/', $type, $match)) {
+						$type = $match[1];
+					}
+
+					// Just index everything; the query can figure out what to
+					// exclude... !
+
+					// if (isset($fieldsToIndex[$name])) {
+					$ret[$name] = array('Type' => $type, 'Value' => $dataObject->$name);
+					// }
+				}
+			}
+		}
+		return $ret;
 	}
 	
 	/**
@@ -160,10 +204,8 @@ class SolrSearchService
 	 * 			A set of parameters to be passed along with the query
 	 * @return Array
 	 */
-	public function queryLucene($query, $page = 1, $limit = 10, $params = array())
+	public function queryLucene($query, $offset = 0, $limit = 10, $params = array())
 	{
-		$page = !$page ? 1 : $page;
-		$offset = ($page - 1) * $limit;
 		// execute the query, and return the results, then map them back to 
 		// data objects
 		$response = $this->getSolr()->search($query, $offset, $limit, $params);
@@ -191,14 +233,13 @@ class SolrSearchService
 	 * 			A set of parameters to be passed along with the query
 	 * @return Array
 	 */
-	public function queryDataObjects($query, $page = 1, $limit = 10, $params = array())
+	public function queryDataObjects($query, $offset = 0, $limit = 10, $params = array())
 	{
 		$items = new DataObjectSet();
-		$page = !$page ? 1 : $page;
-		$offset = ($page - 1) * $limit;
+
 	    $documents = $this->queryLucene($query, $offset, $limit, $params);
-	    if (count($documents)) {
-			
+	    if ($documents && isset($documents->docs)) {
+			$totalAdded = 0;
 			foreach ($documents->docs as $doc) {
 				list($type, $id) = explode('_', $doc->id);
 				if (!$type || !$id) {
@@ -209,14 +250,20 @@ class SolrSearchService
 				$object = DataObject::get_by_id($type, $id);
 				if ($object && $object->ID) {
 					// check that the user has permission
-					if ($object->canView()) {
-						$items->push($object);
+					if (isset($doc->score)) {
+						$object->SearchScore = $doc->score;
 					}
+
+					$items->push($object);
+					$totalAdded++;
 				} else {
 					SS_Log::log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
 					$this->unindex($type, $id);
 				}
 			}
+
+			// update the dos with stats about this query
+			$items->setPageLimits($documents->start, $limit, $documents->numFound);
 	    }
 		return $items;
 	}

@@ -21,55 +21,30 @@ OF SUCH DAMAGE.
 */
 
 /**
- * A generalised search form that uses an arbitrary SearchService to return results
- * 
+ * Reindex the entire content of the current system in the solr backend
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class SolrSearchForm extends SearchForm
+class SolrReindexTask extends BuildTask
 {
-	/**
-	 * Return dataObjectSet of the results using $_REQUEST to get info from form.
-	 * Wraps around {@link searchEngine()}.
-	 *
-	 * @param int $pageLength DEPRECATED 2.3 Use SearchForm->pageLength
-	 * @param array $data Request data as an associative array. Should contain at least a key 'Search' with all searched keywords.
-	 * @return DataObjectSet
-	 */
-	public function getResults($pageLength = 2, $data = null){
-	 	// legacy usage: $data was defaulting to $_REQUEST, parameter not passed in doc.silverstripe.org tutorials
-		if(!isset($data) || !is_array($data)) $data = $_REQUEST;
+	protected $title = "Reindex all content within Solr";
 
-		// set language (if present)
-		if(singleton('SiteTree')->hasExtension('Translatable') && isset($data['locale'])) {
-			$origLocale = Translatable::get_current_locale();
-			Translatable::set_current_locale($data['locale']);
+	protected $description = "Iterates through all content within the system, re-indexing it in solr";
+
+	function run($request)
+	{
+		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
+		$pages = DataObject::get('Page');
+
+		$search = singleton('SolrSearchService');
+		/* @var $search SolrSearchService */
+		$count = 0;
+		foreach ($pages as $page) {
+			$search->index($page);
+			echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
+			$count ++;
 		}
-
-	 	$query = isset($data['Search']) ? $data['Search'] : '';
-		$searchService = singleton('SolrSearchService');
-		$query = $searchService->parseSearch($query);
-
-		if(!$pageLength) {
-			$pageLength = $this->pageLength;
-		}
-
-		$start = isset($_GET['start']) ? (int)$_GET['start'] : 0;
-
-		// TODO: Add sorting options from the request params
-		$params = array('sort' => 'score desc', 'fl' => '*,score');
-		
-		$results = $searchService->queryDataObjects($query, $start, $pageLength, $params);
-
-		if($results) {
-			foreach($results as $result) {
-				if(!$result->canView()) {
-					$results->remove($result);
-				}
-			}
-		}
-
-		return $results;
+		echo "Reindex complete, $count objects re-indexed<br/>";
 	}
 }
 ?>

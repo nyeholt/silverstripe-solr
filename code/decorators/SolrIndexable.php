@@ -40,51 +40,15 @@ class SolrIndexable extends DataObjectDecorator
 	// After delete, mark as dirty in main index (so only results from delta index will count), then update the delta index  
 	function onAfterPublish() {
 		if (!self::$indexing) return;
-		// only save if it's a published doc
-		$object = $this->objectFields($this->owner);
-		$object['ID'] = $this->owner->ID;
-		$object['ClassName'] = $this->owner->class;
 
 		// make sure only the fields that are highlighted in searchable_fields are included!!
-		singleton('SolrSearchService')->index($object);
+		singleton('SolrSearchService')->index($this->owner);
 	}
 
 	// After delete, mark as dirty in main index (so only results from delta index will count), then update the delta index
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;
 		singleton('SolrSearchService')->unindex($this->owner->class, $this->owner->ID);
-	}
-
-	/**
-	 * Pull out all the fields that should be indexed for a particular object
-	 * 
-	 * @param DataObject $dataObject
-	 * @return array
-	 */
-	protected function objectFields($dataObject) 
-	{
-		$ret = array();
-
-		$fieldsToIndex = $dataObject->searchableFields();
-
-		foreach (ClassInfo::ancestry($dataObject->class, true) as $class) {
-			$fields = DataObject::database_fields($class);
-			if ($fields) {
-				foreach($fields as $name => $type) {
-					if (preg_match('/^(\w+)\(/', $type, $match)) {
-						$type = $match[1];
-					}
-
-					// Just index everything; the query can figure out what to
-					// exclude... !
-
-					// if (isset($fieldsToIndex[$name])) {
-						$ret[$name] = array('Type' => $type, 'Value' => $dataObject->$name);
-					// }
-				}
-			}
-		}
-		return $ret;
 	}
 }
 
