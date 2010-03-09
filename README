@@ -21,15 +21,30 @@ Solr is licensed under the Apache License
 
 Quick Usage Overview
 -----------------------------------------------
+
 Install Solr (packages available for most OSes)
+* For demonstration and testing purposes, a standalone Jetty based installation
+  of solr is available in the solr/ subdirectory. To execute, simply change
+  to that directory and run java -jar start.jar - the default settings will
+  be fine for evaluation. 
 
 Add the SolrSearchable decorator to any DataObjects you want to search (for example, SiteTree and File)
 
-Use GeneralSearchForm instead of SearchForm. Set GeneralSearchForm::$search_class to
-SolrSearch
+Use SolrSearchForm instead of SearchForm.
 
 API
 -----------------------------------------------
+
+By default, the indexing mechanism uses the SolrSchemaMapper class as the 
+mechanism for mapping between silverstripe DataObjects and items that can 
+be stored in a Solr Schema. If you are using the default schema.xml for solr, 
+then you only have a few data types you can play with, which explains why
+the default mapper class only indexes a few properties. 
+
+To improve this, or be more specific with how things are stored, you'll 
+need to provide your own implementation that expands on some of the
+information stored - more details on how exactly to do this will be
+provided at a later point in time
 
 
 Troubleshooting

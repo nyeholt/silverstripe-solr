@@ -29,6 +29,11 @@ OF SUCH DAMAGE.
  */
 class SolrSearchService
 {
+	/**
+	 * The connection details for the solr instance to connect to
+	 *
+	 * @var array
+	 */
 	public static $solr_details = array(
 		'host' => 'localhost',
 		'port' => '8983',
@@ -43,6 +48,11 @@ class SolrSearchService
 	 */
 	public static $mapper_class = 'SolrSchemaMapper';
 
+	/**
+	 * The mapper to use to map silverstripe objects to a solr schema
+	 * 
+	 * @var SolrSchemaMapper
+	 */
 	protected $mapper;
 	
 	public function __construct()
@@ -152,6 +162,7 @@ class SolrSearchService
 	 */
 	public function queryLucene($query, $page = 1, $limit = 10, $params = array())
 	{
+		$page = !$page ? 1 : $page;
 		$offset = ($page - 1) * $limit;
 		// execute the query, and return the results, then map them back to 
 		// data objects
@@ -183,6 +194,7 @@ class SolrSearchService
 	public function queryDataObjects($query, $page = 1, $limit = 10, $params = array())
 	{
 		$items = new DataObjectSet();
+		$page = !$page ? 1 : $page;
 		$offset = ($page - 1) * $limit;
 	    $documents = $this->queryLucene($query, $offset, $limit, $params);
 	    if (count($documents)) {
