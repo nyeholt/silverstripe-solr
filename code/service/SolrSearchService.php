@@ -55,10 +55,18 @@ class SolrSearchService
 	 */
 	protected $mapper;
 	
-	public function __construct()
-	{
+	public function __construct() {
 		$m = self::$mapper_class;
 		$this->mapper = new $m;
+	}
+
+	/**
+	 * A class that can map field types to solr fields, and values to appropriate types
+	 *
+	 * @param SolrSchemaMapper $mapper
+	 */
+	public function setMapper($mapper) {
+		$this->mapper = $mapper;
 	}
 	
 	/**
@@ -83,19 +91,29 @@ class SolrSearchService
 	public function index($object)
 	{
 		$document = new Apache_Solr_Document();
+		$fieldsToIndex = array();
 
 		if (is_object($object)) {
+			$fieldsToIndex = $object->searchableFields();
+			$fieldsToIndex['LastEdited'] = array();
+			$fieldsToIndex['Created'] = array();
 			$o = $object;
 			$object = $this->objectToFields($object);
 			$object['ID'] = $o->ID;
 			$object['ClassName'] = $o->class;
 			unset($o);
+		} else {
+			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
+				'Title' => array(),
+				'Content' => array(),
+			);
 		}
 		
 		$id = isset($object['ID']) ? $object['ID'] : false;
-		unset($object['ID']);
 		$classType = isset($object['ClassName']) ? $object['ClassName'] : false;
-		unset($object['ClassName']);
+
+		// we're not indexing these fields just at the moment
+		unset($object['ClassName']);unset($object['ID']);
 
 		foreach ($object as $field => $valueDesc) {
 			if (!is_array($valueDesc)) {
@@ -105,7 +123,16 @@ class SolrSearchService
 			$type = $valueDesc['Type'];
 			$value = $valueDesc['Value'];
 
-			$fieldName = $this->mapper->mapType($field, $type);
+			// this should have already been taken care of, but just in case...
+			if ($type == 'MultiValueField' && $value instanceof MultiValueField) {
+				$value = $value->getValues();
+			}
+
+			if (!isset($fieldsToIndex[$field])) {
+				continue;
+			}
+
+			$fieldName = $this->mapper->mapType($field, $type, $value);
 
 			if (!$fieldName) {
 				continue;
@@ -114,7 +141,9 @@ class SolrSearchService
 			$value = $this->mapper->mapValue($value, $type);
 
 			if (is_array($value)) {
-				$document->setMultiValue($fieldName, $value);
+				foreach ($value as $v) {
+					$document->addField($fieldName, $v);
+				}
 			} else {
 				$document->$fieldName = $value;
 			}
@@ -127,8 +156,7 @@ class SolrSearchService
 				$this->getSolr()->commit();
 				$this->getSolr()->optimize();
 			} catch (Exception $ie) {
-				SS_Log::log($ie->getMessage(), SS_Log::ERR);
-				SS_Log::log($ie->getTraceAsString(), SS_Log::ERR);
+				SS_Log::log($ie, SS_Log::ERR);
 			}
 		}
 	}
@@ -146,25 +174,26 @@ class SolrSearchService
 	{
 		$ret = array();
 
-		$fieldsToIndex = $dataObject->searchableFields();
+		$fields = Object::combined_static('Page', 'db');
 
-		foreach (ClassInfo::ancestry($dataObject->class, true) as $class) {
-			$fields = DataObject::database_fields($class);
-			if ($fields) {
-				foreach($fields as $name => $type) {
-					if (preg_match('/^(\w+)\(/', $type, $match)) {
-						$type = $match[1];
-					}
+		foreach($fields as $name => $type) {
+			if (preg_match('/^(\w+)\(/', $type, $match)) {
+				$type = $match[1];
+			}
 
-					// Just index everything; the query can figure out what to
-					// exclude... !
+			// Just index everything; the query can figure out what to exclude... !
+			$value = $dataObject->$name;
 
-					// if (isset($fieldsToIndex[$name])) {
-					$ret[$name] = array('Type' => $type, 'Value' => $dataObject->$name);
-					// }
+			if ($type == 'MultiValueField') {
+				$value = $value->getValues();
+				if (!$value || count($value) == 0) {
+					continue;
 				}
 			}
+
+			$ret[$name] = array('Type' => $type, 'Value' => $value);
 		}
+
 		return $ret;
 	}
 	
@@ -300,19 +329,50 @@ class SolrSchemaMapper
 		'Content' => 'content_t',
 	);
 
-        /**
-         * Map a SilverStripe field to a Solr field
-         *
-         * @param String $field
-         *          The field name
-         * @param String $type
-         *          The field type
-         * @return String
-         */
-	public function mapType($field, $type)
+	/**
+	 * Map a SilverStripe field to a Solr field
+	 *
+	 * @param String $field
+	 *          The field name
+	 * @param String $type
+	 *          The field type
+	 * @param String $value
+	 *			The value being stored (needed if a multival)
+	 * 
+	 * @return String
+	 */
+	public function mapType($field, $type, $value)
 	{
 		if (isset($this->solrFields[$field])) {
 			return $this->solrFields[$field];
+		}
+
+		if (strpos($type, '(')) {
+			$type = substr($type, 0, strpos($type, '('));
+		}
+
+		// otherwise, lets use a generic field for it
+		switch ($type) {
+			case 'MultiValueField': {
+				return 'attr_*'.$field;
+			}
+			case 'Text':
+			case 'HTMLText': {
+				return $field.'_t';
+			}
+			case 'SS_Datetime': {
+				return $field.'_dt';
+			}
+			case 'Enum':
+			case 'Varchar': {
+				return $field.'_s';
+			}
+			case 'Integer': {
+				return $field.'_i';
+			}
+			default: {
+				return $field.'_s';
+			}
 		}
 	}
 
@@ -337,7 +397,7 @@ class SolrSchemaMapper
 					// we don't want a complete iso8601 date, we want it 
 					// in UTC time with a Z at the end. It's okay, php's
 					// strtotime will correctly re-convert this to the correct
-					// timestamp 
+					// timestamp, but this is how Solr wants things
 					$hoursToRemove = date('Z');
 					$ts = strtotime($value) - $hoursToRemove;
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2007-2009, Conduit Internet Technologies, Inc.
+ * Copyright (c) 2007-2010, Conduit Internet Technologies, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,9 +27,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * @copyright Copyright 2007-2009 Conduit Internet Technologies, Inc. (http://conduit-it.com)
+ * @copyright Copyright 2007-2010 Conduit Internet Technologies, Inc. (http://conduit-it.com)
  * @license New BSD (http://solr-php-client.googlecode.com/svn/trunk/COPYING)
- * @version $Id: Document.php 15 2009-08-04 17:53:08Z donovan.jimenez $
+ * @version $Id: Document.php 28 2010-02-19 23:36:22Z donovan.jimenez $
  *
  * @package Apache
  * @subpackage Solr
@@ -60,12 +60,12 @@ class Apache_Solr_Document implements IteratorAggregate
 	/**
 	 * SVN Revision meta data for this class
 	 */
-	const SVN_REVISION = '$Revision: 15 $';
+	const SVN_REVISION = '$Revision: 28 $';
 
 	/**
 	 * SVN ID meta data for this class
 	 */
-	const SVN_ID = '$Id: Document.php 15 2009-08-04 17:53:08Z donovan.jimenez $';
+	const SVN_ID = '$Id: Document.php 28 2010-02-19 23:36:22Z donovan.jimenez $';
 
 	/**
 	 * Document boost value
