@@ -354,7 +354,7 @@ class SolrSchemaMapper
 		// otherwise, lets use a generic field for it
 		switch ($type) {
 			case 'MultiValueField': {
-				return 'attr_*'.$field;
+				return 'attr_'.$field;
 			}
 			case 'Text':
 			case 'HTMLText': {
