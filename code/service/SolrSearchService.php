@@ -95,8 +95,7 @@ class SolrSearchService
 
 		if (is_object($object)) {
 			$fieldsToIndex = $object->searchableFields();
-			$fieldsToIndex['LastEdited'] = array();
-			$fieldsToIndex['Created'] = array();
+			
 			$o = $object;
 			$object = $this->objectToFields($object);
 			$object['ID'] = $o->ID;
@@ -108,6 +107,9 @@ class SolrSearchService
 				'Content' => array(),
 			);
 		}
+
+		$fieldsToIndex['LastEdited'] = array();
+		$fieldsToIndex['Created'] = array();
 		
 		$id = isset($object['ID']) ? $object['ID'] : false;
 		$classType = isset($object['ClassName']) ? $object['ClassName'] : false;
@@ -174,7 +176,9 @@ class SolrSearchService
 	{
 		$ret = array();
 
-		$fields = Object::combined_static('Page', 'db');
+		$fields = Object::combined_static($dataObject->ClassName, 'db');
+		$fields['Created'] = 'SS_Datetime';
+		$fields['LastEdited'] = 'SS_Datetime';
 
 		foreach($fields as $name => $type) {
 			if (preg_match('/^(\w+)\(/', $type, $match)) {
