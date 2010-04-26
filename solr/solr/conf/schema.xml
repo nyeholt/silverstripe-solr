@@ -487,25 +487,32 @@
         EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
-   <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
-   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
-   <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
-   <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
-   <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
-   <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*_i"  type="int"    indexed="true"  stored="false"/>
+   <dynamicField name="*_l"  type="long"   indexed="true"  stored="false"/>
+
+   <dynamicField name="*_s"  type="string"  indexed="true"  stored="false"/>
+   
+   <!-- A multi valued string field -->
+   <dynamicField name="*_ms"  type="string"  indexed="true"  stored="true" multiValued="true"/>
+
+   <dynamicField name="*_t"  type="text"    indexed="true"  stored="false"/>
+
+   <dynamicField name="*_b"  type="boolean" indexed="true"  stored="false"/>
+   <dynamicField name="*_f"  type="float"  indexed="true"  stored="false"/>
+   <dynamicField name="*_d"  type="double" indexed="true"  stored="false"/>
+   <dynamicField name="*_dt" type="date"    indexed="true"  stored="false"/>
 
    <!-- some trie-coded dynamic fields for faster range queries -->
-   <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
+   <dynamicField name="*_ti" type="tint"    indexed="true"  stored="false"/>
+   <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="false"/>
+   <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="false"/>
+   <dynamicField name="*_td" type="tdouble" indexed="true"  stored="false"/>
+   <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="false"/>
 
-   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="false"/>
 
    <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
+   
    <dynamicField name="attr_*" type="textgen" indexed="true" stored="true" multiValued="true"/>
 
    <dynamicField name="random_*" type="random" />
@@ -532,14 +539,14 @@
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,
         or to add multiple fields to the same field for easier/faster searching.  -->
-
+<!--
    <copyField source="cat" dest="text"/>
    <copyField source="name" dest="text"/>
    <copyField source="manu" dest="text"/>
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>
    <copyField source="manu" dest="manu_exact"/>
-	
+	-->
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 
 	  destination field is to use the dynamic field syntax. 

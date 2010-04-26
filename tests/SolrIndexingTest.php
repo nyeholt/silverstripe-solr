@@ -69,8 +69,8 @@ class SolrIndexingTest extends SapphireTest
 		
 		$item = $this->objFromFixture('Page','page1');
 		$item->extend('onAfterPublish', $item);
-		$results = $search->queryLucene('content_t:"Text Content"');
-		
+		$results = $search->query('text:"Text Content"');
+		$results = $results->getResult()->response;
 		$this->assertNotNull($results->docs);
 		$this->assertEquals(1, count($results->docs));
 		$this->assertEquals('Page_1', $results->docs[0]->id);
@@ -90,8 +90,9 @@ class SolrIndexingTest extends SapphireTest
 
 		$item = $this->objFromFixture('Page','page1');
 		$item->extend('onAfterPublish', $item);
-		$results = $search->queryDataObjects('content_t:"Text Content"');
-
+		$results = $search->query('text:"Text Content"');
+		$results = $results->getDataObjects();
+		
 		$this->assertTrue($results instanceof DataObjectSet);
 		$this->assertEquals(1, $results->Count());
 		$items = $results->toArray();
@@ -123,13 +124,48 @@ class SolrIndexingTest extends SapphireTest
 		$item = $this->objFromFixture('Page','page4');
 		$item->extend('onAfterPublish', $item);
 		
-		$results = $search->queryLucene('content_t:"Text Content"', 1, 10, array('facet'=>'true', 'facet.field' => 'content_t'));
-		
-		$this->assertNotNull($results->docs);
-		$this->assertEquals(4, count($results->docs));
-		$this->assertEquals('Page_1', $results->docs[0]->id);
-		
-		// print_r($results);
+		$results = $search->getFacetsForFields('text');
+		$facets = $results->getFacets();
+		$this->assertNotNull($facets);
+		$this->assertEquals(1, count($facets));
+		$this->assertTrue(isset($facets['text']));
+		$this->assertEquals(4, count($facets['text']));
+	}
+
+	public function testMultipleFacetQuery()
+	{
+		global $_SINGLETONS;
+		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		// we should be able to perform a query for documents with 'text content'
+		// and receive back some valid data
+		$search = singleton('SolrSearchService');
+		// clear everything out, then index content
+
+		/* @var $search SolrSearchService */
+		$search->getSolr()->deleteByQuery('*:*');
+
+		$item = $this->objFromFixture('Page','page1');
+		$item->extend('onAfterPublish', $item);
+
+		$item = $this->objFromFixture('Page','page2');
+		$item->extend('onAfterPublish', $item);
+
+		$item = $this->objFromFixture('Page','page3');
+		$item->extend('onAfterPublish', $item);
+
+		$item = $this->objFromFixture('Page','page4');
+		$item->extend('onAfterPublish', $item);
+
+		$results = $search->getFacetsForFields(array('text', 'title'));
+		$facets = $results->getFacets();
+
+		$this->assertNotNull($facets);
+		$this->assertEquals(2, count($facets));
+		$this->assertTrue(isset($facets['title']));
+		$this->assertTrue(isset($facets['text']));
+
+		$this->assertEquals(4, count($facets['title']));
+		$this->assertEquals(4, count($facets['text']));
 	}
 }
 

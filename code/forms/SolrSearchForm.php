@@ -59,7 +59,8 @@ class SolrSearchForm extends SearchForm
 		// TODO: Add sorting options from the request params
 		$params = array('sort' => 'score desc', 'fl' => '*,score');
 		
-		$results = $searchService->queryDataObjects($query, $start, $pageLength, $params);
+		$results = $searchService->query($query, $start, $pageLength, $params);
+		$results = $results->getDataObjects();
 
 		if($results) {
 			foreach($results as $result) {

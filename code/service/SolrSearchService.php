@@ -88,20 +88,19 @@ class SolrSearchService
 	 * 
 	 * @param stdClass $object
 	 */
-	public function index($object)
+	public function index($dataObject)
 	{
 		$document = new Apache_Solr_Document();
 		$fieldsToIndex = array();
 
-		if (is_object($object)) {
-			$fieldsToIndex = $object->searchableFields();
+		if (is_object($dataObject)) {
+			$fieldsToIndex = $dataObject->searchableFields();
 			
-			$o = $object;
-			$object = $this->objectToFields($object);
-			$object['ID'] = $o->ID;
-			$object['ClassName'] = $o->class;
-			unset($o);
+			$object = $this->objectToFields($dataObject);
+			$object['ID'] = $dataObject->ID;
+			$object['ClassName'] = $dataObject->class;
 		} else {
+			$object = $dataObject;
 			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
 				'Title' => array(),
 				'Content' => array(),
@@ -225,36 +224,8 @@ class SolrSearchService
 	}
 	
 	/**
-	 * Perform a raw query against the search index
-	 * 
-	 * @param String $query
-	 * 			The lucene query to execute. 
-	 * @param int $page
-	 * 			What result page are we on?
-	 * @param int $limit
-	 * 			How many items to limit the query to
-	 * @param array $params
-	 * 			A set of parameters to be passed along with the query
-	 * @return Array
-	 */
-	public function queryLucene($query, $offset = 0, $limit = 10, $params = array())
-	{
-		// execute the query, and return the results, then map them back to 
-		// data objects
-		$response = $this->getSolr()->search($query, $offset, $limit, $params);
-		
-		if ($response->getHttpStatus() >= 200 && $response->getHttpStatus() < 300) {
-			// decode the response
-			$response = json_decode($response->getRawResponse());
-			return $response->response;
-		}
-
-		return null;
-	}
-
-	/**
-	 * Perform a raw query against the search index, then convert the results
-	 * into a dataobjectset
+	 * Perform a raw query against the search index, returning a SolrResultSet object that 
+	 * can be used to extract a more complete result set
 	 *
 	 * @param String $query
 	 * 			The lucene query to execute.
@@ -264,41 +235,37 @@ class SolrSearchService
 	 * 			How many items to limit the query to
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
-	 * @return Array
+	 * @return SolrResultSet
 	 */
-	public function queryDataObjects($query, $offset = 0, $limit = 10, $params = array())
-	{
-		$items = new DataObjectSet();
+	public function query($query, $offset = 0, $limit = 20, $params = array()) {
+		// execute the query
+		$response = $this->getSolr()->search($query, $offset, $limit, $params);
+		$params = new stdClass();
+		$params->offset = $offset;
+		$params->limit = $limit;
+		$params->params = $params;
 
-	    $documents = $this->queryLucene($query, $offset, $limit, $params);
-	    if ($documents && isset($documents->docs)) {
-			$totalAdded = 0;
-			foreach ($documents->docs as $doc) {
-				list($type, $id) = explode('_', $doc->id);
-				if (!$type || !$id) {
-					SS_Log::log("Invalid solr document ID $doc->id", SS_Log::ERR);
-					continue;
-				}
+		return new SolrResultSet($response, $params, $this);
+	}
 
-				$object = DataObject::get_by_id($type, $id);
-				if ($object && $object->ID) {
-					// check that the user has permission
-					if (isset($doc->score)) {
-						$object->SearchScore = $doc->score;
-					}
 
-					$items->push($object);
-					$totalAdded++;
-				} else {
-					SS_Log::log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
-					$this->unindex($type, $id);
-				}
-			}
+	/**
+	 * Method used to return details about the facets stored for content, if any, for an empty query.
+	 *
+	 * Note - if you're wanting to perform actual queries using faceting information, please
+	 * manually add the faceting information into the $params array during the query! This
+	 * method is purely for convenience!
+	 *
+	 * @param $fields
+	 *			An array of fields to get facet information for
+	 *
+	 */
+	public function getFacetsForFields($fields, $number=10) {
+		if (!is_array($fields)) {
+			$fields = array($fields);
+		}
 
-			// update the dos with stats about this query
-			$items->setPageLimits($documents->start, $limit, $documents->numFound);
-	    }
-		return $items;
+		return $this->query('*:*', 0, 1, array('facet'=>'true', 'facet.field' => $fields, 'facet.limit' => 10));
 	}
 	
 	protected $client;
@@ -330,7 +297,7 @@ class SolrSchemaMapper
 		'Title' => 'title',
 		'ClassName' => 'content_type',
 		'LastEdited' => 'last_modified',
-		'Content' => 'content_t',
+		'Content' => 'text',
 	);
 
 	/**
@@ -358,7 +325,7 @@ class SolrSchemaMapper
 		// otherwise, lets use a generic field for it
 		switch ($type) {
 			case 'MultiValueField': {
-				return 'attr_'.$field;
+				return $field.'_ms';
 			}
 			case 'Text':
 			case 'HTMLText': {
@@ -369,13 +336,13 @@ class SolrSchemaMapper
 			}
 			case 'Enum':
 			case 'Varchar': {
-				return $field.'_s';
+				return $field.'_ms';
 			}
 			case 'Integer': {
 				return $field.'_i';
 			}
 			default: {
-				return $field.'_s';
+				return $field.'_ms';
 			}
 		}
 	}
@@ -406,6 +373,9 @@ class SolrSchemaMapper
 					$ts = strtotime($value) - $hoursToRemove;
 
 					return date('o-m-d\TH:i:s\Z', $ts);
+				}
+				case 'HTMLText': {
+					return strip_tags($value);
 				}
 				default: {
 					return $value;
