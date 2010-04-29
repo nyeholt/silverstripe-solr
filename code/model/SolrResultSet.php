@@ -100,6 +100,14 @@ class SolrResultSet
 		return $this->luceneQuery;
 	}
 
+	/**
+	 * Get all the parameters used in this query
+	 *
+	 */
+	public function getQueryParameters() {
+		return $this->queryParameters;
+	}
+
 
 	/**
 	 * Gets the raw result set as an object graph.
@@ -201,8 +209,8 @@ class SolrResultSet
 			$elemVals = array();
 			foreach ($values as $vname => $vcount) {
 				$r = new stdClass;
-				$r->name = $vname;
-				$r->count = $vcount;
+				$r->Name = $vname;
+				$r->Count = $vcount;
 				$elemVals[] = $r;
 			}
 			$result[$field] = $elemVals;

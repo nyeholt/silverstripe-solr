@@ -1,4 +1,11 @@
 <div class="typography">
+	<% if FacetCrumbs %>
+	<ul>
+		<% control FacetCrumbs %>
+		<li><a href="$RemoveLink">$Name</a></li>
+		<% end_control %>
+	</ul>
+	<% end_if %>
 	<% if Results %>
 	    <ul id="SearchResults">
 	      <% control Results %>

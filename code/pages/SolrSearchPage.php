@@ -36,7 +36,6 @@ class SolrSearchPage extends Page
 		'ResultsPerPage' => 'Int',
 	);
 
-
 	/**
 	 *
 	 * The facets we're interested in for this site
@@ -63,6 +62,13 @@ class SolrSearchPage extends Page
 	 */
 	protected $solr;
 
+	/**
+	 * Used for the url param
+	 *
+	 * @var String
+	 */
+	public static $filter_param = 'filter';
+
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
 
@@ -71,8 +77,9 @@ class SolrSearchPage extends Page
 			new DropdownField(
 				'ResultsPerPage',
 				_t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'),
-				array('10' => '10', '20' => '20')
-			)
+				array('5' => '5', '10' => '10', '15' => '15', '20' => '20')
+			),
+			'Content'
 		);
 
 		return $fields;
@@ -129,6 +136,17 @@ class SolrSearchPage extends Page
 			$query = $_GET['Search'];
 		}
 
+		$activeFacets = $this->getActiveFacets();
+		if (count($activeFacets)) {
+			$sep = $query ? ' AND ' : '';
+			foreach ($activeFacets as $facetName => $facetValues) {
+				foreach ($facetValues as $value) {
+					$query .= $sep . $facetName . ':"'.$value.'"';
+					$sep = ' AND ';
+				}
+			}
+		}
+
 		if (!$query) {
 			$this->query = $this->getSolr()->getFacetsForFields(self::$facets);
 		} else {
@@ -149,6 +167,40 @@ class SolrSearchPage extends Page
 		return $this->query;
 	}
 
+	/**
+	 * Gets a list of facet based filters
+	 */
+	public function getActiveFacets() {
+		return isset($_GET[self::$filter_param]) ? $_GET[self::$filter_param] : array();
+	}
+
+	/**
+	 * Returns a url parameter string that was just used to execute the current query.
+	 *
+	 * This is useful for ensuring the parameters used in the search can be passed on again
+	 * for subsequent queries.
+	 *
+	 * @param array $exclusions
+	 *			A list of elements that should be excluded from the final query string
+	 *
+	 * @return String
+	 */
+	function SearchQuery() {
+		$parts = parse_url($_SERVER['REQUEST_URI']);
+		if(!$parts) {
+			throw new InvalidArgumentException("Can't parse URL: " . $uri);
+		}
+
+		// Parse params and add new variable
+		$params = array();
+		if(isset($parts['query'])) {
+			parse_str($parts['query'], $params);
+			if (count($params)) {
+				return http_build_query($params);
+			}
+		}
+	}
+
 
 	/**
 	 * Get the list of facet values for the given term
@@ -161,6 +213,14 @@ class SolrSearchPage extends Page
 		if ($term) {
 			// return just that term
 			$ret = isset($facets[$term]) ? $facets[$term] : null;
+			// lets update them all and add a link parameter
+			
+			foreach ($ret as $facetTerm) {
+				$sq = $this->SearchQuery();
+				$sep = strlen($sq) ? '&amp;' : '';
+				$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Name";
+			}
+
 			return new DataObjectSet($ret);
 		}
 
@@ -175,33 +235,25 @@ class SolrSearchPage_Controller extends Page_Controller {
 		return $this->data()->getSolr();
 	}
 
-	/**
-	 * Get the list of facet values for the given term
-	 *
-	 * @param String $term
-	 */
-	public function Facets($term=null) {
-		$facets = $this->data()->getQuery()->getFacets();
-
-		if ($term) {
-			// return just that term
-			$ret = isset($facets[$term]) ? $facets[$term] : null;
-			return new DataObjectSet($ret);
-		}
-
-		return $facets;
-	}
-
 	public function FacetCrumbs() {
-
-	}
-
-	function SearchQuery() {
-		$query = $this->data()->getQuery();
-		if ($query && $query->getLuceneQuery() != '*:*') {
-			return Convert::raw2att($query->getLuceneQuery()) . " AND ";
+		$activeFacets = $this->data()->getActiveFacets();
+		$parts = array();
+		$queryString = $this->data()->SearchQuery();
+		if (count($activeFacets)) {
+			foreach ($activeFacets as $facetName => $facetValues) {
+				foreach ($facetValues as $i => $v) {
+					$item = new stdClass();
+					$item->Name = $v;
+					$paramName = urlencode(SolrSearchPage::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
+					$item->RemoveLink = $this->Link('results') . '?' . str_replace($paramName, '', $queryString);
+					$parts[] = $item;
+				}
+			}
 		}
+
+		return new DataObjectSet($parts);
 	}
+
 
 	/**
 	 * Process and render search results
