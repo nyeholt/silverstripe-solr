@@ -28,6 +28,13 @@ OF SUCH DAMAGE.
  */
 class SolrResultSet
 {
+
+	/**
+	 * The raw lucene query issued to solr
+	 * @var String
+	 */
+	protected $luceneQuery;
+
 	/**
 	 * @var SolrSearchService
 	 */
@@ -61,7 +68,21 @@ class SolrResultSet
 	 */
 	protected $queryParameters;
 
-    public function __construct($rawResponse, $parameters, SolrSearchService $service) {
+	/**
+	 * The total number of results found in this query
+	 *
+	 * @var Int
+	 */
+	protected $totalResults;
+
+	/**
+	 * Create a new result set object
+	 *
+	 * @param $query
+	 *			The raw lucene query issued to solr
+	 */
+    public function __construct($query, $rawResponse, $parameters, SolrSearchService $service) {
+		$this->luceneQuery = $query;
 		$this->response = $rawResponse;
 		$this->queryParameters = $parameters;
 		$this->solr = $service;
@@ -70,6 +91,15 @@ class SolrResultSet
 	public function getErrors() {
 		
 	}
+
+	/**
+	 * @return String
+	 *			The raw query issued to generate this result set
+	 */
+	public function getLuceneQuery() {
+		return $this->luceneQuery;
+	}
+
 
 	/**
 	 * Gets the raw result set as an object graph.
@@ -86,11 +116,23 @@ class SolrResultSet
 	}
 
 	/**
+	 * The number of results found for the given parameters.
+	 *
+	 * @return Int
+	 */
+	public function getTotalResults() {
+		return $this->totalResults;
+	}
+
+	/**
 	 * Return all the dataobjects that were found in this query
+	 *
+	 * @param $evaluatePermissions
+	 *			Should we evaluate whether the user can view before adding the result to the dataset?
 	 *
 	 * @return DataObjectSet
 	 */
-	public function getDataObjects() {
+	public function getDataObjects($evaluatePermissions=false) {
 		if (!$this->dataObjects) {
 			$this->dataObjects = new DataObjectSet();
 
@@ -112,14 +154,17 @@ class SolrResultSet
 							$object->SearchScore = $doc->score;
 						}
 
-						$this->dataObjects->push($object);
+						if (!$evaluatePermissions || $object->canView()) {
+							$this->dataObjects->push($object);
+						}
+
 						$totalAdded++;
 					} else {
 						ssau_log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
 						$this->solr->unindex($type, $id);
 					}
 				}
-
+				$this->totalResults = $documents->numFound;
 				// update the dos with stats about this query
 				$this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
 			}

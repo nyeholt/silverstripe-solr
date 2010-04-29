@@ -232,7 +232,7 @@ class SolrSearchService
 	 * @param int $page
 	 * 			What result page are we on?
 	 * @param int $limit
-	 * 			How many items to limit the query to
+	 * 			How many items to limit the query to return
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
 	 * @return SolrResultSet
@@ -245,7 +245,7 @@ class SolrSearchService
 		$params->limit = $limit;
 		$params->params = $params;
 
-		return new SolrResultSet($response, $params, $this);
+		return new SolrResultSet($query, $response, $params, $this);
 	}
 
 
@@ -265,7 +265,7 @@ class SolrSearchService
 			$fields = array($fields);
 		}
 
-		return $this->query('*:*', 0, 1, array('facet'=>'true', 'facet.field' => $fields, 'facet.limit' => 10));
+		return $this->query('*:*', 0, 1, array('facet'=>'true', 'facet.field' => $fields, 'facet.limit' => 10, 'facet.mincount' => 1));
 	}
 	
 	protected $client;

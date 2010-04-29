@@ -50,6 +50,11 @@ class SolrIndexable extends DataObjectDecorator
 		if (!self::$indexing) return;
 		singleton('SolrSearchService')->unindex($this->owner->class, $this->owner->ID);
 	}
+
+	function onAfterDelete() {
+		if (!self::$indexing) return;
+		singleton('SolrSearchService')->unindex($this->owner->class, $this->owner->ID);
+	}
 }
 
 
