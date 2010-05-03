@@ -38,16 +38,21 @@ class SolrSearchPage extends Page
 
 	/**
 	 *
-	 * The facets we're interested in for this site
+	 * The facets we're interested in for this search page. This will be made a little more
+	 * flexible in later releases.
+	 * 
+	 * for example with the alchemiser module -
+	 * 
+	 * array (
+	 * 'AlcKeywords_ms',
+	 * 	'AlcPerson_ms',
+	 * 	'AlcCompany_ms',
+	 * 	'AlcOrganization_ms',
+	 * );
 	 *
 	 * @var array
 	 */
-	public static $facets = array(
-		'AlcKeywords_ms',
-		'AlcPerson_ms',
-		'AlcCompany_ms',
-		'AlcOrganization_ms',
-	);
+	public static $facets = array();
 
 	/**
 	 * A local cache of the current query the user is executing based

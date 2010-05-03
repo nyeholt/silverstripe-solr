@@ -37,6 +37,8 @@ class SolrReindexTask extends BuildTask
 		$pages = DataObject::get('Page');
 
 		$search = singleton('SolrSearchService');
+		$search->getSolr()->deleteByQuery('*:*');
+
 		/* @var $search SolrSearchService */
 		$count = 0;
 		foreach ($pages as $page) {
