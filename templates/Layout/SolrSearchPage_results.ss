@@ -1,6 +1,6 @@
 <div class="typography">
 	<% if FacetCrumbs %>
-	<ul>
+	<ul class="facetCrumbs">
 		<% control FacetCrumbs %>
 		<li><a href="$RemoveLink">$Name</a></li>
 		<% end_control %>
