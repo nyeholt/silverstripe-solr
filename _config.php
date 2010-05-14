@@ -29,7 +29,8 @@ DataObject::add_extension('SiteTree', 'SolrIndexable');
 */
 
 // You will also need to specify a solr configuration if it differs from the default
+// SolrSearchService::$solr_details = array();
 
-
+include_once dirname(__FILE__).'/helpers.php';
 
 ?>

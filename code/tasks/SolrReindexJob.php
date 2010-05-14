@@ -21,39 +21,56 @@ OF SUCH DAMAGE.
 */
 
 /**
- * Reindex the entire content of the current system in the solr backend
+ * A queued job used for reindexing content
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class SolrReindexTask extends BuildTask
-{
-	protected $title = "Reindex all content within Solr";
+class SolrReindexJob extends AbstractQueuedJob {
 
-	protected $description = "Iterates through all content within the system, re-indexing it in solr";
+	public function __construct() {
+		
+	}
 
-	function run($request)
-	{
-		if (ClassInfo::exists('QueuedJob')) {
-			$job = new SolrReindexJob();
-			$svc = singleton('QueuedJobService');
-			$svc->queueJob($job);
-			echo "<p>Reindexing job has been queued</p>";
+	public function getTitle() {
+		return "Reindex content in Solr";
+	}
+
+	/**
+	 * Lets see how many pages we're re-indexing
+	 */
+	public function getJobType() {
+		$query = 'SELECT count(*) FROM "Page"';
+		$this->totalSteps = DB::query($query)->value();
+		return $this->totalSteps > 100 ? QueuedJob::LARGE : QueuedJob::QUEUED;
+	}
+
+	public function setup() {
+		$this->lastIndexedID = 0;
+		$service = singleton('SolrSearchService');
+		$service->getSolr()->deleteByQuery('*:*');
+	}
+
+	/**
+	 * To process this job, we need to get the next page whose ID is the next greater than the last
+	 * processed. This way we don't need to remember a bunch of data about what we've processed
+	 */
+	public function process() {
+		if (ClassInfo::exists('Subsite')) {
+			Subsite::$disable_subsite_filter = true;
+		}
+		$page = DataObject::get_one('SiteTree', db_quote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
+		if (!$page || !$page->exists()) {
+			$this->isComplete = true;
 			return;
 		}
-		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
-		$pages = DataObject::get('Page');
 
-		$search = singleton('SolrSearchService');
-		$search->getSolr()->deleteByQuery('*:*');
+		// index away
+		$service = singleton('SolrSearchService');
+		$service->index($page);
 
-		/* @var $search SolrSearchService */
-		$count = 0;
-		foreach ($pages as $page) {
-			$search->index($page);
-			echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
-			$count ++;
-		}
-		echo "Reindex complete, $count objects re-indexed<br/>";
+		$this->currentStep++;
+
+		$this->lastIndexedID = $page->ID;
 	}
 }
 ?>
