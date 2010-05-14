@@ -86,7 +86,7 @@ class SolrSearchService
 	 * ID of the object, and a field named 'ClassName' that is the 
 	 * name of the document's type
 	 * 
-	 * @param stdClass $object
+	 * @param DataObject $object
 	 */
 	public function index($dataObject)
 	{
@@ -94,8 +94,13 @@ class SolrSearchService
 		$fieldsToIndex = array();
 
 		if (is_object($dataObject)) {
+			// if it's not published, we don't want to know about it
+			if (Object::has_extension(get_class($dataObject), 'Versioned')) {
+				if ($dataObject->Status != 'Published') {
+					return;
+				}
+			}
 			$fieldsToIndex = $dataObject->searchableFields();
-			
 			$object = $this->objectToFields($dataObject);
 			$object['ID'] = $dataObject->ID;
 			$object['ClassName'] = $dataObject->class;
@@ -107,15 +112,24 @@ class SolrSearchService
 			);
 		}
 
-		$fieldsToIndex['LastEdited'] = array();
-		$fieldsToIndex['Created'] = array();
-		
+		$fieldsToIndex['LastEdited'] = true;
+		$fieldsToIndex['Created'] = true;
+
+		// specially handle the subsite module - this has serious implications for our search
+		// @TODO we want to genercise this later for other modules to hook into it!
+		if (ClassInfo::exists('Subsite')) {
+			$fieldsToIndex['SubsiteID'] = true;
+			if (is_object($dataObject)) {
+				$object['SubsiteID'] = array('Type' => 'Int', 'Value' => $dataObject->SubsiteID);
+			}
+		}
+
 		$id = isset($object['ID']) ? $object['ID'] : false;
 		$classType = isset($object['ClassName']) ? $object['ClassName'] : false;
 
 		// we're not indexing these fields just at the moment
 		unset($object['ClassName']);unset($object['ID']);
-
+		
 		foreach ($object as $field => $valueDesc) {
 			if (!is_array($valueDesc)) {
 				continue;
@@ -238,6 +252,11 @@ class SolrSearchService
 	 * @return SolrResultSet
 	 */
 	public function query($query, $offset = 0, $limit = 20, $params = array()) {
+		// be very specific about the subsite support :). 
+		if (ClassInfo::exists('Subsite')) {
+			$query = "($query) AND SubsiteID_i:".Subsite::currentSubsiteID();
+		}
+
 		// execute the query
 		$response = $this->getSolr()->search($query, $offset, $limit, $params);
 		$params = new stdClass();
@@ -338,6 +357,7 @@ class SolrSchemaMapper
 			case 'Varchar': {
 				return $field.'_ms';
 			}
+			case 'Int':
 			case 'Integer': {
 				return $field.'_i';
 			}

@@ -56,9 +56,13 @@ class SolrReindexJob extends AbstractQueuedJob {
 	 */
 	public function process() {
 		if (ClassInfo::exists('Subsite')) {
-			Subsite::$disable_subsite_filter = true;
+			Subsite::disable_subsite_filter();
 		}
 		$page = DataObject::get_one('SiteTree', db_quote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
+		if (ClassInfo::exists('Subsite')) {
+			Subsite::$disable_subsite_filter = false;
+		}
+		
 		if (!$page || !$page->exists()) {
 			$this->isComplete = true;
 			return;
@@ -71,6 +75,7 @@ class SolrReindexJob extends AbstractQueuedJob {
 		$this->currentStep++;
 
 		$this->lastIndexedID = $page->ID;
+
 	}
 }
 ?>
