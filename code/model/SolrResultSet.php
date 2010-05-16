@@ -151,7 +151,7 @@ class SolrResultSet
 				foreach ($documents->docs as $doc) {
 					list($type, $id) = explode('_', $doc->id);
 					if (!$type || !$id) {
-						ssau_log("Invalid solr document ID $doc->id", SS_Log::ERR);
+						singleton('SolrUtils')->log("Invalid solr document ID $doc->id", SS_Log::ERR);
 						continue;
 					}
 
@@ -168,7 +168,7 @@ class SolrResultSet
 
 						$totalAdded++;
 					} else {
-						ssau_log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
+						singleton('SolrUtils')->log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
 						$this->solr->unindex($type, $id);
 					}
 				}

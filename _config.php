@@ -24,13 +24,11 @@ OF SUCH DAMAGE.
 // Add to mysite/_config.php
 
 /*
-DataObject::add_extension('File', 'SolrIndexable');
 DataObject::add_extension('SiteTree', 'SolrIndexable');
 */
 
 // You will also need to specify a solr configuration if it differs from the default
 // SolrSearchService::$solr_details = array();
 
-include_once dirname(__FILE__).'/helpers.php';
 
 ?>

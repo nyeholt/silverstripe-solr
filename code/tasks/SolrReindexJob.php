@@ -58,7 +58,7 @@ class SolrReindexJob extends AbstractQueuedJob {
 		if (ClassInfo::exists('Subsite')) {
 			Subsite::disable_subsite_filter();
 		}
-		$page = DataObject::get_one('SiteTree', db_quote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
+		$page = DataObject::get_one('SiteTree', singleton('SolrUtils')->quote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
 		if (ClassInfo::exists('Subsite')) {
 			Subsite::$disable_subsite_filter = false;
 		}
