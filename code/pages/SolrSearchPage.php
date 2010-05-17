@@ -136,6 +136,10 @@ class SolrSearchPage extends Page
 			return $this->query;
 		}
 
+		if (!$this->getSolr()->isConnected()) {
+			return null;
+		}
+
 		$query = null;
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
@@ -213,6 +217,9 @@ class SolrSearchPage extends Page
 	 * @param String $term
 	 */
 	public function currentFacets($term=null) {
+		if (!$this->getQuery()) {
+			return new DataObjectSet();
+		}
 		$facets = $this->getQuery()->getFacets();
 
 		if ($term) {
@@ -269,7 +276,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
 
 	  	$data = array(
-	     	'Results' => $query->getDataObjects(),
+	     	'Results' => $query ? $query->getDataObjects() : new DataObjectSet(),
 	     	'Query' => $term,
 	      	'Title' => 'Search Results'
 	  	);

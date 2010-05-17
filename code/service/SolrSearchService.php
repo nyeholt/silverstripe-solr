@@ -61,6 +61,15 @@ class SolrSearchService
 	}
 
 	/**
+	 * Is solr alive?
+	 *
+	 * @return boolean
+	 */
+	public function isConnected() {
+		return $this->getSolr()->ping();
+	}
+
+	/**
 	 * A class that can map field types to solr fields, and values to appropriate types
 	 *
 	 * @param SolrSchemaMapper $mapper
