@@ -24,10 +24,19 @@ OF SUCH DAMAGE.
 class SolrIndexingTest extends SapphireTest
 {
 	static $fixture_file = 'solr/tests/SolrTest.yml';
+
+	public function setUpOnce() {
+		DataObject::add_extension('SiteTree', 'SolrIndexable');
+		parent::setUpOnce();
+	}
+
+	public function tearDownOnce() {
+		DataObject::remove_extension('SiteTree', 'SolrIndexable');
+		parent::tearDownOnce();
+	}
 	
 	public function testSolrIndexableItem()
 	{
-		DataObject::add_extension('SiteTree', 'SolrIndexable');
 		$item = $this->objFromFixture('Page','page1');
 		
 		$indexFields = array(

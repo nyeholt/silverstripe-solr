@@ -228,8 +228,12 @@ class SolrSearchService
 	 * 
 	 * @param DataObject $object
 	 */
-	public function unindex($type, $id)
+	public function unindex($type, $id=null)
 	{
+		if (is_object($type)) {
+			$id = $type->ID;
+			$type = get_class($type);
+		}
 		$this->getSolr()->deleteById($type.'_'.$id);
 	}
 
