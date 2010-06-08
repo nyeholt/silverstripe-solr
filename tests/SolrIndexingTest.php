@@ -59,9 +59,13 @@ class SolrIndexingTest extends SapphireTest
 	{
 		global $_SINGLETONS;
 		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
+		if (!$search->isConnected()) {
+			return;
+		}
 		// clear everything out, then index content
 
 		/* @var $search SolrSearchService */
@@ -84,6 +88,9 @@ class SolrIndexingTest extends SapphireTest
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
+		if (!$search->isConnected()) {
+			return;
+		}
 		// clear everything out, then index content
 		/* @var $search SolrSearchService */
 		$search->getSolr()->deleteByQuery('*:*');
@@ -107,6 +114,9 @@ class SolrIndexingTest extends SapphireTest
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
+		if (!$search->isConnected()) {
+			return;
+		}
 		// clear everything out, then index content
 
 		/* @var $search SolrSearchService */
@@ -139,6 +149,9 @@ class SolrIndexingTest extends SapphireTest
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
+		if (!$search->isConnected()) {
+			return;
+		}
 		// clear everything out, then index content
 
 		/* @var $search SolrSearchService */
@@ -168,6 +181,3 @@ class SolrIndexingTest extends SapphireTest
 		$this->assertEquals(4, count($facets['text']));
 	}
 }
-
-
-?>
