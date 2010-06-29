@@ -39,7 +39,7 @@ class SolrReindexJob extends AbstractQueuedJob {
 	 * Lets see how many pages we're re-indexing
 	 */
 	public function getJobType() {
-		$query = 'SELECT count(*) FROM "Page"';
+		$query = 'SELECT COUNT(*) FROM "SiteTree"';
 		$this->totalSteps = DB::query($query)->value();
 		return $this->totalSteps > 100 ? QueuedJob::LARGE : QueuedJob::QUEUED;
 	}
