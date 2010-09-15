@@ -45,6 +45,8 @@ Add the SolrSearchable decorator to any SiteTree objects you want to search.
 Support for other data objects may work, though file indexing is not yet
 supported
 
+	DataObject::add_extension('SiteTree', 'SolrIndexable');
+
 ## Configure your search page
 
 This module creates a new page of type _SolrSearchPage_ in your site's root.
@@ -52,23 +54,33 @@ This should be published before being able to perform searches.
 
 ## Change Page.php to redirect to the SolrSearchPage
 
-Finally, the search mechanism needs to be hooked up to redirect to the Solr
-Search Page for processing results. Add the following to your Page.php
+Finally, the search mechanism needs to be hooked up to your pages. This can be done
+by adding the SolrSearchExtension to your Page_Controller class to make available
+the various template hooks
 
-`
-	public function getSearchPage() {
-		return DataObject::get_one('SolrSearchPage');
-	}
-`
+	Object::add_extension('Page_Controller', 'SolrSearchExtension');
 
-and change the `results()` action handler to
+Now, add your searchform wherever you like in your Page template using $SearchForm
 
-`
-	public function results() {
-		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		Director::redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
-	}
-`
+Template Options
+----------------
+
+Facets can be used in your templates with code similar to the following. In this instance, the
+argument passed to the Facets call is the name of a multivalue parameter on a set of dataobjects
+that have been indexed in Solr.
+
+	<div id="Facets">
+		<div class="facetList">
+				<h3>Keywords</h3>
+				<ul>
+				<% control Facets(AlcKeywords_ms) %>
+				<li><a href="$SearchLink">$Name</a> ($Count)</li>
+				<% end_control %>
+				</ul>
+		</div>
+		 <div class="clear"><!-- --></div>
+	</div>
+
 
 API
 ---

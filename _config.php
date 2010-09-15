@@ -25,10 +25,12 @@ OF SUCH DAMAGE.
 
 /*
 DataObject::add_extension('SiteTree', 'SolrIndexable');
-*/
+Object::add_extension('Page_Controller', 'SolrSearchExtension');
+ */
 
-// You will also need to specify a solr configuration if it differs from the default
+
+
+// You will also need to specify a solr configuration if your solr application is on a different host:port than
+// the default
 // SolrSearchService::$solr_details = array();
 
-
-?>
