@@ -82,6 +82,9 @@ that have been indexed in Solr.
 	</div>
 
 
+To customise search results display, provide a SolrSearchPage_results.ss
+file in your theme's templates directory. 
+
 API
 ---
 

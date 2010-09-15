@@ -243,8 +243,7 @@ class SolrSearchService
 	 *
 	 * @param String $query
 	 */
-	public function parseSearch($query)
-	{
+	public function parseSearch($query) {
 		$escaped = str_replace(array('"', "'"), array('\"', "\'"), $query);
 
 		return 'title:"'.$escaped.'" content_t:"'.$escaped.'"';

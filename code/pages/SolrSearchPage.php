@@ -226,11 +226,12 @@ class SolrSearchPage extends Page
 			// return just that term
 			$ret = isset($facets[$term]) ? $facets[$term] : null;
 			// lets update them all and add a link parameter
-			
-			foreach ($ret as $facetTerm) {
-				$sq = $this->SearchQuery();
-				$sep = strlen($sq) ? '&amp;' : '';
-				$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Name";
+			if ($ret) {
+				foreach ($ret as $facetTerm) {
+					$sq = $this->SearchQuery();
+					$sep = strlen($sq) ? '&amp;' : '';
+					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Name";
+				}
 			}
 
 			return new DataObjectSet($ret);

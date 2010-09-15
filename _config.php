@@ -28,6 +28,8 @@ DataObject::add_extension('SiteTree', 'SolrIndexable');
 Object::add_extension('Page_Controller', 'SolrSearchExtension');
  */
 
+// To enable faceting, you need to specify which fields should be available
+// SolrSearchPage::$facets = array ('AlcKeywords_ms', 'AlcPerson_ms', 'AlcCompany_ms', 'AlcOrganization_ms');
 
 
 // You will also need to specify a solr configuration if your solr application is on a different host:port than

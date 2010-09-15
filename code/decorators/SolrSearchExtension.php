@@ -64,7 +64,7 @@ class SolrSearchExtension extends Extension {
 	      	new FormAction('results', 'Search')
 	  	);
 
-	  	return new SearchForm($this, "SearchForm", $fields, $actions);
+	  	return new SearchForm($this->owner, "SearchForm", $fields, $actions);
 	}
 
 	/**
