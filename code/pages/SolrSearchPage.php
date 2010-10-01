@@ -1,25 +1,4 @@
 <?php
-/*
-
-Copyright (c) 2009, SilverStripe Australia PTY LTD - www.silverstripe.com.au
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
-
 /**
  * A page type specifically used for displaying search results.
  *
@@ -29,11 +8,15 @@ OF SUCH DAMAGE.
  * 
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
+ * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchPage extends Page
 {
     public static $db = array(
 		'ResultsPerPage' => 'Int',
+		'SearchType' => 'Varchar(64)',
+		'SortBy' => "Varchar(64)",
+		'SortDir' => "Enum('Ascending,Descending')",
 	);
 
 	/**
@@ -77,17 +60,48 @@ class SolrSearchPage extends Page
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
 
-		$fields->addFieldToTab(
-			'Root.Content.Main',
-			new DropdownField(
-				'ResultsPerPage',
-				_t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'),
-				array('5' => '5', '10' => '10', '15' => '15', '20' => '20')
-			),
-			'Content'
-		);
+		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
+		$fields->addFieldToTab('Root.Content.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
+
+		if (!$this->SortBy) {
+			$this->SortBy = 'Created';
+		}
+		
+		$objFields = $this->getSelectableFields();
+		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields), 'Content');
+		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->dbObject('SortDir')->enumValues()), 'Content');
+
+		$types = SiteTree::page_type_classes(); 
+		$source = array_combine($types, $types);
+		asort($source);
+		$source = array_merge(array('' => 'Any'), $source);
+		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.PAGE_TYPE', 'Search pages of type'), $source, 'Any');
+		$fields->addFieldToTab('Root.Content.Main', $optionsetField, 'Content');
 
 		return $fields;
+	}
+
+	/**
+	 * Return the fields that can be selected for sorting operations.
+	 *
+	 * @param String $listType
+	 * @return string
+	 */
+	public function getSelectableFields($listType=null) {
+		if (!$listType) {
+			$listType = strlen($this->SearchType) ? $this->SearchType : 'Page';
+		}
+
+		$objFields = singleton($listType)->inheritedDatabaseFields();
+		$objFields = array_keys($objFields);
+		$objFields = array_combine($objFields, $objFields);
+		$objFields['LastEdited'] = 'LastEdited';
+		$objFields['Created'] = 'Created';
+		$objFields['ID'] = 'ID';
+		$objFields['Score'] = 'Score';
+		
+		ksort($objFields);
+		return $objFields;
 	}
 
 
@@ -113,7 +127,6 @@ class SolrSearchPage extends Page
 		}
 	}
 
-
 	/**
 	 * Get the solr instance. 
 	 * 
@@ -129,6 +142,7 @@ class SolrSearchPage extends Page
 
 	/**
 	 * Get the currently active query for this page, if any
+	 * 
 	 * @return SolrResultSet
 	 */
 	public function getQuery() {
@@ -144,6 +158,16 @@ class SolrSearchPage extends Page
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
 		}
+
+		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
+		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->SortDir;
+		$type = isset($_GET['SearchType']) ? $_GET['SearchType'] : $this->SearchType;
+
+		$fields = $this->getSelectableFields($this->SearchType);
+		if (!isset($fields[$sortBy])) {
+			$sortBy = 'score';
+		}
+		$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
 		$activeFacets = $this->getActiveFacets();
 		if (count($activeFacets)) {
@@ -161,13 +185,17 @@ class SolrSearchPage extends Page
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
-			$params = array('sort' => 'score desc', 'fl' => '*,score');
+			$sortBy = singleton('SolrSearchService')->getFieldName($type, $sortBy);
+			if ($type) {
+				$query .= ' AND ClassNameHierarchy_ms:'.$type;
+			}
+
 			$params = array(
 				'facet' => 'true',
 				'facet.field' => self::$facets,
 				'facet.limit' => 10,
 				'facet.mincount' => 1,
-				'sort' => 'score desc',
+				'sort' => "$sortBy $sortDir",
 				'fl' => '*,score'
 			);
 
@@ -210,7 +238,6 @@ class SolrSearchPage extends Page
 		}
 	}
 
-
 	/**
 	 * Get the list of facet values for the given term
 	 *
@@ -243,9 +270,28 @@ class SolrSearchPage extends Page
 
 class SolrSearchPage_Controller extends Page_Controller {
 
-
 	protected function getSolr() {
 		return $this->data()->getSolr();
+	}
+
+	public function Form() {
+		$fields = new FieldSet(
+			new TextField('Search', _t('SolrSearchPage.SEARCH','Search'), isset($_GET['Search']) ? $_GET['Search'] : '')
+		);
+
+		$objFields = $this->data()->getSelectableFields();
+		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
+		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
+		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
+		$fields->push(new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->data()->dbObject('SortDir')->enumValues(), $sortDir));
+
+		$actions = new FieldSet(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
+		
+		$form = new Form($this, 'Form', $fields, $actions);
+
+		$form->setFormMethod('GET');
+		$form->disableSecurityToken();
+		return $form;
 	}
 
 	public function FacetCrumbs() {
@@ -285,4 +331,3 @@ class SolrSearchPage_Controller extends Page_Controller {
 	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 	}
 }
-?>

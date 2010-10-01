@@ -1,31 +1,10 @@
 <?php
-/**
-
-Copyright (c) 2009, SilverStripe Australia PTY LTD - www.silverstripe.com.au
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the 
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software 
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
-OF SUCH DAMAGE.
- 
-*/
 
 /**
  * A search service built around Solr
  * 
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
- *
+ * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchService
 {
@@ -97,11 +76,11 @@ class SolrSearchService
 	 * 
 	 * @param DataObject $object
 	 */
-	public function index($dataObject)
-	{
+	public function index($dataObject) {
 		$document = new Apache_Solr_Document();
 		$fieldsToIndex = array();
 
+		$id = 0;
 		if (is_object($dataObject)) {
 			// if it's not published, we don't want to know about it
 			if (Object::has_extension(get_class($dataObject), 'Versioned')) {
@@ -109,20 +88,26 @@ class SolrSearchService
 					return;
 				}
 			}
+
 			$fieldsToIndex = $dataObject->searchableFields();
 			$object = $this->objectToFields($dataObject);
-			$object['ID'] = $dataObject->ID;
-			$object['ClassName'] = $dataObject->class;
+			$id = $dataObject->ID;
+			
 		} else {
 			$object = $dataObject;
+			$id = isset($dataObject['ID']) ? $dataObject['ID'] : 0;
+
 			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
 				'Title' => array(),
 				'Content' => array(),
 			);
 		}
 
+		$fieldsToIndex['SS_ID'] = true;
 		$fieldsToIndex['LastEdited'] = true;
 		$fieldsToIndex['Created'] = true;
+		$fieldsToIndex['ClassName'] = true;
+		$fieldsToIndex['ClassNameHierarchy'] = true;
 
 		// specially handle the subsite module - this has serious implications for our search
 		// @TODO we want to genercise this later for other modules to hook into it!
@@ -133,11 +118,17 @@ class SolrSearchService
 			}
 		}
 
-		$id = isset($object['ID']) ? $object['ID'] : false;
-		$classType = isset($object['ClassName']) ? $object['ClassName'] : false;
+		$classType = isset($object['ClassName']) ? $object['ClassName']['Value'] : 'INVALID_CLASS_TYPE';
 
-		// we're not indexing these fields just at the moment
-		unset($object['ClassName']);unset($object['ID']);
+		// we're not indexing these fields just at the moment because the conflict
+		unset($object['ID']);
+
+		// a special type hierarchy 
+		$classes = array_values(ClassInfo::ancestry($classType));
+		$object['ClassNameHierarchy'] = array(
+			'Type' => 'MultiValueField',
+			'Value' => $classes,
+		);
 		
 		foreach ($object as $field => $valueDesc) {
 			if (!is_array($valueDesc)) {
@@ -156,7 +147,7 @@ class SolrSearchService
 				continue;
 			}
 
-			$fieldName = $this->mapper->mapType($field, $type, $value);
+			$fieldName = $this->mapper->mapType($field, $type);
 
 			if (!$fieldName) {
 				continue;
@@ -185,7 +176,6 @@ class SolrSearchService
 		}
 	}
 
-
 	/**
 	 * Pull out all the fields that should be indexed for a particular object
 	 *
@@ -194,14 +184,16 @@ class SolrSearchService
 	 * @param DataObject $dataObject
 	 * @return array
 	 */
-	protected function objectToFields($dataObject)
-	{
+	protected function objectToFields($dataObject) {
 		$ret = array();
 
 		$fields = Object::combined_static($dataObject->ClassName, 'db');
 		$fields['Created'] = 'SS_Datetime';
 		$fields['LastEdited'] = 'SS_Datetime';
 
+		$ret['ClassName'] = array('Type' => 'Varchar', 'Value' => $dataObject->class);
+		$ret['SS_ID'] = array('Type' => 'Int', 'Value' => $dataObject->ID);
+		
 		foreach($fields as $name => $type) {
 			if (preg_match('/^(\w+)\(/', $type, $match)) {
 				$type = $match[1];
@@ -228,8 +220,7 @@ class SolrSearchService
 	 * 
 	 * @param DataObject $object
 	 */
-	public function unindex($type, $id=null)
-	{
+	public function unindex($type, $id=null) {
 		if (is_object($type)) {
 			$id = $type->ID;
 			$type = get_class($type);
@@ -306,13 +297,35 @@ class SolrSearchService
 	 * 
 	 * @return Apache_Solr_Service
 	 */
-	public function getSolr()
-	{
+	public function getSolr() {
 		if (!$this->client) {
 			$this->client = new Apache_Solr_Service(self::$solr_details['host'],  self::$solr_details['port'], self::$solr_details['context']);
 		} 
 		
 		return $this->client;
+	}
+
+	/**
+	 * Return the field name for a given property within
+	 * on a given data object type
+	 *
+	 * @param String $className
+	 *				The data object class name
+	 * @param String $field
+	 *				The field name to get the Solr type for.
+	 *
+	 * @return String
+	 *
+	 */
+	public function getFieldName($className, $field) {
+		$dummy = singleton($className);
+		$fields = $this->objectToFields($dummy);
+		if ($field == 'ID') {
+			$field = 'SS_ID';
+		}
+		if (isset($fields[$field])) {
+			return $this->mapper->mapType($field, $fields[$field]['Type']);
+		}
 	}
 }
 
@@ -322,11 +335,9 @@ class SolrSearchService
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  *
  */
-class SolrSchemaMapper
-{
-	private $solrFields = array(
+class SolrSchemaMapper {
+	protected $solrFields = array(
 		'Title' => 'title',
-		'ClassName' => 'content_type',
 		'LastEdited' => 'last_modified',
 		'Content' => 'text',
 	);
@@ -343,8 +354,7 @@ class SolrSchemaMapper
 	 * 
 	 * @return String
 	 */
-	public function mapType($field, $type, $value)
-	{
+	public function mapType($field, $type) {
 		if (isset($this->solrFields[$field])) {
 			return $this->solrFields[$field];
 		}
@@ -386,8 +396,7 @@ class SolrSchemaMapper
 	 * @param string $type
 	 * @return mixed
 	 */
-	public function mapValue($value, $type)
-	{
+	public function mapValue($value, $type) {
 		if (is_array($value)) {
 			$newReturn = array();
 			foreach ($value as $v) {

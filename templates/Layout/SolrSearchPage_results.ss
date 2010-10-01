@@ -6,6 +6,10 @@
 		<% end_control %>
 	</ul>
 	<% end_if %>
+
+	$Content
+	$Form
+	
 	<% if Results %>
 	    <ul id="SearchResults">
 	      <% control Results %>
@@ -46,7 +50,4 @@
       
 	    </div>
 	 <% end_if %>
-
-
-	
 </div>

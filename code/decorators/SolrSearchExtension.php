@@ -1,14 +1,11 @@
 <?php
-/* 
- * 
-All code covered by the BSD license located at http://silverstripe.org/bsd-license/
- */
 
 /**
  * A controller extension that provides additional methods on page controllers
  * to allow for better searching using Solr
  *
  * @author marcus@silverstripe.com.au
+ * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchExtension extends Extension {
 	
