@@ -288,7 +288,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$actions = new FieldSet(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
 		
 		$form = new Form($this, 'Form', $fields, $actions);
-
+		$form->addExtraClass('searchPageForm');
 		$form->setFormMethod('GET');
 		$form->disableSecurityToken();
 		return $form;
