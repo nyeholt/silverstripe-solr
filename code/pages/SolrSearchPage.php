@@ -280,6 +280,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		);
 
 		$objFields = $this->data()->getSelectableFields();
+		$objFields = array_merge(array('' => 'Any'), $objFields);
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
 		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
