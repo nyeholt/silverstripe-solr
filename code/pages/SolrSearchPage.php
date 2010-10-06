@@ -167,6 +167,13 @@ class SolrSearchPage extends Page
 		$type = isset($_GET['SearchType']) ? $_GET['SearchType'] : $this->SearchType;
 
 		$fields = $this->getSelectableFields($this->SearchType);
+		
+		// if we've explicitly set a sort by, then we want to make sure we have a type
+		// so we can resolve what the field name in solr is
+		if (!$type && $sortBy) {
+			// default to page
+			$type = 'Page';
+		}
 		if (!isset($fields[$sortBy])) {
 			$sortBy = 'score';
 		}
