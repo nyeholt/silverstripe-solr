@@ -447,6 +447,10 @@
      multiple values for them.
    -->
    <field name="title" type="text" indexed="true" stored="true" multiValued="true"/>
+
+   <!-- exact title used for sorting -->
+   <field name="title_exact" type="string" indexed="true" stored="false" multiValued="true"/>
+
    <field name="subject" type="text" indexed="true" stored="true"/>
    <field name="description" type="text" indexed="true" stored="true"/>
    <field name="comments" type="text" indexed="true" stored="true"/>
@@ -535,6 +539,8 @@
 
  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
  <solrQueryParser defaultOperator="OR"/>
+
+	<copyField source="title" dest="title_exact" />
 
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,
