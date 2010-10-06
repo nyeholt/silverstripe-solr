@@ -185,8 +185,9 @@ class SolrSearchPage extends Page
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
-			$sortBy = singleton('SolrSearchService')->getFieldName($type, $sortBy);
+			
 			if ($type) {
+				$sortBy = singleton('SolrSearchService')->getFieldName($type, $sortBy);
 				$query .= ' AND ClassNameHierarchy_ms:'.$type;
 			}
 
