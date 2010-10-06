@@ -52,7 +52,7 @@ supported
 This module creates a new page of type _SolrSearchPage_ in your site's root.
 This should be published before being able to perform searches.
 
-## Change Page.php to redirect to the SolrSearchPage
+## Add the search extension
 
 Finally, the search mechanism needs to be hooked up to your pages. This can be done
 by adding the SolrSearchExtension to your Page_Controller class to make available
@@ -65,39 +65,13 @@ Now, add your searchform wherever you like in your Page template using $SearchFo
 Template Options
 ----------------
 
-Facets can be used in your templates with code similar to the following. In this instance, the
-argument passed to the Facets call is the name of a multivalue parameter on a set of dataobjects
-that have been indexed in Solr.
-
-	<div id="Facets">
-		<div class="facetList">
-				<h3>Keywords</h3>
-				<ul>
-				<% control Facets(AlcKeywords_ms) %>
-				<li><a href="$SearchLink">$Name</a> ($Count)</li>
-				<% end_control %>
-				</ul>
-		</div>
-		 <div class="clear"><!-- --></div>
-	</div>
-
-
 To customise search results display, provide a SolrSearchPage_results.ss
 file in your theme's templates directory. 
 
 API
 ---
 
-By default, the indexing mechanism uses the SolrSchemaMapper class as the 
-mechanism for mapping between silverstripe DataObjects and items that can 
-be stored in a Solr Schema. If you are using the default schema.xml for solr, 
-then you only have a few data types you can play with, which explains why
-the default mapper class only indexes a few properties. 
-
-To improve this, or be more specific with how things are stored, you'll 
-need to provide your own implementation that expands on some of the
-information stored - more details on how exactly to do this will be
-provided at a later point in time
+[GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
 
 
 Troubleshooting
