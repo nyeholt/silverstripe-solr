@@ -235,9 +235,13 @@ class SolrSearchService
 	 * @param String $query
 	 */
 	public function parseSearch($query) {
-		$escaped = str_replace(array('"', "'"), array('\"', "\'"), $query);
+		// if there's a colon in the search, assume that the user is doing a custom power search
+		if (strpos($query, ':')) {
+			return $query;
+		}
 
-		return 'title:"'.$escaped.'" content_t:"'.$escaped.'"';
+		// otherwise search in the title and text by default
+		return 'title:'.$query.' OR text:'.$query.'';
 	}
 	
 	/**

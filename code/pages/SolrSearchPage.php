@@ -157,6 +157,9 @@ class SolrSearchPage extends Page
 		$query = null;
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
+
+			// lets convert it to a solr query
+			$query = $this->getSolr()->parseSearch($query);
 		}
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
