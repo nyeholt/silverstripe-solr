@@ -97,7 +97,7 @@ class SolrSearchPage extends Page
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
-		$objFields['Score'] = 'Score';
+		$objFields['score'] = 'Score';
 		
 		ksort($objFields);
 		return $objFields;
@@ -176,6 +176,7 @@ class SolrSearchPage extends Page
 		if (!isset($fields[$sortBy])) {
 			$sortBy = 'score';
 		}
+		
 		$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
 		$activeFacets = $this->getActiveFacets();
@@ -200,6 +201,9 @@ class SolrSearchPage extends Page
 				$query .= ' AND ClassNameHierarchy_ms:'.$type;
 			}
 
+			if (!$sortBy) {
+				$sortBy = 'score';
+			}
 			$params = array(
 				'facet' => 'true',
 				'facet.field' => self::$facets,
