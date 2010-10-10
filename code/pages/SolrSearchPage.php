@@ -92,9 +92,8 @@ class SolrSearchPage extends Page
 			$listType = strlen($this->SearchType) ? $this->SearchType : 'Page';
 		}
 
-		$objFields = singleton($listType)->inheritedDatabaseFields();
-		$objFields = array_keys($objFields);
-		$objFields = array_combine($objFields, $objFields);
+		$f = singleton($listType)->searchableFields();
+		$objFields = array_combine(array_keys($f), array_keys($f));
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
@@ -161,7 +160,7 @@ class SolrSearchPage extends Page
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->SortDir;
-		$type = isset($_GET['SearchType']) ? $_GET['SearchType'] : $this->SearchType;
+		$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
 
 		$fields = $this->getSelectableFields($this->SearchType);
 		if (!isset($fields[$sortBy])) {
