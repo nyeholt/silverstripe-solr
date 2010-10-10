@@ -235,9 +235,13 @@ class SolrSearchService
 	 * @param String $query
 	 */
 	public function parseSearch($query) {
-		$escaped = str_replace(array('"', "'"), array('\"', "\'"), $query);
+		// if there's a colon in the search, assume that the user is doing a custom power search
+		if (strpos($query, ':')) {
+			return $query;
+		}
 
-		return 'title:"'.$escaped.'" content_t:"'.$escaped.'"';
+		// otherwise search in the title and text by default
+		return 'title:'.$query.' OR text:'.$query.'';
 	}
 	
 	/**
@@ -309,15 +313,15 @@ class SolrSearchService
 	 * Return the field name for a given property within
 	 * on a given data object type
 	 *
-	 * @param String $className
-	 *				The data object class name
 	 * @param String $field
 	 *				The field name to get the Solr type for.
+	 * @param String $className
+	 *				The data object class name. Defaults to 'page'. 
 	 *
 	 * @return String
 	 *
 	 */
-	public function getFieldName($className, $field) {
+	public function getFieldName($field, $className='Page') {
 		$dummy = singleton($className);
 		$fields = $this->objectToFields($dummy);
 		if ($field == 'ID') {
@@ -326,6 +330,20 @@ class SolrSearchService
 		if (isset($fields[$field])) {
 			return $this->mapper->mapType($field, $fields[$field]['Type']);
 		}
+	}
+
+	/**
+	 * Get a field name used for sorting in a query. This is just a hardcoded
+	 * way at the moment to handle the fact that to sort by 'Title', you
+	 * actually want to sort by title_exact (due to tokenization in solr). 
+	 *
+	 * @param String $field
+	 *				The field name to get the Solr type for.
+	 * @param String $className
+	 *				The data object class name. Defaults to 'page'.
+	 */
+	public function getSortFieldName($field, $className='Page') {
+		return $field == 'Title' ? 'title_exact' : $this->getFieldName($field, $className);
 	}
 }
 

@@ -1,9 +1,11 @@
 Version 0.2.0
 -------------
 
-* Better interface for searching by providing a complete 'SearchPage' implementation
+* Better interface for searching by providing a complete 'SearchPage' 
+  implementation
 * Added support for faceting
-* Added support for queueing reindexing to reduce user wait time
+* Added support for queueing reindexing to reduce user wait time (if the 
+  QueuedJobs module is installed)
 
 Version 0.1.0 RC1
 2009-11-16

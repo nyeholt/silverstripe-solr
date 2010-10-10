@@ -3,6 +3,7 @@
 /**
  * A queued job used for reindexing content
  *
+ *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  */
@@ -39,7 +40,7 @@ class SolrReindexJob extends AbstractQueuedJob {
 		if (ClassInfo::exists('Subsite')) {
 			Subsite::disable_subsite_filter();
 		}
-		$page = DataObject::get_one('SiteTree', singleton('SolrUtils')->quote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
+		$page = DataObject::get_one('SiteTree', singleton('SolrUtils')->dbQuote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
 		if (ClassInfo::exists('Subsite')) {
 			Subsite::$disable_subsite_filter = false;
 		}

@@ -156,6 +156,9 @@ class SolrSearchPage extends Page
 		$query = null;
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
+
+			// lets convert it to a solr query
+			$query = $this->getSolr()->parseSearch($query);
 		}
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
@@ -163,6 +166,13 @@ class SolrSearchPage extends Page
 		$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
 
 		$fields = $this->getSelectableFields($this->SearchType);
+		
+		// if we've explicitly set a sort by, then we want to make sure we have a type
+		// so we can resolve what the field name in solr is
+		if (!$type && $sortBy) {
+			// default to page
+			$type = 'Page';
+		}
 		if (!isset($fields[$sortBy])) {
 			$sortBy = 'score';
 		}
@@ -184,8 +194,9 @@ class SolrSearchPage extends Page
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
-			$sortBy = singleton('SolrSearchService')->getFieldName($type, $sortBy);
+			
 			if ($type) {
+				$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
 				$query .= ' AND ClassNameHierarchy_ms:'.$type;
 			}
 
@@ -279,6 +290,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		);
 
 		$objFields = $this->data()->getSelectableFields();
+		$objFields = array_merge(array('' => 'Any'), $objFields);
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
 		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
@@ -287,7 +299,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$actions = new FieldSet(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
 		
 		$form = new Form($this, 'Form', $fields, $actions);
-
+		$form->addExtraClass('searchPageForm');
 		$form->setFormMethod('GET');
 		$form->disableSecurityToken();
 		return $form;
