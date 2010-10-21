@@ -198,7 +198,7 @@ class SolrSearchPage extends Page
 			
 			if ($type) {
 				$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
-				$query .= ' AND ClassNameHierarchy_ms:'.$type;
+				$query = '('.$query.') AND ClassNameHierarchy_ms:'.$type;
 			}
 
 			if (!$sortBy) {
