@@ -1,3 +1,11 @@
+Version 0.2.1
+2010-10-21
+-------------
+
+* Fixed bug where associativity precedence in query syntax stopped pages 
+  being found by 'title' 
+
+
 Version 0.2.0
 -------------
 
