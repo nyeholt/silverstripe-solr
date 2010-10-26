@@ -75,24 +75,20 @@ class SolrSearchService
 	 * name of the document's type
 	 * 
 	 * @param DataObject $object
+	 *				The object being indexed
+	 * @param String $stage
+	 *				If we're indexing for a particular stage or not. 
+	 *
 	 */
-	public function index($dataObject) {
+	public function index($dataObject, $stage=null) {
 		$document = new Apache_Solr_Document();
 		$fieldsToIndex = array();
 
 		$id = 0;
 		if (is_object($dataObject)) {
-			// if it's not published, we don't want to know about it
-			if (Object::has_extension(get_class($dataObject), 'Versioned')) {
-				if ($dataObject->Status != 'Published') {
-					return;
-				}
-			}
-
 			$fieldsToIndex = $dataObject->searchableFields();
 			$object = $this->objectToFields($dataObject);
 			$id = $dataObject->ID;
-			
 		} else {
 			$object = $dataObject;
 			$id = isset($dataObject['ID']) ? $dataObject['ID'] : 0;
@@ -108,6 +104,19 @@ class SolrSearchService
 		$fieldsToIndex['Created'] = true;
 		$fieldsToIndex['ClassName'] = true;
 		$fieldsToIndex['ClassNameHierarchy'] = true;
+
+		// the stage we're on when we write this doc to the index.
+		// this is used for versioned AND non-versioned objects; we just cheat and
+		// set it BOTH stages if it's non-versioned object
+		$fieldsToIndex['SS_Stage'] = true;
+
+		// if it's a versioned object, just save ONE stage value. 
+		if ($stage) {
+			$object['SS_Stage'] = array('Type' => 'Enum', 'Value' => $stage);
+			$id = $id . '_' . $stage;
+		} else {
+			$object['SS_Stage'] = array('Type' => 'Enum', 'Value' => array('Draft', 'Live'));
+		}
 
 		// specially handle the subsite module - this has serious implications for our search
 		// @TODO we want to genercise this later for other modules to hook into it!
@@ -193,7 +202,8 @@ class SolrSearchService
 
 		$ret['ClassName'] = array('Type' => 'Varchar', 'Value' => $dataObject->class);
 		$ret['SS_ID'] = array('Type' => 'Int', 'Value' => $dataObject->ID);
-		
+
+
 		foreach($fields as $name => $type) {
 			if (preg_match('/^(\w+)\(/', $type, $match)) {
 				$type = $match[1];
@@ -261,8 +271,18 @@ class SolrSearchService
 	public function query($query, $offset = 0, $limit = 20, $params = array()) {
 		// be very specific about the subsite support :). 
 		if (ClassInfo::exists('Subsite')) {
-			$query = "($query) AND SubsiteID_i:".Subsite::currentSubsiteID();
+			$query = "($query) AND (SubsiteID_i:".Subsite::currentSubsiteID().')';
 		}
+
+		// add the stage details in - we should probably use an extension mechanism for this,
+		// but for now this will have to do. @TODO Refactor this....
+		$stage = Versioned::current_stage();
+		if (!$stage && !(isset($params['ignore_stage']) && $params['ignore_stage'])) {
+			// default to searching live content only
+			$stage = 'Live';
+		}
+
+		$query = "($query) AND (SS_Stage_ms:$stage)";
 
 		// execute the query
 		$response = $this->getSolr()->search($query, $offset, $limit, $params);

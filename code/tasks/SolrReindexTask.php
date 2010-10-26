@@ -29,7 +29,10 @@ class SolrReindexTask extends BuildTask
 		/* @var $search SolrSearchService */
 		$count = 0;
 		foreach ($pages as $page) {
-			$search->index($page);
+			$search->index($page, 'Draft');
+			if ($page->Status == 'Published') {
+				$search->index($page, 'Live');
+			}
 			echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
 			$count ++;
 		}

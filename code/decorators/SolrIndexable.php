@@ -16,13 +16,41 @@ class SolrIndexable extends DataObjectDecorator
 	 */
 	public static $indexing = true;
 
+	/**
+	 * Should we index draft content too?
+	 *
+	 * @var boolean
+	 */
+	public static $index_draft = true;
 
-	// After delete, mark as dirty in main index (so only results from delta index will count), then update the delta index  
+
+	/**
+	 * Index after publish
+	 */
 	function onAfterPublish() {
 		if (!self::$indexing) return;
 
 		// make sure only the fields that are highlighted in searchable_fields are included!!
-		singleton('SolrSearchService')->index($this->owner);
+		singleton('SolrSearchService')->index($this->owner, 'Live');
+	}
+
+	/**
+	 * Index after every write; this lets us search on Draft data as well as live data
+	 */
+	public function  onAfterWrite() {
+		if (!self::$indexing) return;
+
+		$changes = $this->owner->getChangedFields(true, 2);
+		
+		if (count($changes)) {
+			// if it's being written and a versionable, then save only in the draft
+			// repository. 
+			if (Object::has_extension($this->owner, 'Versioned')) {
+				singleton('SolrSearchService')->index($this->owner, 'Stage');
+			} else {
+				singleton('SolrSearchService')->index($this->owner);
+			}
+		}
 	}
 
 	// After delete, mark as dirty in main index (so only results from delta index will count), then update the delta index

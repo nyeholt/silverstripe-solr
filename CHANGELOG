@@ -1,3 +1,14 @@
+Version 0.3.0
+2010-10-26
+-------------
+
+* Added ability to query against both Live and Draft data sources. If an 
+  object is versionable, it will be indexed with either Live or Stage, 
+  depending on whether it is written or published. For non-versioned content, 
+  it is actually indexed with BOTH stages, indicating that it is relevant for 
+  a search in either stage"
+
+ 
 Version 0.2.1
 2010-10-21
 -------------

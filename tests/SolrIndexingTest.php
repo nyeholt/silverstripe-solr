@@ -86,7 +86,7 @@ class SolrIndexingTest extends SapphireTest
 		$results = $results->getResult()->response;
 		$this->assertNotNull($results->docs);
 		$this->assertEquals(1, count($results->docs));
-		$this->assertEquals('Page_1', $results->docs[0]->id);
+		$this->assertEquals('Page_1_Live', $results->docs[0]->id);
 		
 	}
 
@@ -111,9 +111,9 @@ class SolrIndexingTest extends SapphireTest
 		
 		$this->assertTrue($results instanceof DataObjectSet);
 		$this->assertEquals(1, $results->Count());
-		$items = $results->toArray();
-		$this->assertEquals('Page', $items[0]->ClassName);
-		$this->assertEquals(1, $items[0]->ID);
+		$item = $results->First();
+		$this->assertEquals('Page', $item->ClassName);
+		$this->assertEquals(1, $item->ID);
 	}
 
 	public function testFacetQuery()
@@ -188,5 +188,38 @@ class SolrIndexingTest extends SapphireTest
 
 		$this->assertEquals(4, count($facets['title']));
 		$this->assertEquals(4, count($facets['text']));
+	}
+
+	public function testStageQuerying() {
+		global $_SINGLETONS;
+		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		// we should be able to perform a query for documents with 'text content'
+		// and receive back some valid data
+		$search = singleton('SolrSearchService');
+		if (!$search->isConnected()) {
+			return;
+		}
+		// clear everything out, then index content
+
+		/* @var $search SolrSearchService */
+		$search->getSolr()->deleteByQuery('*:*');
+
+		$item = $this->objFromFixture('Page','home');
+		$item->write();
+		$item->doPublish();
+
+		$results = $search->query('title:home');
+		$objects = $results->getDataObjects();
+
+		// there should actually be two results; one for each stage.
+		$this->assertEquals(2, $objects->count());
+
+		// now set a stage
+		Versioned::choose_site_stage();
+
+		$results = $search->query('title:home');
+		$objects = $results->getDataObjects();
+		$this->assertEquals(1, $objects->count());
+
 	}
 }

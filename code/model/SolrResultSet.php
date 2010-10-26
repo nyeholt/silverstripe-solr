@@ -130,10 +130,18 @@ class SolrResultSet
 			if ($documents && isset($documents->docs)) {
 				$totalAdded = 0;
 				foreach ($documents->docs as $doc) {
-					list($type, $id) = explode('_', $doc->id);
+					list($type, $id, $stage) = explode('_', $doc->id);
+					
 					if (!$type || !$id) {
-						singleton('SolrUtils')->log("Invalid solr document ID $doc->id", SS_Log::ERR);
+						singleton('SolrUtils')->log("Invalid solr document ID $doc->id", SS_Log::WARN);
 						continue;
+					}
+
+					// a double sanity check for the stage here. 
+					if ($currentStage = Versioned::current_stage()) {
+						if ($currentStage != $stage) {
+							continue;
+						}
 					}
 
 					$object = DataObject::get_by_id($type, $id);
@@ -149,7 +157,7 @@ class SolrResultSet
 
 						$totalAdded++;
 					} else {
-						singleton('SolrUtils')->log("Object $doc->id is no longer in the system, removing from index", SS_Log::ERR);
+						singleton('SolrUtils')->log("Object $doc->id is no longer in the system, removing from index", SS_Log::WARN);
 						$this->solr->unindex($type, $id);
 					}
 				}
