@@ -1,6 +1,10 @@
-Version 0.3.0
-2010-10-26
--------------
+2011-02-03 v0.3.1
+-----------------
+
+* Fixed declaration of reindex job to detect queuedjob module existence first
+
+2010-10-26 v0.3.0
+-----------------
 
 * Added ability to query against both Live and Draft data sources. If an 
   object is versionable, it will be indexed with either Live or Stage, 
@@ -9,23 +13,19 @@ Version 0.3.0
   a search in either stage"
 
  
-Version 0.2.1
-2010-10-21
--------------
+2010-10-21 v0.2.1
+-----------------
 
 * Fixed bug where associativity precedence in query syntax stopped pages 
   being found by 'title' 
 
 
-Version 0.2.0
--------------
+2010-06-21 v0.2.0
+-----------------
 
 * Better interface for searching by providing a complete 'SearchPage' 
   implementation
 * Added support for faceting
 * Added support for queueing reindexing to reduce user wait time (if the 
   QueuedJobs module is installed)
-
-Version 0.1.0 RC1
-2009-11-16
 
