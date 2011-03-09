@@ -1,3 +1,8 @@
+2011-03-08 v0.3.2
+-----------------
+
+* Fixed error caused by unpublish failing if solr has gone away
+
 2011-02-03 v0.3.1
 -----------------
 
