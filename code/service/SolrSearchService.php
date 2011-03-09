@@ -235,7 +235,12 @@ class SolrSearchService
 			$id = $type->ID;
 			$type = get_class($type);
 		}
-		$this->getSolr()->deleteById($type.'_'.$id);
+		try {
+			$this->getSolr()->deleteById($type.'_'.$id);
+		} catch (Exception $ie) {
+			SS_Log::log($ie, SS_Log::ERR);
+		}
+		
 	}
 
 	/**
