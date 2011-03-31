@@ -47,6 +47,10 @@ supported
 
 	DataObject::add_extension('SiteTree', 'SolrIndexable');
 
+By default, the solr indexer will index Title and Content fields. If you want
+other fields indexed too, add them to your $searchable_fields static
+variable in your class type. 
+
 ## Configure your search page
 
 This module creates a new page of type _SolrSearchPage_ in your site's root.
@@ -61,6 +65,16 @@ the various template hooks
 	Object::add_extension('Page_Controller', 'SolrSearchExtension');
 
 Now, add your searchform wherever you like in your Page template using $SearchForm
+
+
+## Using facets
+
+First, you need to tell the search page what you're going to be faceting on
+
+	SolrSearchPage::$facets = array('MetaKeywords_ms');
+
+then make sure that field (MetaKeywords) is included in the list of fields to
+index via the searchable_fields static
 
 Template Options
 ----------------

@@ -197,6 +197,9 @@ class SolrResultSet
 		foreach ($elems as $field => $values) {
 			$elemVals = array();
 			foreach ($values as $vname => $vcount) {
+				if ($vname == '_empty_') {
+					continue;
+				}
 				$r = new stdClass;
 				$r->Name = $vname;
 				$r->Count = $vcount;

@@ -26,7 +26,7 @@ class SolrSearchExtension extends Extension {
 
 	/**
 	 * Get the list of facet values for the given term
-	 *
+	 * 
 	 * @param String $term
 	 */
 	public function Facets($term=null) {

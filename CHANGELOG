@@ -1,3 +1,9 @@
+2011-03-31 v0.3.3
+-----------------
+
+* Fixed issue where empty strings in facet results were being passed through
+  as _empty_
+
 2011-03-08 v0.3.2
 -----------------
 
