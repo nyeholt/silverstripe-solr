@@ -18,6 +18,17 @@ class SolrSearchService
 		'port' => '8983',
 		'context' => '/solr',
 	);
+	
+	/**
+	 * A list of all fields that will be searched through by default, if the user hasn't specified
+	 * any in their search query. 
+	 *
+	 * @var array 
+	 */
+	public static $default_query_fields = array(
+		'title',
+		'text'
+	);
 
 	/**
 	 * Determines what mapper class to use to map to solr schema fields. 
@@ -55,6 +66,10 @@ class SolrSearchService
 	 */
 	public function setMapper($mapper) {
 		$this->mapper = $mapper;
+	}
+	
+	public function add_default_query_field($field) {
+		self::$default_query_fields[] = $field;
 	}
 	
 	/**
@@ -254,9 +269,9 @@ class SolrSearchService
 		if (strpos($query, ':')) {
 			return $query;
 		}
-
-		// otherwise search in the title and text by default
-		return 'title:'.$query.' OR text:'.$query.'';
+		
+		$lucene = implode(':'.$query.' OR ', self::$default_query_fields).':'.$query;
+		return $lucene;
 	}
 	
 	/**
