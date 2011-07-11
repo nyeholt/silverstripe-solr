@@ -1,3 +1,10 @@
+2011-07-11 v0.3.5
+-----------------
+
+* Indexing of content uses the queuedjobs module if available to process
+  the actual indexing of an individual item. Uses the immediate mode jobs
+  so that the indexing happens straight away. 
+
 2011-05-27 v0.3.4
 -----------------
 
