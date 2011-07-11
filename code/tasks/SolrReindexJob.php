@@ -51,7 +51,7 @@ if (class_exists('AbstractQueuedJob')) {
 
 			// index away
 			$service = singleton('SolrSearchService');
-			$service->index($page, 'Draft');
+			$service->index($page, 'Stage');
 			if ($page->Status == 'Published') {
 				$service->index($page, 'Live');
 			}

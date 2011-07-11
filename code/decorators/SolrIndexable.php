@@ -7,8 +7,7 @@
  * @license http://silverstripe.org/bsd-license/
  *
  */
-class SolrIndexable extends DataObjectDecorator
-{
+class SolrIndexable extends DataObjectDecorator {
 	/**
 	 * We might not want to index, eg during a data load
 	 * 
@@ -22,6 +21,10 @@ class SolrIndexable extends DataObjectDecorator
 	 * @var boolean
 	 */
 	public static $index_draft = true;
+	
+	public static $db = array(
+		'ResultBoost'		=> 'Int',
+	);
 
 	protected function createIndexJob($item, $stage = null, $mode = 'index') {
 		$job = new SolrIndexItemJob($item, $stage, $mode);

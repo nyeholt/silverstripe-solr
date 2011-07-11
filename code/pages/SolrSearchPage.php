@@ -10,8 +10,7 @@
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  */
-class SolrSearchPage extends Page
-{
+class SolrSearchPage extends Page {
     public static $db = array(
 		'ResultsPerPage' => 'Int',
 		'SearchType' => 'Varchar(64)',
@@ -71,7 +70,7 @@ class SolrSearchPage extends Page
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields), 'Content');
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->dbObject('SortDir')->enumValues()), 'Content');
 
-		$types = SiteTree::page_type_classes(); 
+		$types = SiteTree::page_type_classes();
 		$source = array_combine($types, $types);
 		asort($source);
 		$source = array_merge(array('' => 'Any'), $source);

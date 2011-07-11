@@ -29,7 +29,8 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 	public function getTitle() {
 		$mode = $this->mode == 'index' ? _t('Solr.INDEXING', 'Indexing') : _t('Solr.UNINDEXING', 'Unindexing');
 		$stage = $this->stage == 'Live' ? 'Live' : 'Stage';
-		return sprintf(_t('Solr.INDEX_ITEM_JOB', $mode . ' %s in stage '.$stage), $this->getItem()->Title);
+		$item = $this->getItem();
+		return sprintf(_t('Solr.INDEX_ITEM_JOB', $mode . ' "%s" in stage '.$stage), $item ? $item->Title : 'item #'.$this->itemID);
 	}
 
 	public function getJobType() {
@@ -37,13 +38,21 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 	}
 
 	public function process() {
-		$item = $this->getItem();
+		
 
 		$method = $this->mode == 'index' ? 'index' : 'unindex';
 		$stage = is_null($this->stage) ? null : ($this->stage == 'Stage' ? 'Stage' : 'Live');
 
-		singleton('SolrSearchService')->$method($this->owner, $stage);
-
+		if ($method == 'index') {
+			$item = $this->getItem();
+			if ($item) {
+				singleton('SolrSearchService')->index($item, $stage);
+			}
+		} else if ($method == 'unindex') {
+			// item has already been deleted by here, so need to use the stored type/id
+			singleton('SolrSearchService')->unindex($this->itemType, $this->itemID);
+		}
+		
 		$this->currentStep++;
 		$this->isComplete = true;
 	}

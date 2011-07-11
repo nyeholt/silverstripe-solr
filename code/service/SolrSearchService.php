@@ -247,10 +247,12 @@ class SolrSearchService {
 	public function unindex($type, $id=null) {
 		if (is_object($type)) {
 			$id = $type->ID;
-			$type = get_class($type);
+			$type = $type->class; // get_class($type);
 		}
 		try {
-			$this->getSolr()->deleteById($type.'_'.$id);
+			// delete all published/non-published versions of this item. 
+			$this->getSolr()->deleteByQuery('id:' . $type . '_' . $id.'*');
+			$this->getSolr()->commit();
 		} catch (Exception $ie) {
 			SS_Log::log($ie, SS_Log::ERR);
 		}
