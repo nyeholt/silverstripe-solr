@@ -50,8 +50,8 @@ class SolrSearchService {
 		$m = self::$mapper_class;
 		$this->mapper = new $m;
 		
-		$this->queryBuilders['default'] = new SolrQueryBuilder();
-		$this->queryBuilders['dismax'] = new DismaxSolrSearchBuilder();
+		$this->queryBuilders['default'] = 'SolrQueryBuilder'; 
+		$this->queryBuilders['dismax'] = 'DismaxSolrSearchBuilder';
 	}
 
 	/**
@@ -106,7 +106,7 @@ class SolrSearchService {
 	 * @param SolrQueryBuilder $type 
 	 */
 	public function getQueryBuilder($type='default') {
-		return isset($this->queryBuilders[$type]) ? $this->queryBuilders[$type] : $this->queryBuilders['default'];
+		return isset($this->queryBuilders[$type]) ? new $this->queryBuilders[$type] : new $this->queryBuilders['default'];
 	}
 	
 	/**
@@ -386,7 +386,7 @@ class SolrSearchService {
 			$fields = array($fields);
 		}
 
-		return $this->query('*:*', 0, 1, array('facet'=>'true', 'facet.field' => $fields, 'facet.limit' => 10, 'facet.mincount' => 1));
+		return $this->query('*', 0, 1, array('facet'=>'true', 'facet.field' => $fields, 'facet.limit' => 10, 'facet.mincount' => 1));
 	}
 	
 	protected $client;

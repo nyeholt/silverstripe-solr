@@ -83,10 +83,11 @@ class SolrSearchPage extends Page {
 
 		$parsers = singleton('SolrSearchService')->getQueryBuilders();
 		$options = array();
-		foreach ($parsers as $key => $obj) {
+		foreach ($parsers as $key => $objCls) {
+			$obj = new $objCls;
 			$options[$key] = $obj->title;
 		}
-		
+
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('QueryType', _t('SolrSearchPage.QUERY_TYPE', 'Query Type'), $options), 'Content');
 
 		return $fields;
@@ -201,7 +202,7 @@ class SolrSearchPage extends Page {
 			}
 		}
 
-		if (!$query) {
+		if (!$query && !count($activeFacets)) {
 			$this->query = $this->getSolr()->getFacetsForFields(self::$facets);
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
