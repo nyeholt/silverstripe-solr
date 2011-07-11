@@ -23,6 +23,10 @@ class SolrIndexable extends DataObjectDecorator
 	 */
 	public static $index_draft = true;
 
+	protected function createIndexJob($item, $stage = null, $mode = 'index') {
+		$job = new SolrIndexItemJob($item, $stage, $mode);
+		singleton('QueuedJobService')->queueJob($job);
+	}
 
 	/**
 	 * Index after publish
@@ -30,40 +34,64 @@ class SolrIndexable extends DataObjectDecorator
 	function onAfterPublish() {
 		if (!self::$indexing) return;
 
-		// make sure only the fields that are highlighted in searchable_fields are included!!
-		singleton('SolrSearchService')->index($this->owner, 'Live');
+		if (class_exists('SolrIndexItemJob')) {
+			$this->createIndexJob($this->owner, 'Live');
+		} else {
+			// make sure only the fields that are highlighted in searchable_fields are included!!
+			singleton('SolrSearchService')->index($this->owner, 'Live');
+		}
 	}
 
 	/**
 	 * Index after every write; this lets us search on Draft data as well as live data
 	 */
-	public function  onAfterWrite() {
+	public function onAfterWrite() {
 		if (!self::$indexing) return;
 
 		$changes = $this->owner->getChangedFields(true, 2);
 		
 		if (count($changes)) {
+			
+			$stage = null;
 			// if it's being written and a versionable, then save only in the draft
 			// repository. 
 			if (Object::has_extension($this->owner, 'Versioned')) {
-				singleton('SolrSearchService')->index($this->owner, 'Stage');
+				$stage = 'Stage';
+			}
+
+			if (class_exists('SolrIndexItemJob')) {
+				$this->createIndexJob($this->owner, $stage);
 			} else {
-				singleton('SolrSearchService')->index($this->owner);
+				// make sure only the fields that are highlighted in searchable_fields are included!!
+				singleton('SolrSearchService')->index($this->owner, $stage);
 			}
 		}
 	}
 
-	// After delete, mark as dirty in main index (so only results from delta index will count), then update the delta index
+	/**
+	 * If unpublished, we delete from the index then reindex the 'stage' version of the 
+	 * content
+	 *
+	 * @return 
+	 */
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;
-		singleton('SolrSearchService')->unindex($this->owner->class, $this->owner->ID);
+
+		if (class_exists('SolrIndexItemJob')) {
+			$this->createIndexJob($this->owner, null, 'unindex');
+			$this->createIndexJob($this->owner, 'Stage');
+		} else {
+			singleton('SolrSearchService')->unindex($this->owner);
+			singleton('SolrSearchService')->index($this->owner, 'Stage');
+		}
 	}
 
 	function onAfterDelete() {
 		if (!self::$indexing) return;
-		singleton('SolrSearchService')->unindex($this->owner->class, $this->owner->ID);
+		if (class_exists('SolrIndexItemJob')) {
+			$this->createIndexJob($this->owner, null, 'unindex');
+		} else {
+			singleton('SolrSearchService')->unindex($this->owner);
+		}
 	}
 }
-
-
-?>

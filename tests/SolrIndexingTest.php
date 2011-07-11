@@ -220,6 +220,5 @@ class SolrIndexingTest extends SapphireTest
 		$results = $search->query('title:home');
 		$objects = $results->getDataObjects();
 		$this->assertEquals(1, $objects->count());
-
 	}
 }

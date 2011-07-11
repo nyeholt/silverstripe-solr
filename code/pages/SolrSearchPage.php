@@ -173,10 +173,11 @@ class SolrSearchPage extends Page
 			// default to page
 			$type = 'Page';
 		}
+
 		if (!isset($fields[$sortBy])) {
 			$sortBy = 'score';
 		}
-		
+
 		$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
 		$activeFacets = $this->getActiveFacets();

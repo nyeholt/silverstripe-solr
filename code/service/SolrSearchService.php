@@ -6,8 +6,7 @@
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  */
-class SolrSearchService
-{
+class SolrSearchService {
 	/**
 	 * The connection details for the solr instance to connect to
 	 *
@@ -269,11 +268,11 @@ class SolrSearchService
 		if (strpos($query, ':')) {
 			return $query;
 		}
-		
+
 		$lucene = implode(':'.$query.' OR ', self::$default_query_fields).':'.$query;
 		return $lucene;
 	}
-	
+
 	/**
 	 * Perform a raw query against the search index, returning a SolrResultSet object that 
 	 * can be used to extract a more complete result set
@@ -483,5 +482,3 @@ class SolrSchemaMapper {
 		}
 	} 
 }
-
-?>
