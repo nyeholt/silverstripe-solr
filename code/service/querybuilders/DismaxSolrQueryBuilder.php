@@ -9,9 +9,8 @@
 class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 	public $title = 'Solr Dismax';
 	
-	
-	public function parse($query, $fields = array()) {
-		return $query;
+	public function toString() {
+		return $this->userQuery;
 	}
 
 	public function getParams() {

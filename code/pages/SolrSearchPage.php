@@ -17,6 +17,7 @@ class SolrSearchPage extends Page {
 		'SortBy' => "Varchar(64)",
 		'SortDir' => "Enum('Ascending,Descending')",
 		'QueryType'	=> 'Varchar',
+		'SearchOnFields'	=> 'MultiValueField',
 	);
 
 	/**
@@ -77,7 +78,9 @@ class SolrSearchPage extends Page {
 		$source = array_merge(array('' => 'Any'), $source);
 		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.PAGE_TYPE', 'Search pages of type'), $source, 'Any');
 		$fields->addFieldToTab('Root.Content.Main', $optionsetField, 'Content');
-		
+
+		$fields->addFieldToTab('Root.Content.Main', new MultiValueDropdownField('SearchOnFields', _t('SolrSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
+
 		$parsers = singleton('SolrSearchService')->getQueryBuilders();
 		$options = array();
 		foreach ($parsers as $key => $obj) {
@@ -211,6 +214,15 @@ class SolrSearchPage extends Page {
 
 			if (!$sortBy) {
 				$sortBy = 'score';
+			}
+
+			$selectedFields = $this->SearchOnFields->getValues();
+			if (count($selectedFields)) {
+				$mappedFields = array();
+				foreach ($selectedFields as $field) {
+					$mappedFields[] = $this->getSolr()->getFieldName($field, $type);
+				}
+				$builder->queryFields($mappedFields);
 			}
 
 			$params = array(
