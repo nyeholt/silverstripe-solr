@@ -16,6 +16,7 @@ class SolrSearchPage extends Page {
 		'SearchType' => 'Varchar(64)',
 		'SortBy' => "Varchar(64)",
 		'SortDir' => "Enum('Ascending,Descending')",
+		'QueryType'	=> 'Varchar',
 	);
 
 	/**
@@ -76,6 +77,14 @@ class SolrSearchPage extends Page {
 		$source = array_merge(array('' => 'Any'), $source);
 		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.PAGE_TYPE', 'Search pages of type'), $source, 'Any');
 		$fields->addFieldToTab('Root.Content.Main', $optionsetField, 'Content');
+		
+		$parsers = singleton('SolrSearchService')->getQueryBuilders();
+		$options = array();
+		foreach ($parsers as $key => $obj) {
+			$options[$key] = $obj->title;
+		}
+		
+		$fields->addFieldToTab('Root.Content.Main', new DropdownField('QueryType', _t('SolrSearchPage.QUERY_TYPE', 'Query Type'), $options), 'Content');
 
 		return $fields;
 	}
@@ -101,7 +110,6 @@ class SolrSearchPage extends Page {
 		ksort($objFields);
 		return $objFields;
 	}
-
 
 	/**
 	 * Ensures that there is always a 404 page
@@ -153,11 +161,13 @@ class SolrSearchPage extends Page {
 		}
 
 		$query = null;
+		$builder = $this->getSolr()->getQueryBuilder($this->QueryType);
+		
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
 
-			// lets convert it to a solr query
-			$query = $this->getSolr()->parseSearch($query);
+			// lets convert it to a base solr query
+			$builder->baseQuery($query);
 		}
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
@@ -181,11 +191,9 @@ class SolrSearchPage extends Page {
 
 		$activeFacets = $this->getActiveFacets();
 		if (count($activeFacets)) {
-			$sep = $query ? ' AND ' : '';
 			foreach ($activeFacets as $facetName => $facetValues) {
 				foreach ($facetValues as $value) {
-					$query .= $sep . $facetName . ':"'.$value.'"';
-					$sep = ' AND ';
+					$builder->andWith($facetName, $value);
 				}
 			}
 		}
@@ -195,15 +203,16 @@ class SolrSearchPage extends Page {
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
-			
+
 			if ($type) {
 				$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
-				$query = '('.$query.') AND ClassNameHierarchy_ms:'.$type;
+				$builder->andWith('ClassNameHierarchy_ms', $type);
 			}
 
 			if (!$sortBy) {
 				$sortBy = 'score';
 			}
+
 			$params = array(
 				'facet' => 'true',
 				'facet.field' => self::$facets,
@@ -213,7 +222,7 @@ class SolrSearchPage extends Page {
 				'fl' => '*,score'
 			);
 
-			$this->query = $this->getSolr()->query($query, $offset, $limit, $params);
+			$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 		}
 		return $this->query;
 	}

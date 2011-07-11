@@ -210,4 +210,3 @@ class SolrResultSet
 		return $result;
 	}
 }
-?>

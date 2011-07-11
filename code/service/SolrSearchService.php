@@ -44,9 +44,14 @@ class SolrSearchService {
 	 */
 	protected $mapper;
 	
+	protected $queryBuilders = array();
+	
 	public function __construct() {
 		$m = self::$mapper_class;
 		$this->mapper = new $m;
+		
+		$this->queryBuilders['default'] = new SolrQueryBuilder();
+		$this->queryBuilders['dismax'] = new DismaxSolrSearchBuilder();
 	}
 
 	/**
@@ -67,8 +72,41 @@ class SolrSearchService {
 		$this->mapper = $mapper;
 	}
 	
+	/**
+	 * Add a field to be included in default searches
+	 *
+	 * @param string $field 
+	 */
 	public function add_default_query_field($field) {
 		self::$default_query_fields[] = $field;
+	}
+	
+	/**
+	 * Add a new query parser into the service
+	 *
+	 * @param string $name
+	 * @param object $obj 
+	 */
+	public function addQueryBuilder($name, $obj) {
+		$this->queryBuilders[$name] = $obj;
+	}
+	
+	/**
+	 * Gets the list of query parsers available
+	 *
+	 * @return array
+	 */
+	public function getQueryBuilders() {
+		return $this->queryBuilders;
+	}
+	
+	/**
+	 * Gets the query builder for the given search type
+	 *
+	 * @param SolrQueryBuilder $type 
+	 */
+	public function getQueryBuilder($type='default') {
+		return isset($this->queryBuilders[$type]) ? $this->queryBuilders[$type] : $this->queryBuilders['default'];
 	}
 	
 	/**
@@ -265,10 +303,14 @@ class SolrSearchService {
 	 *
 	 * @param String $query
 	 */
-	public function parseSearch($query) {
+	public function parseSearch($query, $type='default') {
 		// if there's a colon in the search, assume that the user is doing a custom power search
 		if (strpos($query, ':')) {
 			return $query;
+		}
+
+		if (isset($this->queryBuilders[$type])) {
+			return $this->queryBuilders[$type]->parse($query);
 		}
 
 		$lucene = implode(':'.$query.' OR ', self::$default_query_fields).':'.$query;
@@ -290,9 +332,15 @@ class SolrSearchService {
 	 * @return SolrResultSet
 	 */
 	public function query($query, $offset = 0, $limit = 20, $params = array()) {
+		if (is_string($query)) {
+			$builder = $this->getQueryBuilder('default');
+			$builder->baseQuery($query);
+			$query = $builder;
+		}
 		// be very specific about the subsite support :). 
 		if (ClassInfo::exists('Subsite')) {
-			$query = "($query) AND (SubsiteID_i:".Subsite::currentSubsiteID().')';
+			$query->andWith('SubsiteID_i', Subsite::currentSubsiteID());
+			// $query = "($query) AND (SubsiteID_i:".Subsite::currentSubsiteID().')';
 		}
 
 		// add the stage details in - we should probably use an extension mechanism for this,
@@ -303,7 +351,13 @@ class SolrSearchService {
 			$stage = 'Live';
 		}
 
-		$query = "($query) AND (SS_Stage_ms:$stage)";
+		$query->andWith('SS_Stage_ms', $stage);
+		// $query = "($query) AND (SS_Stage_ms:$stage)";
+
+		$extraParams = $query->getParams();
+		$params = array_merge($params, $extraParams);
+
+		$query = $query->toString();
 
 		// execute the query
 		$response = $this->getSolr()->search($query, $offset, $limit, $params);
