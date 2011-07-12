@@ -14,6 +14,11 @@ class SolrQueryBuilder {
 	protected $fields = array('title', 'text');
 	protected $and = array();
 	protected $params = array();
+	/**
+	 * an array of field => amount to boost
+	 * @var array
+	 */
+	protected $boost = array();
 
 	public function baseQuery($query) {
 		$this->userQuery = $query;
@@ -36,9 +41,22 @@ class SolrQueryBuilder {
 	}
 
 	public function parse($string) {
-		$fields = $this->fields;
-		$lucene = implode(':'.$string.' OR ', $fields).':'.$string;
+		
+		$sep = '';
+		$lucene = '';
+		foreach ($this->fields as $field) {
+			$lucene .= $sep . $field . ':' . $string;
+			if (isset($this->boost[$field])) {
+				$lucene .= '^' . $this->boost[$field];
+			}
+			$sep = ' OR ';
+		}
+
 		return $lucene;
+	}
+	
+	public function boost($boost) {
+		$this->boost = $boost;
 	}
 	
 	public function toString() {
@@ -52,6 +70,8 @@ class SolrQueryBuilder {
 		
 		foreach ($this->and as $field => $value) {
 			$rawQuery .= $sep . $field .':' . $value;
+			
+			
 			$sep = ' AND ';
 		}
 		

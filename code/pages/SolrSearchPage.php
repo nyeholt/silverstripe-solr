@@ -18,6 +18,7 @@ class SolrSearchPage extends Page {
 		'SortDir' => "Enum('Ascending,Descending')",
 		'QueryType'	=> 'Varchar',
 		'SearchOnFields'	=> 'MultiValueField',
+		'BoostFields'		=> 'MultiValueField',
 	);
 
 	/**
@@ -28,10 +29,10 @@ class SolrSearchPage extends Page {
 	 * for example with the alchemiser module -
 	 * 
 	 * array (
-	 * 'AlcKeywords_ms',
-	 * 	'AlcPerson_ms',
-	 * 	'AlcCompany_ms',
-	 * 	'AlcOrganization_ms',
+	 * 'AlcKeywords_mt',
+	 * 	'AlcPerson_mt',
+	 * 	'AlcCompany_mt',
+	 * 	'AlcOrganization_mt',
 	 * );
 	 *
 	 * @var array
@@ -89,6 +90,16 @@ class SolrSearchPage extends Page {
 		}
 
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('QueryType', _t('SolrSearchPage.QUERY_TYPE', 'Query Type'), $options), 'Content');
+
+		$boostVals = array();
+		for ($i = 1; $i <= 5; $i++) {
+			$boostVals[$i] = $i;
+		}
+		$fields->addFieldToTab(
+			'Root.Content.Main', 
+			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
+			'Content'
+		);
 
 		return $fields;
 	}
@@ -224,6 +235,16 @@ class SolrSearchPage extends Page {
 					$mappedFields[] = $this->getSolr()->getFieldName($field, $type);
 				}
 				$builder->queryFields($mappedFields);
+			}
+			
+			if ($boost = $this->BoostFields->getValues()) {
+				$boostSetting = array();
+				foreach ($boost as $field => $amount) {
+					if ($amount > 0) {
+						$boostSetting[$this->getSolr()->getFieldName($field, $type)] = $amount;
+					}
+				}
+				$builder->boost($boostSetting);
 			}
 
 			$params = array(

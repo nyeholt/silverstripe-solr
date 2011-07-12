@@ -255,7 +255,6 @@ class SolrSearchService {
 		$ret['ClassName'] = array('Type' => 'Varchar', 'Value' => $dataObject->class);
 		$ret['SS_ID'] = array('Type' => 'Int', 'Value' => $dataObject->ID);
 
-
 		foreach($fields as $name => $type) {
 			if (preg_match('/^(\w+)\(/', $type, $match)) {
 				$type = $match[1];
@@ -450,9 +449,11 @@ class SolrSearchService {
  */
 class SolrSchemaMapper {
 	protected $solrFields = array(
-		'Title' => 'title',
-		'LastEdited' => 'last_modified',
-		'Content' => 'text',
+		'Title'					=> 'title',
+		'LastEdited'			=> 'last_modified',
+		'Content'				=> 'text',
+		'ClassNameHierarchy'	=> 'ClassNameHierarchy_ms',
+		'SS_Stage'				=> 'SS_Stage_ms',
 	);
 
 	/**
@@ -479,7 +480,7 @@ class SolrSchemaMapper {
 		// otherwise, lets use a generic field for it
 		switch ($type) {
 			case 'MultiValueField': {
-				return $field.'_ms';
+				return $field.'_mt';
 			}
 			case 'Text':
 			case 'HTMLText': {
@@ -488,16 +489,18 @@ class SolrSchemaMapper {
 			case 'SS_Datetime': {
 				return $field.'_dt';
 			}
-			case 'Enum':
-			case 'Varchar': {
+			case 'Enum': {
 				return $field.'_ms';
+			}
+			case 'Varchar': {
+				return $field.'_mt';
 			}
 			case 'Int':
 			case 'Integer': {
 				return $field.'_i';
 			}
 			default: {
-				return $field.'_ms';
+				return $field.'_mt';
 			}
 		}
 	}

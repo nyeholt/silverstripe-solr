@@ -15,14 +15,27 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 
 	public function getParams() {
 		
-		$fields = implode(' ', $this->fields);
+		$fields = '';
+		$sep = '';
+		foreach ($this->fields as $field) {
+			$fields .= $sep . $field;
+			if (isset($this->boost[$field])) {
+				$fields .= '^'.$this->boost[$field];
+			}
+			$sep = ' ';
+		}
+		$this->params['qf'] = $fields;
+		
 		$this->params['defType'] = 'dismax';
+		
+		// AND conditionals
 		$ac = '';
 		foreach ($this->and as $field => $value) {
 			$ac .= '+'.$field. ':' .$value .' ';
 		}
 		$this->params['bq'] = $ac;
-		$this->params['qf'] = $fields;
+		
+		
 		return $this->params;
 	}
 }
