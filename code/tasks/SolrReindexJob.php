@@ -16,15 +16,6 @@ if (class_exists('AbstractQueuedJob')) {
 			return "Reindex content in Solr";
 		}
 
-		/**
-		 * Lets see how many pages we're re-indexing
-		 */
-		public function getJobType() {
-			$query = 'SELECT COUNT(*) FROM "SiteTree"';
-			$this->totalSteps = DB::query($query)->value();
-			return $this->totalSteps > 100 ? QueuedJob::LARGE : QueuedJob::QUEUED;
-		}
-
 		public function setup() {
 			$this->lastIndexedID = 0;
 			$service = singleton('SolrSearchService');
