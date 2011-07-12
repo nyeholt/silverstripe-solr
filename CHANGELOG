@@ -1,3 +1,14 @@
+2011-07-12 v0.4.0
+-----------------
+
+* Users can configure solr indexing from the "Solr" section of the admin 
+  interface. Select the page type, then select which fields should be indexed
+  for that type
+* Updated the schema.xml to allow for a 'multitext' type which provides for 
+  case insensitive searching
+* Introduced the ability to boost certain fields in searches
+* Added dismax option for search 
+
 2011-07-11 v0.3.5
 -----------------
 
