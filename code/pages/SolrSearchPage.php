@@ -68,7 +68,7 @@ class SolrSearchPage extends Page {
 		if (!$this->SortBy) {
 			$this->SortBy = 'Created';
 		}
-		
+
 		$objFields = $this->getSelectableFields();
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields), 'Content');
 		$fields->addFieldToTab('Root.Content.Main', new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->dbObject('SortDir')->enumValues()), 'Content');
@@ -95,6 +95,7 @@ class SolrSearchPage extends Page {
 		for ($i = 1; $i <= 5; $i++) {
 			$boostVals[$i] = $i;
 		}
+
 		$fields->addFieldToTab(
 			'Root.Content.Main', 
 			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
@@ -114,14 +115,14 @@ class SolrSearchPage extends Page {
 		if (!$listType) {
 			$listType = strlen($this->SearchType) ? $this->SearchType : 'Page';
 		}
-
-		$f = singleton($listType)->searchableFields();
-		$objFields = array_combine(array_keys($f), array_keys($f));
+		
+		$availableFields = singleton('SolrSearchService')->getSearchableFieldsFor($listType);
+		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
 		$objFields['score'] = 'Score';
-		
+
 		ksort($objFields);
 		return $objFields;
 	}
@@ -232,7 +233,7 @@ class SolrSearchPage extends Page {
 			if (count($selectedFields)) {
 				$mappedFields = array();
 				foreach ($selectedFields as $field) {
-					$mappedFields[] = $this->getSolr()->getFieldName($field, $type);
+					$mappedFields[] = $this->getSolr()->getSolrFieldName($field, $type);
 				}
 				$builder->queryFields($mappedFields);
 			}
@@ -241,7 +242,7 @@ class SolrSearchPage extends Page {
 				$boostSetting = array();
 				foreach ($boost as $field => $amount) {
 					if ($amount > 0) {
-						$boostSetting[$this->getSolr()->getFieldName($field, $type)] = $amount;
+						$boostSetting[$this->getSolr()->getSolrFieldName($field, $type)] = $amount;
 					}
 				}
 				$builder->boost($boostSetting);

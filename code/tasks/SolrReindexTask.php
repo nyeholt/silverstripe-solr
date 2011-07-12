@@ -39,4 +39,3 @@ class SolrReindexTask extends BuildTask
 		echo "Reindex complete, $count objects re-indexed<br/>";
 	}
 }
-?>
