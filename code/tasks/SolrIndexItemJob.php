@@ -23,6 +23,9 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 	}
 
 	protected function getItem() {
+		if (ClassInfo::exists('Subsite')) {
+			Subsite::disable_subsite_filter();
+		}
 		return DataObject::get_by_id($this->itemType, $this->itemID);
 	}
 
@@ -52,7 +55,7 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 			// item has already been deleted by here, so need to use the stored type/id
 			singleton('SolrSearchService')->unindex($this->itemType, $this->itemID);
 		}
-		
+
 		$this->currentStep++;
 		$this->isComplete = true;
 	}
