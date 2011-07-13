@@ -433,8 +433,10 @@ class SolrSearchService {
 	protected function buildSearchableFieldCache() {
 		if (!$this->searchableCache) {
 			$objects = DataObject::get('SolrTypeConfiguration');
-			foreach ($objects as $obj) {
-				$this->searchableCache[$obj->Title] = $obj->FieldMappings->getValues();
+			if ($objects) {
+				foreach ($objects as $obj) {
+					$this->searchableCache[$obj->Title] = $obj->FieldMappings->getValues();
+				}
 			}
 		}
 		return $this->searchableCache;
