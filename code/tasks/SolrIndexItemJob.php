@@ -24,9 +24,13 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 
 	protected function getItem() {
 		if (ClassInfo::exists('Subsite')) {
-			Subsite::disable_subsite_filter();
+			Subsite::disable_subsite_filter(true);
 		}
-		return DataObject::get_by_id($this->itemType, $this->itemID);
+		$item = DataObject::get_by_id($this->itemType, $this->itemID);
+		if (ClassInfo::exists('Subsite')) {
+			Subsite::disable_subsite_filter(false);
+		}
+		return $item;
 	}
 
 	public function getTitle() {
