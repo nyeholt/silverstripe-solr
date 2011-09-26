@@ -265,9 +265,9 @@ class SolrSearchService {
 
 			if ($type == 'MultiValueField') {
 				$value = $value->getValues();
-				if (!$value || count($value) == 0) {
-					continue;
-				}
+//				if (!$value || count($value) == 0) {
+//					continue;
+//				}
 			}
 
 			$ret[$name] = array('Type' => $type, 'Value' => $value);
