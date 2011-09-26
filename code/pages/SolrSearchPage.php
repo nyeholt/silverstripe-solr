@@ -346,6 +346,7 @@ class SolrSearchPage extends Page {
 					$sq = $this->SearchQuery();
 					$sep = strlen($sq) ? '&amp;' : '';
 					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Name";
+					$facetTerm->QuotedSearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=&quot;$facetTerm->Name&quot;";
 				}
 			}
 
