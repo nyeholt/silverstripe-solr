@@ -41,7 +41,11 @@ class SolrQueryBuilder {
 	}
 
 	public function parse($string) {
-		
+		// custom search query entered
+		if (strpos($string, ':') > 0) {
+			return $string;
+		}
+
 		$sep = '';
 		$lucene = '';
 		foreach ($this->fields as $field) {
