@@ -233,11 +233,15 @@ class SolrSearchPage extends Page {
 			if (count($selectedFields)) {
 				$mappedFields = array();
 				foreach ($selectedFields as $field) {
-					$mappedFields[] = $this->getSolr()->getSolrFieldName($field, $type);
+					$mappedField = $this->getSolr()->getSolrFieldName($field, $type);
+					if (!$mappedField) {
+						throw new Exception("Field $field does not have a proper mapping");
+					}
+					$mappedFields[] = $mappedField;
 				}
 				$builder->queryFields($mappedFields);
 			}
-			
+
 			if ($boost = $this->BoostFields->getValues()) {
 				$boostSetting = array();
 				foreach ($boost as $field => $amount) {
@@ -371,7 +375,6 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 		return new DataObjectSet($parts);
 	}
-
 
 	/**
 	 * Process and render search results
