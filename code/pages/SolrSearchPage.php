@@ -17,8 +17,10 @@ class SolrSearchPage extends Page {
 		'SortBy' => "Varchar(64)",
 		'SortDir' => "Enum('Ascending,Descending')",
 		'QueryType'	=> 'Varchar',
+		'StartWithListing'	=> 'Boolean',			// whether to start display with a *:* search
 		'SearchOnFields'	=> 'MultiValueField',
 		'BoostFields'		=> 'MultiValueField',
+		'FacetFields'		=> 'MultiValueField',
 	);
 
 	/**
@@ -62,6 +64,8 @@ class SolrSearchPage extends Page {
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
 
+		$fields->addFieldToTab('Root.Content.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing')), 'Content');
+
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
 		$fields->addFieldToTab('Root.Content.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
 
@@ -99,6 +103,12 @@ class SolrSearchPage extends Page {
 		$fields->addFieldToTab(
 			'Root.Content.Main', 
 			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
+			'Content'
+		);
+		
+		$fields->addFieldToTab(
+			'Root.Content.Main', 
+			new MultiValueDropdownField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
 			'Content'
 		);
 
@@ -161,6 +171,22 @@ class SolrSearchPage extends Page {
 		}
 		return $this->solr;
 	}
+	
+	/**
+	 * Figures out the list of fields to use in faceting, based on configured / defaults
+	 */
+	public function fieldsForFacets() {
+		$fields = self::$facets;
+		if ($this->FacetFields && $ff = $this->FacetFields->getValues()) {
+			$fields = array();
+			$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
+			foreach ($ff as $f) {
+				$fields[] = $this->getSolr()->getSolrFieldName($f, $type);
+			}
+		}
+
+		return $fields;
+	}
 
 	/**
 	 * Get the currently active query for this page, if any
@@ -215,7 +241,7 @@ class SolrSearchPage extends Page {
 		}
 
 		if (!$query && !count($activeFacets)) {
-			$this->query = $this->getSolr()->getFacetsForFields(self::$facets);
+			$this->query = $this->getSolr()->getFacetsForFields($this->fieldsForFacets());
 		} else {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
@@ -254,7 +280,7 @@ class SolrSearchPage extends Page {
 
 			$params = array(
 				'facet' => 'true',
-				'facet.field' => self::$facets,
+				'facet.field' => $this->fieldsForFacets(),
 				'facet.limit' => 10,
 				'facet.mincount' => 1,
 				'sort' => "$sortBy $sortDir",
@@ -334,6 +360,16 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 	protected function getSolr() {
 		return $this->data()->getSolr();
+	}
+	
+	public function index() {
+		if ($this->StartWithListing) {
+			$_GET['SortBy'] = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
+			$_GET['SortDir'] = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
+		
+			return $this->results();
+		}
+		return array();
 	}
 
 	public function Form() {
