@@ -29,9 +29,15 @@ class SolrQueryBuilder {
 	}
 	
 	public function andWith($field, $value) {
-		$this->and[$field] = $value;
+		$existing = array();
+		if (isset($this->and[$field])) {
+			$existing = $this->and[$field];
+		}
+
+		$existing[] = $value;
+		$this->and[$field] = $existing;
 	}
-	
+
 	public function setParams($params) {
 		$this->params = $params;
 	}
@@ -72,13 +78,13 @@ class SolrQueryBuilder {
 			$sep = ' AND ';
 		}
 		
-		foreach ($this->and as $field => $value) {
-			$rawQuery .= $sep . $field .':' . $value;
-			
-			
-			$sep = ' AND ';
+		foreach ($this->and as $field => $valArray) {
+			foreach ($valArray as $value) {
+				$rawQuery .= $sep . $field .':' . $value;
+				$sep = ' AND ';
+			}
 		}
-		
+
 		return $rawQuery;
 	}
 }

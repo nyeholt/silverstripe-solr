@@ -30,11 +30,14 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 		
 		// AND conditionals
 		$ac = '';
-		foreach ($this->and as $field => $value) {
-			$ac .= '+'.$field. ':' .$value .' ';
-		}
-		$this->params['bq'] = $ac;
 		
+		foreach ($this->and as $field => $valArray) {
+			foreach ($valArray as $value) {
+				$ac .= '+'.$field. ':' .$value .' ';
+			}
+		}
+		
+		$this->params['bq'] = $ac;
 		
 		return $this->params;
 	}
