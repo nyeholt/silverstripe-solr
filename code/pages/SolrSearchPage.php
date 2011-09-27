@@ -240,55 +240,51 @@ class SolrSearchPage extends Page {
 			}
 		}
 
-		if (!$query && !count($activeFacets)) {
-			$this->query = $this->getSolr()->getFacetsForFields($this->fieldsForFacets());
-		} else {
-			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
-			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
+		$offset = isset($_GET['start']) ? $_GET['start'] : 0;
+		$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
 
-			if ($type) {
-				$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
-				$builder->andWith('ClassNameHierarchy_ms', $type);
-			}
-
-			if (!$sortBy) {
-				$sortBy = 'score';
-			}
-
-			$selectedFields = $this->SearchOnFields->getValues();
-			if (count($selectedFields)) {
-				$mappedFields = array();
-				foreach ($selectedFields as $field) {
-					$mappedField = $this->getSolr()->getSolrFieldName($field, $type);
-					if (!$mappedField) {
-						throw new Exception("Field $field does not have a proper mapping");
-					}
-					$mappedFields[] = $mappedField;
-				}
-				$builder->queryFields($mappedFields);
-			}
-
-			if ($boost = $this->BoostFields->getValues()) {
-				$boostSetting = array();
-				foreach ($boost as $field => $amount) {
-					if ($amount > 0) {
-						$boostSetting[$this->getSolr()->getSolrFieldName($field, $type)] = $amount;
-					}
-				}
-				$builder->boost($boostSetting);
-			}
-
-			$params = array(
-				'facet' => 'true',
-				'facet.field' => $this->fieldsForFacets(),
-				'facet.limit' => 10,
-				'facet.mincount' => 1,
-				'sort' => "$sortBy $sortDir",
-				'fl' => '*,score'
-			);
-
-			$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
+		if ($type) {
+			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
+			$builder->andWith('ClassNameHierarchy_ms', $type);
 		}
+
+		if (!$sortBy) {
+			$sortBy = 'score';
+		}
+
+		$selectedFields = $this->SearchOnFields->getValues();
+		if (count($selectedFields)) {
+			$mappedFields = array();
+			foreach ($selectedFields as $field) {
+				$mappedField = $this->getSolr()->getSolrFieldName($field, $type);
+				if (!$mappedField) {
+					throw new Exception("Field $field does not have a proper mapping");
+				}
+				$mappedFields[] = $mappedField;
+			}
+			$builder->queryFields($mappedFields);
+		}
+
+		if ($boost = $this->BoostFields->getValues()) {
+			$boostSetting = array();
+			foreach ($boost as $field => $amount) {
+				if ($amount > 0) {
+					$boostSetting[$this->getSolr()->getSolrFieldName($field, $type)] = $amount;
+				}
+			}
+			$builder->boost($boostSetting);
+		}
+
+		$params = array(
+			'facet' => 'true',
+			'facet.field' => $this->fieldsForFacets(),
+			'facet.limit' => 10,
+			'facet.mincount' => 1,
+			'sort' => "$sortBy $sortDir",
+			'fl' => '*,score'
+		);
+
+		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 		return $this->query;
 	}
 
