@@ -367,7 +367,9 @@ class SolrSearchPage_Controller extends Page_Controller {
 		if ($this->StartWithListing) {
 			$_GET['SortBy'] = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 			$_GET['SortDir'] = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
-		
+			$_GET['Search'] = '*';
+			$this->DefaultListing = true;
+			
 			return $this->results();
 		}
 		return array();
