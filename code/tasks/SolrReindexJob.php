@@ -9,7 +9,11 @@
  */
 if (class_exists('AbstractQueuedJob')) {
 	class SolrReindexJob extends AbstractQueuedJob {
-		public function __construct() {
+		
+		public function __construct($type = null) {
+			if ($type) {
+				$this->reindexType = $type;
+			}
 		}
 
 		public function getTitle() {
@@ -19,7 +23,7 @@ if (class_exists('AbstractQueuedJob')) {
 		public function setup() {
 			$this->lastIndexedID = 0;
 			$service = singleton('SolrSearchService');
-			$service->getSolr()->deleteByQuery('ClassNameHierarchy_ms:SiteTree');
+			$service->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $this->reindexType);
 		}
 
 		/**
@@ -30,7 +34,8 @@ if (class_exists('AbstractQueuedJob')) {
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::disable_subsite_filter();
 			}
-			$page = DataObject::get_one('SiteTree', singleton('SolrUtils')->dbQuote(array('SiteTree.ID >' => $this->lastIndexedID)), true, 'ID ASC');
+			
+			$page = DataObject::get_one($this->reindexType, singleton('SolrUtils')->dbQuote(array($this->reindexType . '.ID >' => $this->lastIndexedID)), true, 'ID ASC');
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::$disable_subsite_filter = false;
 			}
@@ -43,15 +48,12 @@ if (class_exists('AbstractQueuedJob')) {
 			// index away
 			$service = singleton('SolrSearchService');
 			$service->index($page, 'Stage');
-			if ($page->Status == 'Published') {
+			if ($page->Status == 'Published' || !$page->Status) {
 				$service->index($page, 'Live');
 			}
 
 			$this->currentStep++;
-
 			$this->lastIndexedID = $page->ID;
-
 		}
 	}
-
 }

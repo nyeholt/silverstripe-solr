@@ -14,8 +14,12 @@ class SolrReindexTask extends BuildTask
 
 	function run($request)
 	{
+		$type = Convert::raw2sql($request->getVar('type'));
+		if (!$type) {
+			$type = 'SiteTree';
+		}
 		if (ClassInfo::exists('QueuedJob')) {
-			$job = new SolrReindexJob();
+			$job = new SolrReindexJob($type);
 			$svc = singleton('QueuedJobService');
 			$svc->queueJob($job);
 			echo "<p>Reindexing job has been queued</p>";
