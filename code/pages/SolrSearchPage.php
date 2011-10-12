@@ -60,6 +60,12 @@ class SolrSearchPage extends Page {
 	 * @var String
 	 */
 	public static $filter_param = 'filter';
+	
+	/**
+	 *
+	 * @var array
+	 */
+	public static $additional_search_types = array();
 
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
@@ -81,6 +87,9 @@ class SolrSearchPage extends Page {
 		$source = array_combine($types, $types);
 		asort($source);
 		$source = array_merge(array('' => 'Any'), $source);
+		
+		$source = array_merge($source, self::$additional_search_types);
+		
 		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.PAGE_TYPE', 'Search pages of type'), $source, 'Any');
 		$fields->addFieldToTab('Root.Content.Main', $optionsetField, 'Content');
 
