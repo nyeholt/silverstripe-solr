@@ -1,3 +1,10 @@
+2011-12-06 v0.6.0
+-----------------
+
+* FEATURE Added functionality that allows the start and stop of the bundled 
+  solr jetty servlet container file from within the CMS, allowing ADMIN users 
+  to start/stop Solr directly. 
+
 2011-09-26 v0.5.0
 -----------------
 

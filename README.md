@@ -90,7 +90,21 @@ API
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
 
 
+# Administration
+
+If you have ADMIN privileges, you can start and stop the locally bundled
+jetty version of solr from within the CMS on the Solr admin section.
+
+To set the java path (if different from /usr/bin/java), set
+
+    SolrSearchService::$java_bin 
+
+to the appropriate path
+
+
 Troubleshooting
 ---------------
 
-If you aren't getting any search results, first make sure Solr is running. Next, check to make sure that
+If you aren't getting any search results, first make sure Solr is running. 
+
+

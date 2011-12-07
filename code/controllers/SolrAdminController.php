@@ -16,10 +16,73 @@ class SolrAdminController extends ModelAdmin {
 	
 	public static $allowed_actions = array(
 		'ReindexForm',
+		'EditForm',
 	);
 	
 	public static $collection_controller_class = 'SolrAdmin_CollectionController';
 	
+	public function init() {
+		parent::init();
+		
+		Requirements::javascript('solr/javascript/solr.js');
+	}
+	
+	public function EditForm() {
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			return false;
+		}
+		
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+
+		$fields = new FieldSet($ts = new TabSet('Root'));
+
+		$config = singleton('SolrSearchService')->localEngineConfig();
+		$allow = isset($config['RunLocal']) ? $config['RunLocal'] : 0;
+		
+		$fields->addFieldToTab('Root.Content', new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
+		
+		if ($allow) {
+			
+			$status = singleton('SolrSearchService')->localEngineStatus();
+			
+			if (!$status) {
+				$fields->addFieldToTab('Root.Content', new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
+			} else {
+				$fields->addFieldToTab('Root.Content', new CheckboxField('Kill', _t('SolrAdmin.Kill', 'Kill Solr process (' . $status . ')')));
+			}
+
+			$log = singleton('SolrSearchService')->getLogData(100);
+			$log = array_reverse($log);
+			
+			$fields->addFieldToTab('Root.Content', $logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log'), 15, 20, implode($log)));
+		}
+
+		$actions = new FieldSet(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
+		$form = new Form($this, 'EditForm', $fields, $actions);
+		return $form;
+	}
+
+	public function saveconfig($data, $form, $request) {
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+
+		$config = singleton('SolrSearchService')->localEngineConfig();
+
+		$config['RunLocal'] = $data['RunLocal'];
+
+		singleton('SolrSearchService')->saveEngineConfig($config);
+		
+		if (isset($data['Start']) && $data['Start']) {
+			singleton('SolrSearchService')->startSolr();
+		} else if (isset($data['Kill']) && $data['Kill']) {
+			singleton('SolrSearchService')->stopSolr();
+			sleep(2);
+		}
+		return $this->EditForm()->forAjaxTemplate();
+	}
 }
 
 class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {

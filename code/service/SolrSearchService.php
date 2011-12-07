@@ -7,6 +7,10 @@
  * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchService {
+	
+	public static $config_file = 'solr/config';
+	public static $java_bin = '/usr/bin/java';
+	
 	/**
 	 * The connection details for the solr instance to connect to
 	 *
@@ -480,6 +484,109 @@ class SolrSearchService {
 	public function getSortFieldName($field, $className='Page') {
 		return $field == 'Title' ? 'title_exact' : $this->getSolrFieldName($field, $className);
 	}
+	
+	/**
+	 * get local service information
+	 */
+	public function localEngineConfig() {
+		$file = $this->getConfigFile();
+		
+		$config = array();
+		if (file_exists($file)) {
+			$ser = file_get_contents($file);
+			if (strlen($ser)) {
+				$config = unserialize($ser);
+			}
+			
+		} 
+		if (!count($config)) {
+			$config['RunLocal'] = 0;
+			$config['SolrPort'] = 8983;
+			$config['LogPath'] = '/solr/solr/logs/solr.log';
+		}
+
+		return $config;
+	}
+
+	public function localEngineStatus() {
+		$status = `ps aux | awk '/solr\/start.jar/ && !/awk/ {print $2}'`;
+		return trim($status);
+	}
+
+	public function startSolr() {
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+		$config = $this->localEngineConfig();
+		
+		$solrJar = Director::baseFolder().'/solr/solr/start.jar';
+		$logFile = Director::baseFolder().$config['LogPath'];
+		
+		$curdir = getcwd();
+		chdir(dirname($solrJar));
+		
+		$port = self::$solr_details['port'];
+		
+		$cmd = self::$java_bin . " -Djetty.port=$port -jar $solrJar > $logFile 2>&1 &";
+		system($cmd);
+		chdir($curdir);
+	}
+	
+	public function stopSolr() {
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+		$status = $this->localEngineStatus();
+		if ($status) {
+			$cmd = "kill $status";
+			system($cmd);
+		}
+	}
+	
+	protected function getConfigFile() {
+		$file = self::$config_file;
+		if ($file{0} != '/') {
+			$file = TEMP_FOLDER . '/' . $file;
+			Filesystem::makeFolder(dirname($file));
+		}
+		
+		if (!file_exists($file)) {
+			touch($file);
+		}
+		
+		return $file;
+	}
+	
+	public function saveEngineConfig($config) {
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+		
+		$file = $this->getConfigFile();
+		if (!$config) {
+			return;
+		}
+		
+		if (file_exists($file)) {
+			$ser = serialize($config);
+			file_put_contents($file, $ser);
+		}
+	}
+	
+	public function getLogData($numLines = 100) {
+		if (!Permission::check('ADMIN')) {
+			return false;
+		}
+		$config = $this->localEngineConfig();
+		$logFile = Director::baseFolder().$config['LogPath'];
+		if (file_exists($logFile)) {
+			$log = file($logFile);
+			$log = array_slice($log, -1 * $numLines);
+			return $log;
+		}
+		
+		return array();
+	}
 }
 
 /**
@@ -584,4 +691,5 @@ class SolrSchemaMapper {
 			}
 		}
 	} 
+	
 }
