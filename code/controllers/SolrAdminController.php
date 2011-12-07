@@ -39,14 +39,13 @@ class SolrAdminController extends ModelAdmin {
 		$fields = new FieldSet($ts = new TabSet('Root'));
 
 		$config = singleton('SolrSearchService')->localEngineConfig();
-		$allow = isset($config['RunLocal']) ? $config['RunLocal'] : 0;
+		$allow = $config->RunLocal;
 		
 		$fields->addFieldToTab('Root.Content', new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
 		
 		if ($allow) {
-			
 			$status = singleton('SolrSearchService')->localEngineStatus();
-			
+
 			if (!$status) {
 				$fields->addFieldToTab('Root.Content', new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
 			} else {
@@ -70,9 +69,7 @@ class SolrAdminController extends ModelAdmin {
 		}
 
 		$config = singleton('SolrSearchService')->localEngineConfig();
-
-		$config['RunLocal'] = $data['RunLocal'];
-
+		$config->RunLocal = $data['RunLocal'];
 		singleton('SolrSearchService')->saveEngineConfig($config);
 		
 		if (isset($data['Start']) && $data['Start']) {

@@ -489,22 +489,7 @@ class SolrSearchService {
 	 * get local service information
 	 */
 	public function localEngineConfig() {
-		$file = $this->getConfigFile();
-		
-		$config = array();
-		if (file_exists($file)) {
-			$ser = file_get_contents($file);
-			if (strlen($ser)) {
-				$config = unserialize($ser);
-			}
-			
-		} 
-		if (!count($config)) {
-			$config['RunLocal'] = 0;
-			$config['SolrPort'] = 8983;
-			$config['LogPath'] = '/solr/solr/logs/solr.log';
-		}
-
+		$config = DataObject::get_one('SolrServerConfig');
 		return $config;
 	}
 
@@ -520,7 +505,7 @@ class SolrSearchService {
 		$config = $this->localEngineConfig();
 		
 		$solrJar = Director::baseFolder().'/solr/solr/start.jar';
-		$logFile = Director::baseFolder().$config['LogPath'];
+		$logFile = $config->getLogFile();
 		
 		$curdir = getcwd();
 		chdir(dirname($solrJar));
@@ -543,42 +528,20 @@ class SolrSearchService {
 		}
 	}
 	
-	protected function getConfigFile() {
-		$file = self::$config_file;
-		if ($file{0} != '/') {
-			$file = TEMP_FOLDER . '/' . $file;
-			Filesystem::makeFolder(dirname($file));
-		}
-		
-		if (!file_exists($file)) {
-			touch($file);
-		}
-		
-		return $file;
-	}
-	
 	public function saveEngineConfig($config) {
 		if (!Permission::check('ADMIN')) {
 			return false;
 		}
-		
-		$file = $this->getConfigFile();
-		if (!$config) {
-			return;
-		}
-		
-		if (file_exists($file)) {
-			$ser = serialize($config);
-			file_put_contents($file, $ser);
-		}
+		$config->write();
 	}
-	
+
 	public function getLogData($numLines = 100) {
 		if (!Permission::check('ADMIN')) {
 			return false;
 		}
 		$config = $this->localEngineConfig();
-		$logFile = Director::baseFolder().$config['LogPath'];
+		$logFile = $config->getLogFile();
+		
 		if (file_exists($logFile)) {
 			$log = file($logFile);
 			$log = array_slice($log, -1 * $numLines);
