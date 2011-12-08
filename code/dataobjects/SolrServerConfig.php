@@ -8,13 +8,25 @@
 class SolrServerConfig extends DataObject {
 	public static $db = array(
 		'RunLocal'		=> 'Boolean',
+		'InstanceID'	=> 'Varchar(64)',
 		'LogPath'		=> 'Varchar(128)',
 	);
 	
 	static $defaults = array(
-		'LogPath' => '/solr/solr/logs/solr.log'
+		'LogPath' => '/solr/solr/logs'
 	);
 	
+	public function onBeforeWrite() {
+		parent::onBeforeWrite();
+		if (!$this->InstanceID) {
+			$this->InstanceID = md5(mt_rand(0, 1000) . time());
+		}
+		
+		if (!$this->LogPath) {
+			$this->LogPath = self::$defaults['LogPath'];
+		}
+	}
+
 	public function requireDefaultRecords() {
 		parent::requireDefaultRecords();
 		
@@ -22,6 +34,7 @@ class SolrServerConfig extends DataObject {
 		if (!$conf || !$conf->ID) {
 			$conf = new SolrServerConfig();
 			$conf->RunLocal = false;
+			$conf->InstanceID = md5(mt_rand(0, 1000) . time());
 			$conf->write();
 		}
 	}
@@ -31,7 +44,8 @@ class SolrServerConfig extends DataObject {
 		if (!$this->LogPath) {
 			$logFile = self::$defaults['LogPath'];
 		}
-		$logFile = Director::baseFolder().$logFile;
+		
+		$logFile = Director::baseFolder().$logFile . '/solr-' . $this->InstanceID . '.log';
 		return $logFile;
 	}
 }

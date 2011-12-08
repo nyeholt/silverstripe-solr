@@ -1,3 +1,10 @@
+2011-12-08 v0.6.2
+-----------------
+
+* Added a unique ID when starting solr so the correct one is identified when
+  looking for the existing instance
+* CONFIG Allow developers to select where the data dir is placed
+
 2011-12-06 v0.6.0
 -----------------
 

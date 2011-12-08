@@ -10,22 +10,23 @@ class SolrSearchService {
 	
 	public static $config_file = 'solr/config';
 	public static $java_bin = '/usr/bin/java';
-	
+		
 	/**
 	 * The connection details for the solr instance to connect to
 	 *
 	 * @var array
 	 */
 	public static $solr_details = array(
-		'host' => 'localhost',
-		'port' => '8983',
-		'context' => '/solr',
+		'host'		=> 'localhost',
+		'port'		=> '8983',
+		'context'	=> '/solr',
+		'data_dir'	=> null
 	);
 	
 	/**
 	 * A list of all fields that will be searched through by default, if the user hasn't specified
 	 * any in their search query. 
-	 *
+	 * 
 	 * @var array 
 	 */
 	public static $default_query_fields = array(
@@ -494,7 +495,10 @@ class SolrSearchService {
 	}
 
 	public function localEngineStatus() {
-		$status = `ps aux | awk '/solr\/start.jar/ && !/awk/ {print $2}'`;
+		$config = $this->localEngineConfig();
+		$id = '-Dsolrid='.$config->InstanceID;
+		$cmd = "ps aux | awk '/$id/ && !/awk/ {print $2}'";
+		$status = `$cmd`;
 		return trim($status);
 	}
 
@@ -506,17 +510,23 @@ class SolrSearchService {
 		
 		$solrJar = Director::baseFolder().'/solr/solr/start.jar';
 		$logFile = $config->getLogFile();
+		$id = $config->InstanceID;
 		
 		$curdir = getcwd();
 		chdir(dirname($solrJar));
 		
 		$port = self::$solr_details['port'];
 		
-		$cmd = self::$java_bin . " -Djetty.port=$port -jar $solrJar > $logFile 2>&1 &";
+		$dataDir = '';
+		if (isset(self::$solr_details['data_dir']) && strlen(self::$solr_details['data_dir'])) {
+			$dataDir = ' -Dsolr.data.dir=' . self::$solr_details['data_dir'];
+		}
+
+		$cmd = self::$java_bin . " -Djetty.port=$port $dataDir -Dsolrid=$id -jar $solrJar > $logFile 2>&1 &";
 		system($cmd);
 		chdir($curdir);
 	}
-	
+
 	public function stopSolr() {
 		if (!Permission::check('ADMIN')) {
 			return false;

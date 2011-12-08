@@ -74,6 +74,7 @@ class SolrAdminController extends ModelAdmin {
 		
 		if (isset($data['Start']) && $data['Start']) {
 			singleton('SolrSearchService')->startSolr();
+			sleep(2);
 		} else if (isset($data['Kill']) && $data['Kill']) {
 			singleton('SolrSearchService')->stopSolr();
 			sleep(2);
