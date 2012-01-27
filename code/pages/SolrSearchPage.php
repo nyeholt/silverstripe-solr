@@ -223,7 +223,7 @@ class SolrSearchPage extends Page {
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->SortDir;
-		$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
+		$type = (strlen($this->SearchType) ? $this->SearchType : null);  
 
 		$fields = $this->getSelectableFields($this->SearchType);
 		

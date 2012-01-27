@@ -149,8 +149,30 @@ class SolrResultSet
 							continue;
 						}
 					}
+					if (strpos($id, SolrSearchService::RAW_DATA_KEY) === 0) {
+						$data = array(
+							'ID'		=> $id,
+							'Title'		=> $doc->title[0],
+							'Link'		=> $doc->attr_SS_URL[0],
+						);
 
-					$object = DataObject::get_by_id($type, $id);
+						foreach ($doc as $key => $val) {
+							if (strpos($key, 'attr_') === 0 && $key != 'attr_SS_URL') {
+								$name = str_replace('attr_', '', $key);
+								$val = $doc->$key;
+								if (is_array($val) && count($val) == 1) {
+									$data[$name] = $val[0];
+								} else {
+									$data[$name] = $val;
+								}
+							}
+						}
+
+						$object = new ArrayData($data);
+					} else {
+						$object = DataObject::get_by_id($type, $id);
+					}
+
 					if ($object && $object->ID) {
 						// check that the user has permission
 						if (isset($doc->score)) {

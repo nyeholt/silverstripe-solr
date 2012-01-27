@@ -18,6 +18,16 @@ class SolrReindexTask extends BuildTask
 		if (!$type) {
 			$type = 'SiteTree';
 		}
+		
+		$search = singleton('SolrSearchService');
+		
+		if (isset($_GET['delete_all'])) {
+			$search->getSolr()->deleteByQuery('*:*');
+		} else {
+			$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:Page');
+		}
+		$search->getSolr()->commit();
+		
 		if (ClassInfo::exists('QueuedJob')) {
 			$job = new SolrReindexJob($type);
 			$svc = singleton('QueuedJobService');
@@ -28,8 +38,7 @@ class SolrReindexTask extends BuildTask
 		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
 		$pages = DataObject::get('Page');
 
-		$search = singleton('SolrSearchService');
-		$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:Page');
+		
 		/* @var $search SolrSearchService */
 		$count = 0;
 		foreach ($pages as $page) {
