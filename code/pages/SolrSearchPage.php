@@ -88,9 +88,19 @@ class SolrSearchPage extends Page {
 		asort($source);
 		$source = array_merge(array('' => 'Any'), $source);
 		
+		// add in any explicitly configured 
+		$objects = DataObject::get('SolrTypeConfiguration');
+		if ($objects) {
+			foreach ($objects as $obj) {
+				$source[$obj->Title] = $obj->Title;
+			}
+		}
+
+		ksort($source);
+		
 		$source = array_merge($source, self::$additional_search_types);
 		
-		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.PAGE_TYPE', 'Search pages of type'), $source, 'Any');
+		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source, 'Any');
 		$fields->addFieldToTab('Root.Content.Main', $optionsetField, 'Content');
 
 		$fields->addFieldToTab('Root.Content.Main', new MultiValueDropdownField('SearchOnFields', _t('SolrSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');

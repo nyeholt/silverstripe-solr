@@ -1,3 +1,10 @@
+2012-03-23 v0.7.1
+-----------------
+
+* Use the SolrTypeConfiguration in the list of types a page can search
+  on
+
+
 2012-01-27 v0.7.0
 -----------------
 
