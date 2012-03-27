@@ -24,7 +24,7 @@ class SolrReindexTask extends BuildTask
 		if (isset($_GET['delete_all'])) {
 			$search->getSolr()->deleteByQuery('*:*');
 		} else {
-			$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:Page');
+			$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $type);
 		}
 		$search->getSolr()->commit();
 		
@@ -35,19 +35,25 @@ class SolrReindexTask extends BuildTask
 			echo "<p>Reindexing job has been queued</p>";
 			return;
 		}
-		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
-		$pages = DataObject::get('Page');
-
 		
+		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
+		$pages = DataObject::get($type);
+
 		/* @var $search SolrSearchService */
 		$count = 0;
 		foreach ($pages as $page) {
-			$search->index($page, 'Draft');
-			if ($page->Status == 'Published') {
-				$search->index($page, 'Live');
+			if ($page->hasField('Status')) {
+				$search->index($page, 'Draft');
+				if ($page->Status == 'Published') {
+					$search->index($page, 'Live');
+				}
+				echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
+				$count ++;
+			} else {
+				$search->index($page);
+				echo "<p>Reindexed $type ID#$page->ID</p>\n";
+				$count ++;
 			}
-			echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
-			$count ++;
 		}
 		echo "Reindex complete, $count objects re-indexed<br/>";
 	}
