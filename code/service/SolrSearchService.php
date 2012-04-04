@@ -49,6 +49,26 @@ class SolrSearchService {
 	 * @var SolrSchemaMapper
 	 */
 	protected $mapper;
+	
+	/**
+	 * A cache object for query caching
+	 * 
+	 * @var Zend_Cache_Core
+	 */
+	protected $cache;
+	
+	/**
+	 * How many seconds to cache results for
+	 *
+	 * @var int
+	 */
+	protected $cacheTime = 3600;
+	
+	/**
+	 * A mapping of all the available query builders
+	 *
+	 * @var map
+	 */
 	protected $queryBuilders = array();
 
 	public function __construct() {
@@ -57,6 +77,10 @@ class SolrSearchService {
 
 		$this->queryBuilders['default'] = 'SolrQueryBuilder';
 		$this->queryBuilders['dismax'] = 'DismaxSolrSearchBuilder';
+	}
+	
+	public function setCache($cache) {
+		$this->cache = $cache;
 	}
 
 	/**
@@ -363,14 +387,44 @@ class SolrSearchService {
 
 		$query = $query->toString();
 
-		// execute the query
-		$response = $this->getSolr()->search($query, $offset, $limit, $params);
+		$response = null;
+		$rawResponse = null;
+		$solr = $this->getSolr();
+		$key = null;
+		if ($this->cache) {
+			$key = md5($query.$offset.$limit.serialize($params));
+			if ($rawResponse = $this->cache->load($key)) {
+				$response = new Apache_Solr_Response(
+					$rawResponse, 
+					// we fake the following headers... :o
+					array(
+						'HTTP/1.1 200 OK',
+						'Content-Type: text/plain; charset=utf-8'
+					), 
+					$solr->getCreateDocuments(), 
+					$solr->getCollapseSingleValueArrays()
+				);
+			}
+		}
+		if (!$response) {
+			// execute the query
+			if ($this->isConnected()) {
+				$response = $this->getSolr()->search($query, $offset, $limit, $params);
+			}
+		}
+		
 		$params = new stdClass();
 		$params->offset = $offset;
 		$params->limit = $limit;
 		$params->params = $params;
 
-		return new SolrResultSet($query, $response, $params, $this);
+		$results = new SolrResultSet($query, $response, $params, $this);
+		
+		if ($this->cache && !$rawResponse && $key && $response) {
+			$this->cache->save($response->getRawResponse(), $key, array(), $this->cacheTime);
+		}
+		
+		return $results;
 	}
 
 	/**
@@ -689,5 +743,4 @@ class SolrSchemaMapper {
 			}
 		}
 	}
-
 }

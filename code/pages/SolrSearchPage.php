@@ -217,10 +217,6 @@ class SolrSearchPage extends Page {
 			return $this->query;
 		}
 
-		if (!$this->getSolr()->isConnected()) {
-			return null;
-		}
-
 		$query = null;
 		$builder = $this->getSolr()->getQueryBuilder($this->QueryType);
 		

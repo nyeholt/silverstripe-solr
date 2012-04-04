@@ -1,3 +1,10 @@
+2012-04-04 v0.8.0
+-----------------
+
+* Results can now be cached if a SS_Cache object is set as the cache
+  property for the SolrSearchService. This will return results even if
+  the solr server is unable to be contacted
+
 2012-03-23 v0.7.1
 -----------------
 

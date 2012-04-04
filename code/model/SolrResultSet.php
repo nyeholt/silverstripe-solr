@@ -96,7 +96,7 @@ class SolrResultSet
 	 * This is effectively the results as sent from solre
 	 */
 	public function getResult() {
-		if (!$this->result && $this->response->getHttpStatus() >= 200 && $this->response->getHttpStatus() < 300) {
+		if (!$this->result && $this->response && $this->response->getHttpStatus() >= 200 && $this->response->getHttpStatus() < 300) {
 			// decode the response
 			$this->result = json_decode($this->response->getRawResponse());
 		}
