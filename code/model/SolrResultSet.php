@@ -170,6 +170,9 @@ class SolrResultSet
 
 						$object = new ArrayData($data);
 					} else {
+						if (!class_exists($type)) {
+							continue;
+						}
 						$object = DataObject::get_by_id($type, $id);
 					}
 
