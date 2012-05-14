@@ -1,3 +1,8 @@
+2012-05-14 v0.8.1
+-----------------
+
+* Fixed a bug in reading the log file for locally started solr instances
+
 2012-04-04 v0.8.0
 -----------------
 

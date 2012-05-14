@@ -28,7 +28,7 @@ class SolrReindexTask extends BuildTask
 		}
 		$search->getSolr()->commit();
 		
-		if (ClassInfo::exists('QueuedJob')) {
+		if (ClassInfo::exists('QueuedJob') && !isset($_GET['direct'])) {
 			$job = new SolrReindexJob($type);
 			$svc = singleton('QueuedJobService');
 			$svc->queueJob($job);

@@ -618,6 +618,7 @@ class SolrSearchService {
 		$position = filesize($file);
 		fseek($fp, $position - 1);
 		$chunklen = 4096;
+		$data = '';
 		while ($position >= 0) {
 			$position = $position - $chunklen;
 			if ($position < 0) {
@@ -743,4 +744,5 @@ class SolrSchemaMapper {
 			}
 		}
 	}
+
 }
