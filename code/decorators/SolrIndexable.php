@@ -22,13 +22,21 @@ class SolrIndexable extends DataObjectDecorator {
 	 */
 	public static $index_draft = true;
 	
+	/**
+	 * @var array
+	 */
+	public static $dependencies = array(
+		'searchService'		=> 'SolrSearchService',
+		'jobQueue'			=> 'QueuedJobService',
+	);
+	
 	public static $db = array(
 		'ResultBoost'		=> 'Int',
 	);
-
+	
 	protected function createIndexJob($item, $stage = null, $mode = 'index') {
 		$job = new SolrIndexItemJob($item, $stage, $mode);
-		singleton('QueuedJobService')->queueJob($job);
+		$this->jobQueue->queueJob($job);
 	}
 
 	/**
@@ -41,7 +49,7 @@ class SolrIndexable extends DataObjectDecorator {
 			$this->createIndexJob($this->owner, 'Live');
 		} else {
 			// make sure only the fields that are highlighted in searchable_fields are included!!
-			singleton('SolrSearchService')->index($this->owner, 'Live');
+			$this->searchService->index($this->owner, 'Live');
 		}
 	}
 
@@ -66,7 +74,7 @@ class SolrIndexable extends DataObjectDecorator {
 				$this->createIndexJob($this->owner, $stage);
 			} else {
 				// make sure only the fields that are highlighted in searchable_fields are included!!
-				singleton('SolrSearchService')->index($this->owner, $stage);
+				$this->searchService->index($this->owner, $stage);
 			}
 		}
 	}
@@ -84,8 +92,8 @@ class SolrIndexable extends DataObjectDecorator {
 			$this->createIndexJob($this->owner, null, 'unindex');
 			$this->createIndexJob($this->owner, 'Stage');
 		} else {
-			singleton('SolrSearchService')->unindex($this->owner);
-			singleton('SolrSearchService')->index($this->owner, 'Stage');
+			$this->searchService->unindex($this->owner);
+			$this->searchService->index($this->owner, 'Stage');
 		}
 	}
 
@@ -94,7 +102,7 @@ class SolrIndexable extends DataObjectDecorator {
 		if (class_exists('SolrIndexItemJob')) {
 			$this->createIndexJob($this->owner, null, 'unindex');
 		} else {
-			singleton('SolrSearchService')->unindex($this->owner);
+			$this->searchService->unindex($this->owner);
 		}
 	}
 }
