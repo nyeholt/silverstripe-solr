@@ -29,6 +29,11 @@ class SolrAdminController extends ModelAdmin {
 		Requirements::javascript('solr/javascript/solr.js');
 	}
 	
+	/**
+	 *
+	 * @param SS_Request $request
+	 * @return Form 
+	 */
 	public function EditForm($request = null) {
 		$form = parent::EditForm($request);
 		
@@ -86,7 +91,12 @@ class SolrAdminController extends ModelAdmin {
 			$this->searchService->stopSolr();
 			sleep(2);
 		}
-		$this->redirectBack();
+		
+		if (Director::is_ajax()) {
+			return $this->EditForm()->forAjaxTemplate();
+		} else {
+			$this->redirectBack();
+		}
 	}
 }
 //
