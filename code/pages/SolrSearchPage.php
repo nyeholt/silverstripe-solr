@@ -12,15 +12,18 @@
  */
 class SolrSearchPage extends Page {
     public static $db = array(
-		'ResultsPerPage' => 'Int',
-		'SearchType' => 'Varchar(64)',
-		'SortBy' => "Varchar(64)",
-		'SortDir' => "Enum('Ascending,Descending')",
-		'QueryType'	=> 'Varchar',
-		'StartWithListing'	=> 'Boolean',			// whether to start display with a *:* search
-		'SearchOnFields'	=> 'MultiValueField',
-		'BoostFields'		=> 'MultiValueField',
-		'FacetFields'		=> 'MultiValueField',
+		'ResultsPerPage'					=> 'Int',
+		'SearchType'						=> 'Varchar(64)',
+		'SortBy'							=> "Varchar(64)",
+		'SortDir'							=> "Enum('Ascending,Descending')",
+		'QueryType'							=> 'Varchar',
+		'StartWithListing'					=> 'Boolean',			// whether to start display with a *:* search
+		'SearchOnFields'					=> 'MultiValueField',
+		'BoostFields'						=> 'MultiValueField',
+		'FacetFields'						=> 'MultiValueField',
+
+		// not a has_one, because we may not have the listing page module
+		'ListingTemplateID'					=> 'Int',
 	);
 
 	/**
@@ -70,7 +73,19 @@ class SolrSearchPage extends Page {
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
 
-		$fields->addFieldToTab('Root.Content.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing')), 'Content');
+		$fields->addFieldToTab('Root.Content.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing - useful for filterable "data type" lists')), 'Content');
+		
+		if (class_exists('ListingTemplate')) {
+			$templates = DataObject::get('ListingTemplate');
+			if ($templates) {
+				$templates = $templates->toDropDownMap('ID', 'Title', '(Select Template)');
+			} else {
+				$templates = array();
+			}
+
+			$label = _t('SolrSearchPage.CONTENT_TEMPLATE', 'Listing Template - if not set, theme template will be used');
+			$fields->addFieldToTab('Root.Content.Main', new DropdownField('ListingTemplateID', $label, $templates), 'Content');
+		}
 
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
 		$fields->addFieldToTab('Root.Content.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
@@ -215,6 +230,10 @@ class SolrSearchPage extends Page {
 	public function getQuery() {
 		if ($this->query) {
 			return $this->query;
+		}
+
+		if (!$this->getSolr()->isConnected()) {
+			return null;
 		}
 
 		$query = null;
@@ -441,5 +460,22 @@ class SolrSearchPage_Controller extends Page_Controller {
 	  	);
 
 	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
+	}
+	
+	/**
+	 * Return the results with a template applied to them based on the page's listing template
+	 *  
+	 */
+	public function TemplatedResults() {
+		$query = $this->data()->getQuery();
+		if ($this->data()->ListingTemplateID && $query) {
+			$template = DataObject::get_by_id('ListingTemplate', $this->data()->ListingTemplateID);
+			if ($template && $template->exists()) {
+				$items = $query ? $query->getDataObjects() : new DataObjectSet();
+				$item = $this->data()->customise(array('Items' => $items));
+				$view = SSViewer::fromString($template->ItemTemplate);
+				return $view->process($item);
+			}
+		}
 	}
 }

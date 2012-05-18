@@ -11,6 +11,9 @@
 	$Form
 	
 	<% if Results %>
+		<% if ListingTemplateID %>
+		$TemplatedResults
+		<% else %>
 	    <ul id="SearchResults">
 	      <% control Results %>
 	        <li>
@@ -26,6 +29,7 @@
 	        </li>
 	      <% end_control %>
 	    </ul>
+		<% end_if %>
 	  <% else %>
 	    <p>Sorry, your search query did not return any results.</p>
 	  <% end_if %>
