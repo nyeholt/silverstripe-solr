@@ -13,53 +13,60 @@ class SolrAdminController extends ModelAdmin {
 	public static $managed_models = array(
 		'SolrTypeConfiguration'
 	);
-	
+
 	public static $allowed_actions = array(
 		'ReindexForm',
 		'EditForm',
 	);
 	
-	public static $collection_controller_class = 'SolrAdmin_CollectionController';
-	
+	public static $dependencies = array(
+		'searchService' => '%$SolrSearchService',
+	);
+
 	public function init() {
 		parent::init();
 		
 		Requirements::javascript('solr/javascript/solr.js');
 	}
 	
-	public function EditForm() {
+	public function EditForm($request = null) {
+		$form = parent::EditForm($request);
+		
+		
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-			return false;
+			return $form;
 		}
 		
 		if (!Permission::check('ADMIN')) {
-			return false;
+			return $form;
 		}
 
-		$fields = new FieldSet($ts = new TabSet('Root'));
+		$fields = $form->Fields();
 
-		$config = singleton('SolrSearchService')->localEngineConfig();
+		$config = $this->searchService->localEngineConfig();
 		$allow = $config->RunLocal;
 		
-		$fields->addFieldToTab('Root.Content', new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
+		$fields->push(new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
 		
 		if ($allow) {
-			$status = singleton('SolrSearchService')->localEngineStatus();
+			$status = $this->searchService->localEngineStatus();
 
 			if (!$status) {
-				$fields->addFieldToTab('Root.Content', new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
+				$fields->push(new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
 			} else {
-				$fields->addFieldToTab('Root.Content', new CheckboxField('Kill', _t('SolrAdmin.Kill', 'Kill Solr process (' . $status . ')')));
+				$fields->push(new CheckboxField('Kill', _t('SolrAdmin.Kill', 'Kill Solr process (' . $status . ')')));
 			}
 
-			$log = singleton('SolrSearchService')->getLogData(100);
+			$log = $this->searchService->getLogData(100);
 			$log = array_reverse($log);
 			
-			$fields->addFieldToTab('Root.Content', $logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log'), 15, 20, implode($log)));
+			$fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log'), 15, 20, implode($log)));
 		}
 
-		$actions = new FieldSet(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
-		$form = new Form($this, 'EditForm', $fields, $actions);
+		
+		$form->Actions()->push(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
+//		$actions = new FieldSet();
+//		$form = new Form($this, 'EditForm', $fields, $actions);
 		return $form;
 	}
 
@@ -68,42 +75,42 @@ class SolrAdminController extends ModelAdmin {
 			return false;
 		}
 
-		$config = singleton('SolrSearchService')->localEngineConfig();
+		$config = $this->searchService->localEngineConfig();
 		$config->RunLocal = $data['RunLocal'];
-		singleton('SolrSearchService')->saveEngineConfig($config);
+		$this->searchService->saveEngineConfig($config);
 		
 		if (isset($data['Start']) && $data['Start']) {
-			singleton('SolrSearchService')->startSolr();
+			$this->searchService->startSolr();
 			sleep(2);
 		} else if (isset($data['Kill']) && $data['Kill']) {
-			singleton('SolrSearchService')->stopSolr();
+			$this->searchService->stopSolr();
 			sleep(2);
 		}
-		return $this->EditForm()->forAjaxTemplate();
+		$this->redirectBack();
 	}
 }
-
-class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
-	
-	/**
-	 * Get a combination of the Search, Import and Create and Reindex
-	 *
-	 * @return string
-	 */
-	public function getModelSidebar() {
-		return $this->renderWith('SolrAdminSidebar');
-	}
-	
-	public function ReindexForm() {
-		$fields = new FieldSet();
-		$actions = new FieldSet(new FormAction('reindex', _t('Solr.REINDEX_SYSTEM', 'Reindex Content')));
-		return new Form($this, 'ReindexForm', $fields, $actions);
-	}
-	
-	public function reindex($data, Form $form) {
-		$task = singleton('SolrReindexTask');
-		if ($task) {
-			$task->run($this->request);
-		}
-	}
-}
+//
+//class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
+//	
+//	/**
+//	 * Get a combination of the Search, Import and Create and Reindex
+//	 *
+//	 * @return string
+//	 */
+//	public function getModelSidebar() {
+//		return $this->renderWith('SolrAdminSidebar');
+//	}
+//	
+//	public function ReindexForm() {
+//		$fields = new FieldSet();
+//		$actions = new FieldSet(new FormAction('reindex', _t('Solr.REINDEX_SYSTEM', 'Reindex Content')));
+//		return new Form($this, 'ReindexForm', $fields, $actions);
+//	}
+//	
+//	public function reindex($data, Form $form) {
+//		$task = singleton('SolrReindexTask');
+//		if ($task) {
+//			$task->run($this->request);
+//		}
+//	}
+//}
