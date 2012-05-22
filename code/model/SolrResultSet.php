@@ -123,7 +123,7 @@ class SolrResultSet
 	 */
 	public function getDataObjects($evaluatePermissions=false) {
 		if (!$this->dataObjects) {
-			$this->dataObjects = new DataObjectSet();
+			$this->dataObjects = ArrayList::create();
 
 			$result = $this->getResult();
 			$documents = $result->response;
@@ -193,8 +193,10 @@ class SolrResultSet
 					}
 				}
 				$this->totalResults = $documents->numFound;
+				
 				// update the dos with stats about this query
-				$this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
+				
+				// $this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
 			}
 
 		}
