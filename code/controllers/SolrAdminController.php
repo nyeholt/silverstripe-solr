@@ -65,7 +65,9 @@ class SolrAdminController extends ModelAdmin {
 			$log = $this->searchService->getLogData(100);
 			$log = array_reverse($log);
 			
-			$fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log'), 15, 20, implode($log)));
+			$fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log')));
+			
+			$logtxt->setColumns(20)->setRows(15)->setValue(implode($log));
 		}
 
 		

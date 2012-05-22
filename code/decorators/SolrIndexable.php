@@ -7,7 +7,7 @@
  * @license http://silverstripe.org/bsd-license/
  *
  */
-class SolrIndexable extends DataObjectDecorator {
+class SolrIndexable extends DataExtension {
 	/**
 	 * We might not want to index, eg during a data load
 	 * 
@@ -26,8 +26,8 @@ class SolrIndexable extends DataObjectDecorator {
 	 * @var array
 	 */
 	public static $dependencies = array(
-		'searchService'		=> 'SolrSearchService',
-		'jobQueue'			=> 'QueuedJobService',
+		'searchService'		=> '%$SolrSearchService',
+		'jobQueue'			=> '%$QueuedJobService',
 	);
 	
 	public static $db = array(
@@ -66,7 +66,7 @@ class SolrIndexable extends DataObjectDecorator {
 			$stage = null;
 			// if it's being written and a versionable, then save only in the draft
 			// repository. 
-			if (Object::has_extension($this->owner, 'Versioned')) {
+			if ($this->owner->hasExtension('Versioned')) {
 				$stage = 'Stage';
 			}
 

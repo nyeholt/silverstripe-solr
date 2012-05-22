@@ -559,6 +559,10 @@ class SolrSearchService {
 		if (!Permission::check('ADMIN')) {
 			return false;
 		}
+		$status = $this->localEngineStatus();
+		if (strlen($status)) {
+			return;
+		}
 		$config = $this->localEngineConfig();
 
 		$solrJar = Director::baseFolder() . '/solr/solr/start.jar';
