@@ -413,12 +413,12 @@ class SolrSearchService {
 			}
 		}
 		
-		$params = new stdClass();
-		$params->offset = $offset;
-		$params->limit = $limit;
-		$params->params = $params;
+		$queryParams = new stdClass();
+		$queryParams->offset = $offset;
+		$queryParams->limit = $limit;
+		$queryParams->params = $params;
 
-		$results = new SolrResultSet($query, $response, $params, $this);
+		$results = new SolrResultSet($query, $response, $queryParams, $this);
 		
 		if ($this->cache && !$rawResponse && $key && $response) {
 			$this->cache->save($response->getRawResponse(), $key, array(), $this->cacheTime);

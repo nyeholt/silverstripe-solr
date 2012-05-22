@@ -216,17 +216,20 @@ class SolrResultSet
 	 *				}
 	 *			)
 	 */
-	public function getFacets($type='fields') {
+	public function getFacets() {
 		$result = $this->getResult();
 		if (!isset($result->facet_counts)) {
 			return;
 		}
 
-		$n = 'facet_'.$type;
-
-		$elems = $result->facet_counts->$n;
+		if (isset($result->facet_counts->exception)) {
+			// $this->logger->error($result->facet_counts->exception)
+			return array();
+		}
 		
-		$result = array();
+		$elems = $result->facet_counts->facet_fields;
+		
+		$facets = array();
 		foreach ($elems as $field => $values) {
 			$elemVals = array();
 			foreach ($values as $vname => $vcount) {
@@ -235,11 +238,35 @@ class SolrResultSet
 				}
 				$r = new stdClass;
 				$r->Name = $vname;
+				$r->Query = $vname;
 				$r->Count = $vcount;
 				$elemVals[] = $r;
 			}
-			$result[$field] = $elemVals;
+			$facets[$field] = $elemVals;
 		}
-		return $result;
+		
+		// see if there's any query facets for things too
+		$query_elems = $result->facet_counts->facet_queries;
+		if ($query_elems) {
+			foreach ($query_elems as $vname => $count) {
+				if ($vname == '_empty_') {
+					continue;
+				}
+				
+				list($field, $query) = explode(':', $vname);
+
+				$r = new stdClass;
+				$r->Type = 'query';
+				$r->Name = $vname;
+				$r->Query = $query;
+				$r->Count = $count;
+				
+				$existing = isset($facets[$field]) ? $facets[$field] : array();
+				$existing[] = $r;
+				$facets[$field] = $existing;
+			}
+		}
+		
+		return $facets;
 	}
 }

@@ -21,6 +21,8 @@ class SolrSearchPage extends Page {
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
 		'FacetFields'						=> 'MultiValueField',
+		'FacetQueries'						=> 'MultiValueField',
+		'MinFacetCount'						=> 'Int',
 
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
@@ -145,6 +147,17 @@ class SolrSearchPage extends Page {
 			new MultiValueDropdownField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
 			'Content'
 		);
+		
+		$fields->addFieldToTab(
+			'Root.Main', 
+			new KeyValueField('FacetQueries', _t('SolrSearchPage.FACET_QUERIES', 'Fields to create query facets for')),
+			'Content'
+		);
+		
+		$fields->addFieldToTab('Root.Main', 
+			new NumericField('MinFacetCount', _t('SolrSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2), 
+			'Content'
+		);
 
 		return $fields;
 	}
@@ -219,6 +232,18 @@ class SolrSearchPage extends Page {
 			}
 		}
 
+		return $fields;
+	}
+
+	/**
+	 * Get the list of field -> query items to be used for faceting by query 
+	 */
+	public function queryFacets() {
+		$fields = array();
+		if ($this->FacetQueries && $fq = $this->FacetQueries->getValues()) {
+			$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
+			$fields = array_flip($fq);
+		}
 		return $fields;
 	}
 
@@ -313,10 +338,15 @@ class SolrSearchPage extends Page {
 			'facet' => 'true',
 			'facet.field' => $this->fieldsForFacets(),
 			'facet.limit' => 10,
-			'facet.mincount' => 1,
+			'facet.mincount' => $this->MinFacetCount ? $this->MinFacetCount : 1,
 			'sort' => "$sortBy $sortDir",
 			'fl' => '*,score'
 		);
+
+		$fq = $this->queryFacets();
+		if (count($fq)) {
+			$params['facet.query'] = array_keys($fq);
+		}
 
 		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 		return $this->query;
@@ -365,7 +395,9 @@ class SolrSearchPage extends Page {
 		if (!$this->getQuery()) {
 			return new ArrayList(array());
 		}
+
 		$facets = $this->getQuery()->getFacets();
+		$queryFacets = $this->queryFacets();
 
 		if ($term) {
 			// return just that term
@@ -374,11 +406,14 @@ class SolrSearchPage extends Page {
 			$result = array();
 			if ($ret) {
 				foreach ($ret as $facetTerm) {
+					// if it's a query facet, then we may have a label for it 
+					if (isset($queryFacets[$facetTerm->Name])) {
+						$facetTerm->Name = $queryFacets[$facetTerm->Name];
+					}
 					$sq = $this->SearchQuery();
 					$sep = strlen($sq) ? '&amp;' : '';
-					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Name";
-					$facetTerm->QuotedSearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=&quot;$facetTerm->Name&quot;";
-					
+					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Query";
+					$facetTerm->QuotedSearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
 					$result[] = new ArrayData($facetTerm);
 				}
 			}
