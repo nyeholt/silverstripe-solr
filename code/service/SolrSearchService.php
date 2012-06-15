@@ -482,6 +482,20 @@ class SolrSearchService {
 
 		return singleton($className)->searchableFields();
 	}
+	
+	/**
+	 * Get all the searchable fields for a given set of classes
+	 * @param type $classNames 
+	 */
+	public function getAllSearchableFieldsFor($classNames) {
+		$allfields = array();
+		foreach ($classNames as $className) {
+			$fields = $this->getSearchableFieldsFor($className);
+			$allfields = array_merge($allfields, $fields);
+		}
+		
+		return $allfields;
+	}
 
 	protected $searchableCache = array();
 
@@ -501,27 +515,34 @@ class SolrSearchService {
 	}
 
 	/**
-	 * Return the field name for a given property within
-	 * on a given data object type
+	 * Return the field name for a given property within a given set of data object types
+	 * 
+	 * First matching data object with that field is used
 	 *
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
-	 * @param String $className
-	 * 				The data object class name. Defaults to 'page'. 
+	 * @param String $classNames
+	 * 				A list of data object class name. Defaults to 'page'. 
 	 *
 	 * @return String
 	 *
 	 */
-	public function getSolrFieldName($field, $className='Page') {
-		$dummy = singleton($className);
-		$fields = $this->objectToFields($dummy);
-		if ($field == 'ID') {
-			$field = 'SS_ID';
+	public function getSolrFieldName($field, $classNames = array('Page')) {
+		if (!is_array($classNames)) {
+			$classNames = array($classNames);
 		}
-		$configForType = $this->getSearchableFieldsFor($className);
-		if (isset($fields[$field])) {
-			$hint = isset($configForType[$field]) ? $configForType[$field] : false;
-			return $this->mapper->mapType($field, $fields[$field]['Type'], $hint);
+
+		foreach ($classNames as $className) {
+			$dummy = singleton($className);
+			$fields = $this->objectToFields($dummy);
+			if ($field == 'ID') {
+				$field = 'SS_ID';
+			}
+			if (isset($fields[$field])) {
+				$configForType = $this->getSearchableFieldsFor($className);
+				$hint = isset($configForType[$field]) ? $configForType[$field] : false;
+				return $this->mapper->mapType($field, $fields[$field]['Type'], $hint);
+			}
 		}
 	}
 
@@ -532,11 +553,17 @@ class SolrSearchService {
 	 *
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
-	 * @param String $className
-	 * 				The data object class name. Defaults to 'page'.
+	 * @param String $classNames
+	 * 				A list of potential class types that the field may exist in (ie if searching in multiple types)
 	 */
-	public function getSortFieldName($field, $className='Page') {
-		return $field == 'Title' ? 'title_exact' : $this->getSolrFieldName($field, $className);
+	public function getSortFieldName($field, $classNames = array('Page')) {
+		if ($field == 'Title') {
+			return 'title_exact';
+		}
+		if (!is_array($classNames)) {
+			$classNames = array($classNames);
+		}
+		return $this->getSolrFieldName($field, $classNames);
 	}
 
 	/**

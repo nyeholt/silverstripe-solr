@@ -13,11 +13,11 @@
 class SolrSearchPage extends Page {
     public static $db = array(
 		'ResultsPerPage'					=> 'Int',
-		'SearchType'						=> 'Varchar(64)',
 		'SortBy'							=> "Varchar(64)",
 		'SortDir'							=> "Enum('Ascending,Descending')",
 		'QueryType'							=> 'Varchar',
 		'StartWithListing'					=> 'Boolean',			// whether to start display with a *:* search
+		'SearchType'						=> 'MultiValueField',	// types that a user can search within
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
 		'FacetFields'						=> 'MultiValueField',
@@ -103,7 +103,6 @@ class SolrSearchPage extends Page {
 		$types = SiteTree::page_type_classes();
 		$source = array_combine($types, $types);
 		asort($source);
-		$source = array_merge(array('' => 'Any'), $source);
 		
 		// add in any explicitly configured 
 		$objects = DataObject::get('SolrTypeConfiguration');
@@ -117,8 +116,8 @@ class SolrSearchPage extends Page {
 		
 		$source = array_merge($source, self::$additional_search_types);
 		
-		$optionsetField = new DropdownField('SearchType', _t('SolrSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source, 'Any');
-		$fields->addFieldToTab('Root.Main', $optionsetField, 'Content');
+		$types = new MultiValueDropdownField('SearchType', _t('SolrSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
+		$fields->addFieldToTab('Root.Main', $types, 'Content');
 
 		$fields->addFieldToTab('Root.Main', new MultiValueDropdownField('SearchOnFields', _t('SolrSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
 
@@ -170,10 +169,10 @@ class SolrSearchPage extends Page {
 	 */
 	public function getSelectableFields($listType=null) {
 		if (!$listType) {
-			$listType = strlen($this->SearchType) ? $this->SearchType : 'Page';
+			$listType = $this->searchableTypes('Page');
 		}
 		
-		$availableFields = singleton('SolrSearchService')->getSearchableFieldsFor($listType);
+		$availableFields = singleton('SolrSearchService')->getAllSearchableFieldsFor($listType);
 		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
@@ -226,9 +225,10 @@ class SolrSearchPage extends Page {
 		$fields = self::$facets;
 		if ($this->FacetFields && $ff = $this->FacetFields->getValues()) {
 			$fields = array();
-			$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
+			$types = $this->searchableTypes('Page');
 			foreach ($ff as $f) {
-				$fields[] = $this->getSolr()->getSolrFieldName($f, $type);
+				$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
+				$fields[] = $fieldName;
 			}
 		}
 
@@ -241,7 +241,6 @@ class SolrSearchPage extends Page {
 	public function queryFacets() {
 		$fields = array();
 		if ($this->FacetQueries && $fq = $this->FacetQueries->getValues()) {
-			$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');  
 			$fields = array_flip($fq);
 		}
 		return $fields;
@@ -273,15 +272,25 @@ class SolrSearchPage extends Page {
 
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->SortDir;
-		$type = (strlen($this->SearchType) ? $this->SearchType : null);  
+		$types = $this->searchableTypes();
+		// allow user to specify specific type
+		if (isset($_GET['SearchType'])) {
+			$fixedType = $_GET['SearchType'];
+			if (in_array($fixedType, $types)) {
+				$types = array($fixedType);
+			}
+		}
+		
+		// (strlen($this->SearchType) ? $this->SearchType : null);
 
-		$fields = $this->getSelectableFields($this->SearchType);
+		$fields = $this->getSelectableFields();
 		
 		// if we've explicitly set a sort by, then we want to make sure we have a type
-		// so we can resolve what the field name in solr is
-		if (!$type && $sortBy) {
+		// so we can resolve what the field name in solr is. Otherwise we don't care about type
+		// overly much 
+		if (!count($types) && $sortBy) {
 			// default to page
-			$type = 'Page';
+			$types = array('Page');
 		}
 
 		if (!isset($fields[$sortBy])) {
@@ -302,9 +311,9 @@ class SolrSearchPage extends Page {
 		$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 		$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
 
-		if ($type) {
-			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $type);
-			$builder->andWith('ClassNameHierarchy_ms', $type);
+		if (count($types)) {
+			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $types);
+			$builder->andWith('ClassNameHierarchy_ms', $types);
 		}
 
 		if (!$sortBy) {
@@ -312,14 +321,18 @@ class SolrSearchPage extends Page {
 		}
 
 		$selectedFields = $this->SearchOnFields->getValues();
+
+		// the following serves two purposes; filter out the searched on fields to only those that
+		// are in the actually  searched on types, and to map them to relevant solr types
 		if (count($selectedFields)) {
 			$mappedFields = array();
 			foreach ($selectedFields as $field) {
-				$mappedField = $this->getSolr()->getSolrFieldName($field, $type);
-				if (!$mappedField) {
-					throw new Exception("Field $field does not have a proper mapping");
+				$mappedField = $this->getSolr()->getSolrFieldName($field, $types);
+				// some fields that we're searching on don't exist in the types that the user has selected
+				// to search within
+				if ($mappedField) {
+					$mappedFields[] = $mappedField;
 				}
-				$mappedFields[] = $mappedField;
 			}
 			$builder->queryFields($mappedFields);
 		}
@@ -328,7 +341,7 @@ class SolrSearchPage extends Page {
 			$boostSetting = array();
 			foreach ($boost as $field => $amount) {
 				if ($amount > 0) {
-					$boostSetting[$this->getSolr()->getSolrFieldName($field, $type)] = $amount;
+					$boostSetting[$this->getSolr()->getSolrFieldName($field, $types)] = $amount;
 				}
 			}
 			$builder->boost($boostSetting);
@@ -357,6 +370,17 @@ class SolrSearchPage extends Page {
 	 */
 	public function getActiveFacets() {
 		return isset($_GET[self::$filter_param]) ? $_GET[self::$filter_param] : array();
+	}
+	
+	/**
+	 * get the list of types that we've selected to search on
+	 */
+	protected function searchableTypes($default = null) {
+		$listType = $this->SearchType ? $this->SearchType->getValues() : null;
+		if (!$listType) {
+			$listType = $default ? array($default) : null;
+		}
+		return $listType;
 	}
 
 	/**
@@ -494,7 +518,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 	  	$data = array(
 	     	'Results' => $query ? $query->getDataObjects() : ArrayList::create(),
 	     	'Query' => $term,
-	      	'Title' => 'Search Results'
+	      	'Title' => $this->data()->Title
 	  	);
 
 	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
