@@ -177,7 +177,7 @@ class SolrSearchService {
 			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
 				'Title' => array(),
 				'Content' => array(),
-					);
+			);
 		}
 
 		$fieldsToIndex['SS_URL'] = true;

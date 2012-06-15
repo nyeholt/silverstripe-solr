@@ -127,6 +127,7 @@ class SolrResultSet
 
 			$result = $this->getResult();
 			$documents = $result->response;
+
 			if ($documents && isset($documents->docs)) {
 				$totalAdded = 0;
 				foreach ($documents->docs as $doc) {

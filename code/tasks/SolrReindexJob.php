@@ -50,9 +50,14 @@ if (class_exists('AbstractQueuedJob')) {
 
 			// index away
 			$service = singleton('SolrSearchService');
-			$service->index($page, 'Stage');
-			if ($page->Status == 'Published' || !$page->Status) {
-				$service->index($page, 'Live');
+			// only explicitly index live/stage versions if the object has the appropriate extension
+			if ($page->hasExtension('Versioned')) {
+				$service->index($page, 'Stage');
+				if ($page->Status == 'Published' || !$page->Status) {
+					$service->index($page, 'Live');
+				}
+			} else {
+				$service->index($page);
 			}
 
 			$this->currentStep++;
