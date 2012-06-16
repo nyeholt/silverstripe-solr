@@ -514,11 +514,22 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$query = $this->data()->getQuery();
 
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
+		
+		$results = $query ? $query->getDataObjects() : ArrayList::create();
+		
+		if ($query) {
+			$resultData = array(
+				'TotalResults'		=> $query->getTotalResults()
+			);
+		} else {
+			$resultData = array();
+		}
 
 	  	$data = array(
-	     	'Results' => $query ? $query->getDataObjects() : ArrayList::create(),
-	     	'Query' => $term,
-	      	'Title' => $this->data()->Title
+	     	'Results'		=> $results,
+	     	'Query'			=> Varchar::create_field('Varchar', $term),
+	      	'Title'			=> $this->data()->Title,
+			'ResultData'	=> ArrayData::create($resultData)
 	  	);
 
 	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
