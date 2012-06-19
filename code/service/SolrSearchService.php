@@ -725,18 +725,24 @@ class SolrSchemaMapper {
 					return $field . '_ms';
 				}
 			case 'Varchar': {
-					return $field . '_mt';
-				}
+				return $field . '_mt';
+			}
 			case 'Attr': {
-					return 'attr_' . $field;
-				}
+				return 'attr_' . $field;
+			}
+			case 'Double':
+			case 'Decimal':
+			case 'Float':
+			case 'Money': {
+				return $field . '_f';
+			}
 			case 'Int':
 			case 'Integer': {
-					return $field . '_i';
-				}
+				return $field . '_i';
+			}
 			default: {
-					return $field . '_mt';
-				}
+				return $field . '_mt';
+			}
 		}
 	}
 

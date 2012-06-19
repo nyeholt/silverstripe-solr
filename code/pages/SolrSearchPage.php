@@ -409,6 +409,24 @@ class SolrSearchPage extends Page {
 			}
 		}
 	}
+	
+	/**
+	 * Retrieve all facets in the result set in a way that can be iterated 
+	 * over conveniently. 
+	 * 
+	 * @return \ArrayList 
+	 */
+	public function AllFacets() {
+		$facets = $this->currentFacets();
+		$result = array();
+		foreach ($facets as $title => $items) {
+			$object = new ViewableData();
+			$object->Title = Varchar::create_field('Varchar', $title);
+			$object->Items = $this->currentFacets($title);
+			$result[] = $object;
+		}
+		return new ArrayList($result);
+	}
 
 	/**
 	 * Get the list of facet values for the given term
