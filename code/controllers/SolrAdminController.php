@@ -34,8 +34,8 @@ class SolrAdminController extends ModelAdmin {
 	 * @param SS_Request $request
 	 * @return Form 
 	 */
-	public function EditForm($request = null) {
-		$form = parent::EditForm($request);
+	public function getEditForm($request = null) {
+		$form = parent::getEditForm($request);
 		
 		
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -93,12 +93,12 @@ class SolrAdminController extends ModelAdmin {
 			$this->searchService->stopSolr();
 			sleep(2);
 		}
-		
 		if (Director::is_ajax()) {
-			return $this->EditForm()->forAjaxTemplate();
+			return $this->getResponseNegotiator()->respond($this->request);
 		} else {
 			$this->redirectBack();
 		}
+		
 	}
 }
 //

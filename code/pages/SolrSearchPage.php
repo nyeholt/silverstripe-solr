@@ -80,13 +80,13 @@ class SolrSearchPage extends Page {
 		if (class_exists('ListingTemplate')) {
 			$templates = DataObject::get('ListingTemplate');
 			if ($templates) {
-				$templates = $templates->toDropDownMap('ID', 'Title', '(Select Template)');
+				$templates = $templates->map();
 			} else {
 				$templates = array();
 			}
 
 			$label = _t('SolrSearchPage.CONTENT_TEMPLATE', 'Listing Template - if not set, theme template will be used');
-			$fields->addFieldToTab('Root.Main', new DropdownField('ListingTemplateID', $label, $templates), 'Content');
+			$fields->addFieldToTab('Root.Main', new DropdownField('ListingTemplateID', $label, $templates, '', null, '(results template)'), 'Content');
 		}
 
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
