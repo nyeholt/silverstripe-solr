@@ -22,14 +22,17 @@ class SolrReindexTask extends BuildTask
 	function run($request)
 	{
 		$type = Convert::raw2sql($request->getVar('type'));
-		if (!$type && !count($this->types)) {
-			$type = 'SiteTree';
+
+		if($type) {
+			$this->types[] = $type;
+		} elseif(!$this->types) {
+			foreach(ClassInfo::subclassesFor('DataObject') as $class) {
+				if(Object::has_extension($class, 'SolrIndexable')) {
+					$this->types[] = $class;
+				}
+			}
 		}
 
-		if ($type) {
-			$this->types[] = $type;
-		}
-		
 		$search = singleton('SolrSearchService');
 		
 		if (isset($_GET['delete_all'])) {
