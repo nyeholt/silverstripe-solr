@@ -20,7 +20,7 @@ if (class_exists('AbstractQueuedJob')) {
 		}
 
 		public function getTitle() {
-			return "Reindex content in Solr";
+			return "Reindex $this->reindexType content in Solr";
 		}
 
 		public function setup() {
