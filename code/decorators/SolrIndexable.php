@@ -27,7 +27,6 @@ class SolrIndexable extends DataExtension {
 	 */
 	public static $dependencies = array(
 		'searchService'		=> '%$SolrSearchService',
-		'jobQueue'			=> '%$QueuedJobService',
 	);
 	
 	public static $db = array(
@@ -36,7 +35,7 @@ class SolrIndexable extends DataExtension {
 	
 	protected function createIndexJob($item, $stage = null, $mode = 'index') {
 		$job = new SolrIndexItemJob($item, $stage, $mode);
-		$this->jobQueue->queueJob($job);
+		Injector::inst()->get('QueuedJobService')->queueJob($job);
 	}
 
 	/**
