@@ -101,8 +101,10 @@ class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
 	}
 	
 	public function reindex($data, Form $form) {
-		$task = singleton('SolrReindexTask');
-		if ($task) {
+		$items = DataObject::get('SolrTypeConfiguration');
+		if ($items && $items->count()) {
+			$types = $items->column('Title');
+			$task = new SolrReindexTask($types);
 			$task->run($this->request);
 		}
 	}
