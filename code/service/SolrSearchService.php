@@ -480,7 +480,13 @@ class SolrSearchService {
 			}
 		}
 
-		return singleton($className)->searchableFields();
+		$sng = singleton($className);
+
+		if($sng->hasMethod('getSolrSearchableFields')) {
+			return $sng->getSolrSearchableFields();
+		} else {
+			return $sng->searchableFields();
+		}
 	}
 	
 	/**
