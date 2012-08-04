@@ -379,8 +379,9 @@ class SolrSearchService {
 			$stage = 'Live';
 		}
 
-		$query->andWith('SS_Stage_ms', $stage);
-		// $query = "($query) AND (SS_Stage_ms:$stage)";
+		if(!isset($params['ignore_stage']) || !$params['ignore_stage']) {
+			$query->andWith('SS_Stage_ms', $stage);
+		}
 
 		$extraParams = $query->getParams();
 		$params = array_merge($params, $extraParams);
