@@ -34,8 +34,8 @@ class SolrAdminController extends ModelAdmin {
 	 * @param SS_Request $request
 	 * @return Form 
 	 */
-	public function getEditForm($request = null) {
-		$form = parent::getEditForm($request);
+	public function getEditForm($id = null, $fields = null) {
+		$form = parent::getEditForm($id, $fields);
 		
 		
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
