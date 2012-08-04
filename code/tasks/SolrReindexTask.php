@@ -19,8 +19,9 @@ class SolrReindexTask extends BuildTask
 		$this->types = $types;
 	}
 
-	function run($request)
-	{
+	public function run($request) {
+		increase_time_limit_to();
+
 		$type = Convert::raw2sql($request->getVar('type'));
 
 		if($type) {
