@@ -568,6 +568,11 @@ class SolrSearchService {
 		$curdir = getcwd();
 		chdir(dirname($solrJar));
 
+		$logDir = dirname($solrJar).'/logs';
+		if (!is_dir($logDir)) {
+			mkdir($logDir, 2775);
+		}
+
 		$port = self::$solr_details['port'];
 
 		$dataDir = '';
