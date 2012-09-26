@@ -39,7 +39,7 @@ class SolrAdminController extends ModelAdmin {
 		
 		
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-			return $form;
+//			return $form;
 		}
 		
 		if (!Permission::check('ADMIN')) {

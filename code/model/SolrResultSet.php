@@ -197,6 +197,14 @@ class SolrResultSet
 				
 				// update the dos with stats about this query
 				
+				$this->dataObjects = PaginatedList::create($this->dataObjects);
+				
+				$this->dataObjects->setPageLength($this->queryParameters->limit)
+						->setPageStart($documents->start)
+						->setTotalItems($documents->numFound)
+						->setLimitItems(false);
+				
+//				$paginatedSet->setPaginationFromQuery($set->dataQuery()->query());
 				// $this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
 			}
 
