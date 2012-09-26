@@ -25,8 +25,6 @@ if (class_exists('AbstractQueuedJob')) {
 
 		public function setup() {
 			$this->lastIndexedID = 0;
-			$service = singleton('SolrSearchService');
-			$service->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $this->reindexType);
 		}
 
 		/**
