@@ -21,11 +21,16 @@ class SolrSearchPage extends Page {
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
 		'FacetFields'						=> 'MultiValueField',
+		'FacetMapping'						=> 'MultiValueField',
 		'FacetQueries'						=> 'MultiValueField',
 		'MinFacetCount'						=> 'Int',
 
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
+	);
+	
+	public static $many_many = array(
+		'SearchTrees'			=> 'Page',
 	);
 
 	/**
@@ -92,6 +97,8 @@ class SolrSearchPage extends Page {
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
 		$fields->addFieldToTab('Root.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
 
+		$fields->addFieldToTab('Root.Main', new TreeMultiselectField('SearchTrees', 'Restrict results to these subtrees', 'Page'), 'Content');
+		
 		if (!$this->SortBy) {
 			$this->SortBy = 'Created';
 		}
@@ -144,6 +151,12 @@ class SolrSearchPage extends Page {
 		$fields->addFieldToTab(
 			'Root.Main', 
 			new MultiValueDropdownField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
+			'Content'
+		);
+		
+		$fields->addFieldToTab(
+			'Root.Main', 
+			new KeyValueField('FacetMapping', _t('SolrSearchPage.FACET_MAPPING', 'Mapping of facet title to nice title'), $objFields),
 			'Content'
 		);
 		
@@ -315,6 +328,11 @@ class SolrSearchPage extends Page {
 			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $types);
 			$builder->andWith('ClassNameHierarchy_ms', $types);
 		}
+		
+		if ($this->SearchTrees()->count()) {
+			$parents = $this->SearchTrees()->column('ID');
+			$builder->andWith('ParentsHierarchy_ms', $parents);
+		}
 
 		if (!$sortBy) {
 			$sortBy = 'score';
@@ -419,13 +437,33 @@ class SolrSearchPage extends Page {
 	public function AllFacets() {
 		$facets = $this->currentFacets();
 		$result = array();
+		$mapping = $this->facetFieldMapping();
 		foreach ($facets as $title => $items) {
 			$object = new ViewableData();
-			$object->Title = Varchar::create_field('Varchar', $title);
 			$object->Items = $this->currentFacets($title);
+			$title = isset($mapping[$title]) ? $mapping[$title] : $title;
+			$object->Title = Varchar::create_field('Varchar', $title);
 			$result[] = $object;
 		}
 		return new ArrayList($result);
+	}
+	
+	/**
+	 * Retrieve the mapping of facet field name (eg FieldName_mt) 
+	 * mapped to the user entered nice name
+	 * 
+	 * @return type 
+	 */
+	protected function facetFieldMapping() {
+		$fields = array();
+		if ($this->FacetMapping && $ff = $this->FacetMapping->getValues()) {
+			$types = $this->searchableTypes('Page');
+			foreach ($ff as $f => $mapped) {
+				$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
+				$fields[$fieldName] = $mapped;
+			}
+		}
+		return $fields;
 	}
 
 	/**

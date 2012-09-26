@@ -186,6 +186,7 @@ class SolrSearchService {
 		$fieldsToIndex['Created'] = true;
 		$fieldsToIndex['ClassName'] = true;
 		$fieldsToIndex['ClassNameHierarchy'] = true;
+		$fieldsToIndex['ParentsHierarchy'] = true;
 
 		// the stage we're on when we write this doc to the index.
 		// this is used for versioned AND non-versioned objects; we just cheat and
@@ -215,11 +216,15 @@ class SolrSearchService {
 		unset($object['ID']);
 
 		// a special type hierarchy 
-		$classes = array_values(ClassInfo::ancestry($classType));
-		$object['ClassNameHierarchy'] = array(
-			'Type' => 'MultiValueField',
-			'Value' => $classes,
-		);
+		if ($classType != 'INVALID_CLASS_TYPE') {
+			$classes = array_values(ClassInfo::ancestry($classType));
+			$object['ClassNameHierarchy'] = array(
+				'Type' => 'MultiValueField',
+				'Value' => $classes,
+			);
+			
+			$object['ParentsHierarchy'] = $this->getParentsHierarchyField($dataObject);
+		}
 
 		foreach ($object as $field => $valueDesc) {
 			if (!is_array($valueDesc)) {
@@ -264,6 +269,28 @@ class SolrSearchService {
 			} catch (Exception $ie) {
 				SS_Log::log($ie, SS_Log::ERR);
 			}
+		}
+	}
+	
+	/**
+	 * Get a solr field representing the parents hierarchy (if applicable)
+	 * 
+	 * @param type $dataObject 
+	 */
+	protected function getParentsHierarchyField($dataObject) {
+		
+		// see if we've got Parent values
+		if ($dataObject->hasField('ParentID')) {
+			$parentsField = array('Type' => '', 'Value' => null);
+			$parents = array();
+			
+			$parent = $dataObject;
+			while ($parent && $parent->ParentID) {
+				$parents[] = $parent->ParentID;
+				$parent = $parent->Parent();
+			}
+			$parentsField['Value'] = $parents;
+			return $parentsField;
 		}
 	}
 
@@ -693,6 +720,7 @@ class SolrSchemaMapper {
 		'LastEdited' => 'last_modified',
 		'Content' => 'text',
 		'ClassNameHierarchy' => 'ClassNameHierarchy_ms',
+		'ParentsHierarchy'	=> 'ParentsHierarchy_ms',
 		'SS_Stage' => 'SS_Stage_ms',
 	);
 
