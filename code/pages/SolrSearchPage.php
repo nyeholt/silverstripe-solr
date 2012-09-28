@@ -588,7 +588,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 			'ResultData'	=> ArrayData::create($resultData)
 	  	);
 
-	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
+	  	return $data;
 	}
 	
 	/**
