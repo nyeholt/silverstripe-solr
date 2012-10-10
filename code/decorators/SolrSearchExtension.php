@@ -54,10 +54,10 @@ class SolrSearchExtension extends Extension {
 	 */
 	function SearchForm() {
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		$fields = new FieldSet(
+		$fields = new FieldList(
 	      	new TextField("Search", "", $searchText)
 	  	);
-		$actions = new FieldSet(
+		$actions = new FieldList(
 	      	new FormAction('results', 'Search')
 	  	);
 
