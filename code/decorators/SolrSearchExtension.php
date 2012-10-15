@@ -69,6 +69,6 @@ class SolrSearchExtension extends Extension {
 	 */
 	public function results() {
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		Director::redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
+		$this->owner->redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
 	}
 }
