@@ -581,14 +581,14 @@ class SolrSearchPage_Controller extends Page_Controller {
 			$resultData = array();
 		}
 
-	  	$data = array(
+ 	  	$data = array(
 	     	'Results'		=> $results,
 	     	'Query'			=> Varchar::create_field('Varchar', $term),
 	      	'Title'			=> $this->data()->Title,
 			'ResultData'	=> ArrayData::create($resultData)
 	  	);
 
-	  	return $data;
+	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 	}
 	
 	/**
