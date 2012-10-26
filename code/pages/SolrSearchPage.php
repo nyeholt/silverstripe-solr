@@ -205,17 +205,20 @@ class SolrSearchPage extends Page {
 	function requireDefaultRecords() {
 		parent::requireDefaultRecords();
 
-		$page = DataObject::get_one('SolrSearchPage');
-		if(!($page && $page->exists())) {
-			$page = new SolrSearchPage();
-			$page->Title = _t('SolrSearchPage.DEFAULT_PAGE_TITLE', 'Search');
-			$page->Content = '';
-			$page->ResultsPerPage = 10;
-			$page->Status = 'New page';
-			$page->write();
+		if(SiteTree::get_create_default_pages()){
+			$page = DataObject::get_one('SolrSearchPage');
+			if(!($page && $page->exists())) {
+				$page = new SolrSearchPage();
+				$page->Title = _t('SolrSearchPage.DEFAULT_PAGE_TITLE', 'Search');
+				$page->Content = '';
+				$page->ResultsPerPage = 10;
+				$page->Status = 'New page';
+				$page->write();
 
-			DB::alteration_message('Search page created', 'created');
+				DB::alteration_message('Search page created', 'created');
+			}	
 		}
+		
 	}
 
 	/**
