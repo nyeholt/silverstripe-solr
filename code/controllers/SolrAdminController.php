@@ -72,6 +72,9 @@ class SolrAdminController extends ModelAdmin {
 
 		
 		$form->Actions()->push(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
+		
+		$form->Actions()->push(new FormAction('reindex', _t('SolrAdmin.REINDEX', 'Reindex')));
+		
 //		$actions = new FieldSet();
 //		$form = new Form($this, 'EditForm', $fields, $actions);
 		return $form;
@@ -93,35 +96,6 @@ class SolrAdminController extends ModelAdmin {
 			$this->searchService->stopSolr();
 			sleep(2);
 		}
-/* <<<<<<< HEAD
-		return $this->EditForm()->forAjaxTemplate();
-	}
-}
-
-class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
-	
-	/**
-	 * Get a combination of the Search, Import and Create and Reindex
-	 *
-	 * @return string
-	 
-	public function getModelSidebar() {
-		return $this->renderWith('SolrAdminSidebar');
-	}
-	
-	public function ReindexForm() {
-		$fields = new FieldSet();
-		$actions = new FieldSet(new FormAction('reindex', _t('Solr.REINDEX_SYSTEM', 'Reindex Content')));
-		return new Form($this, 'ReindexForm', $fields, $actions);
-	}
-	
-	public function reindex($data, Form $form) {
-		$items = DataObject::get('SolrTypeConfiguration');
-		if ($items && $items->count()) {
-			$types = $items->column('Title');
-			$task = new SolrReindexTask($types);
-			$task->run($this->request);
-=======*/
 		if (Director::is_ajax()) {
 			return $this->getResponseNegotiator()->respond($this->request);
 		} else {
@@ -129,29 +103,17 @@ class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
 		}
 		
 	}
+	
+	public function reindex($data, Form $form) {
+		$task = singleton('SolrReindexTask');
+		if ($task) {
+			$task->run($this->request);
+		}
+
+		if (Director::is_ajax()) {
+			return $this->getResponseNegotiator()->respond($this->request);
+		} else {
+			$this->redirectBack();
+		}
+	}
 }
-//
-//class SolrAdmin_CollectionController extends ModelAdmin_CollectionController {
-//	
-//	/**
-//	 * Get a combination of the Search, Import and Create and Reindex
-//	 *
-//	 * @return string
-//	 */
-//	public function getModelSidebar() {
-//		return $this->renderWith('SolrAdminSidebar');
-//	}
-//	
-//	public function ReindexForm() {
-//		$fields = new FieldSet();
-//		$actions = new FieldSet(new FormAction('reindex', _t('Solr.REINDEX_SYSTEM', 'Reindex Content')));
-//		return new Form($this, 'ReindexForm', $fields, $actions);
-//	}
-//	
-//	public function reindex($data, Form $form) {
-//		$task = singleton('SolrReindexTask');
-//		if ($task) {
-//			$task->run($this->request);
-//		}
-//	}
-//}

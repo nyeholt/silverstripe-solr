@@ -26,7 +26,7 @@ class SolrTypeConfiguration extends DataObject {
 			$keys = $this->getFieldsFor($this->Title);
 			$vals = array(
 				'default'		=> _t('Solr.DEFAULT_MAPPING', 'Default type'),
-				':field_mt'		=> _t('Solr.CASE_INSENSITIVE', 'Case Insensitive text'),
+				':field_txt'		=> _t('Solr.CASE_INSENSITIVE', 'Case Insensitive text'),
 				':field_ms'		=> _t('Solr.CASE_SENSITIVE', 'Case Sensitive, untokenised text'),
 			);
 

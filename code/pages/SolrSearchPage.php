@@ -41,10 +41,10 @@ class SolrSearchPage extends Page {
 	 * for example with the alchemiser module -
 	 * 
 	 * array (
-	 * 'AlcKeywords_mt',
-	 * 	'AlcPerson_mt',
-	 * 	'AlcCompany_mt',
-	 * 	'AlcOrganization_mt',
+	 * 'AlcKeywords_ms',
+	 * 	'AlcPerson_ms',
+	 * 	'AlcCompany_ms',
+	 * 	'AlcOrganization_ms',
 	 * );
 	 *
 	 * @var array

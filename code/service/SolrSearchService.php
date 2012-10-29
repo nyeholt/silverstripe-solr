@@ -752,7 +752,7 @@ class SolrSchemaMapper {
 		// otherwise, lets use a generic field for it
 		switch ($type) {
 			case 'MultiValueField': {
-					return $field . '_mt';
+					return $field . '_txt';
 				}
 			case 'Text':
 			case 'HTMLText': {
@@ -765,7 +765,7 @@ class SolrSchemaMapper {
 					return $field . '_ms';
 				}
 			case 'Varchar': {
-				return $field . '_mt';
+				return $field . '_txt';
 			}
 			case 'Attr': {
 				return 'attr_' . $field;
@@ -781,7 +781,7 @@ class SolrSchemaMapper {
 				return $field . '_i';
 			}
 			default: {
-				return $field . '_mt';
+				return $field . '_txt';
 			}
 		}
 	}

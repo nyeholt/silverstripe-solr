@@ -18,6 +18,8 @@
 
 <config>
 
+  <luceneMatchVersion>LUCENE_36</luceneMatchVersion>
+
   <jmx />
 
   <!-- Set this to 'false' if you want solr to continue working after it has 
@@ -28,6 +30,8 @@
          -Dsolr.abortOnConfigurationError=false
      -->
   <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
+
+  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
 
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
@@ -49,17 +53,7 @@
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
     <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
 
-    <!--
-     Expert: Turn on Lucene's auto commit capability.
-
-     TODO: Add recommendations on why you would want to do this.
-
-     NOTE: Despite the name, this value does not have any relation to Solr's autoCommit functionality
-
-     -->
-    <!--<luceneAutoCommit>false</luceneAutoCommit>-->
     <!--
      Expert:
      The Merge Policy in Lucene controls how merging is handled by Lucene.  The default in 2.3 is the LogByteSizeMergePolicy, previous
@@ -70,14 +64,14 @@
 
      Other implementations of MergePolicy must have a no-argument constructor
      -->
-    <!--<mergePolicy>org.apache.lucene.index.LogByteSizeMergePolicy</mergePolicy>-->
+    <!--<mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>-->
 
     <!--
      Expert:
      The Merge Scheduler in Lucene controls how merges are performed.  The ConcurrentMergeScheduler (Lucene 2.3 default)
       can perform merges in the background using separate threads.  The SerialMergeScheduler (Lucene 2.2 default) does not.
      -->
-    <!--<mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>-->
+    <!--<mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>-->
 
     <!--
       As long as Solr is the only process modifying your index, it is
@@ -618,15 +612,6 @@
   -->
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
   
-  <!-- ping/healthcheck -->
-  <requestHandler name="/admin/ping" class="PingRequestHandler">
-    <lst name="defaults">
-      <str name="qt">standard</str>
-      <str name="q">solrpingquery</str>
-      <str name="echoParams">all</str>
-    </lst>
-  </requestHandler>
-    
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
     <lst name="defaults">
@@ -673,12 +658,12 @@
     in the request. XMLResponseWriter will be used if nothing is specified here.
     The json, python, and ruby writers are also available by default.
 
-    <queryResponseWriter name="xml" class="org.apache.solr.request.XMLResponseWriter" default="true"/>
-    <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
-    <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
-    <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
-    <queryResponseWriter name="php" class="org.apache.solr.request.PHPResponseWriter"/>
-    <queryResponseWriter name="phps" class="org.apache.solr.request.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="xml" class="solr.XMLResponseWriter" default="true"/>
+    <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
+    <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
+    <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
+    <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
+    <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
 
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
@@ -687,7 +672,7 @@
        in Solr's conf/xslt directory.  Changes to xslt files are checked for
        every xsltCacheLifetimeSeconds.  
    -->
-  <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
+  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter> 
     
