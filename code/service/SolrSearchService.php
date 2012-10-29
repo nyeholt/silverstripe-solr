@@ -177,7 +177,7 @@ class SolrSearchService {
 			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
 				'Title' => array(),
 				'Content' => array(),
-					);
+			);
 		}
 
 		$fieldsToIndex['SS_URL'] = true;
@@ -186,6 +186,7 @@ class SolrSearchService {
 		$fieldsToIndex['Created'] = true;
 		$fieldsToIndex['ClassName'] = true;
 		$fieldsToIndex['ClassNameHierarchy'] = true;
+		$fieldsToIndex['ParentsHierarchy'] = true;
 
 		// the stage we're on when we write this doc to the index.
 		// this is used for versioned AND non-versioned objects; we just cheat and
@@ -215,11 +216,15 @@ class SolrSearchService {
 		unset($object['ID']);
 
 		// a special type hierarchy 
-		$classes = array_values(ClassInfo::ancestry($classType));
-		$object['ClassNameHierarchy'] = array(
-			'Type' => 'MultiValueField',
-			'Value' => $classes,
-		);
+		if ($classType != 'INVALID_CLASS_TYPE') {
+			$classes = array_values(ClassInfo::ancestry($classType));
+			$object['ClassNameHierarchy'] = array(
+				'Type' => 'MultiValueField',
+				'Value' => $classes,
+			);
+			
+			$object['ParentsHierarchy'] = $this->getParentsHierarchyField($dataObject);
+		}
 
 		foreach ($object as $field => $valueDesc) {
 			if (!is_array($valueDesc)) {
@@ -264,6 +269,28 @@ class SolrSearchService {
 			} catch (Exception $ie) {
 				SS_Log::log($ie, SS_Log::ERR);
 			}
+		}
+	}
+	
+	/**
+	 * Get a solr field representing the parents hierarchy (if applicable)
+	 * 
+	 * @param type $dataObject 
+	 */
+	protected function getParentsHierarchyField($dataObject) {
+		
+		// see if we've got Parent values
+		if ($dataObject->hasField('ParentID')) {
+			$parentsField = array('Type' => '', 'Value' => null);
+			$parents = array();
+			
+			$parent = $dataObject;
+			while ($parent && $parent->ParentID) {
+				$parents[] = $parent->ParentID;
+				$parent = $parent->Parent();
+			}
+			$parentsField['Value'] = $parents;
+			return $parentsField;
 		}
 	}
 
@@ -379,8 +406,9 @@ class SolrSearchService {
 			$stage = 'Live';
 		}
 
-		$query->andWith('SS_Stage_ms', $stage);
-		// $query = "($query) AND (SS_Stage_ms:$stage)";
+		if(!isset($params['ignore_stage']) || !$params['ignore_stage']) {
+			$query->andWith('SS_Stage_ms', $stage);
+		}
 
 		$extraParams = $query->getParams();
 		$params = array_merge($params, $extraParams);
@@ -413,12 +441,12 @@ class SolrSearchService {
 			}
 		}
 		
-		$params = new stdClass();
-		$params->offset = $offset;
-		$params->limit = $limit;
-		$params->params = $params;
+		$queryParams = new stdClass();
+		$queryParams->offset = $offset;
+		$queryParams->limit = $limit;
+		$queryParams->params = $params;
 
-		$results = new SolrResultSet($query, $response, $params, $this);
+		$results = new SolrResultSet($query, $response, $queryParams, $this);
 		
 		if ($this->cache && !$rawResponse && $key && $response) {
 			$this->cache->save($response->getRawResponse(), $key, array(), $this->cacheTime);
@@ -480,7 +508,27 @@ class SolrSearchService {
 			}
 		}
 
-		return singleton($className)->searchableFields();
+		$sng = singleton($className);
+
+		if($sng->hasMethod('getSolrSearchableFields')) {
+			return $sng->getSolrSearchableFields();
+		} else {
+			return $sng->searchableFields();
+		}
+	}
+	
+	/**
+	 * Get all the searchable fields for a given set of classes
+	 * @param type $classNames 
+	 */
+	public function getAllSearchableFieldsFor($classNames) {
+		$allfields = array();
+		foreach ($classNames as $className) {
+			$fields = $this->getSearchableFieldsFor($className);
+			$allfields = array_merge($allfields, $fields);
+		}
+		
+		return $allfields;
 	}
 
 	protected $searchableCache = array();
@@ -501,27 +549,34 @@ class SolrSearchService {
 	}
 
 	/**
-	 * Return the field name for a given property within
-	 * on a given data object type
+	 * Return the field name for a given property within a given set of data object types
+	 * 
+	 * First matching data object with that field is used
 	 *
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
-	 * @param String $className
-	 * 				The data object class name. Defaults to 'page'. 
+	 * @param String $classNames
+	 * 				A list of data object class name. Defaults to 'page'. 
 	 *
 	 * @return String
 	 *
 	 */
-	public function getSolrFieldName($field, $className='Page') {
-		$dummy = singleton($className);
-		$fields = $this->objectToFields($dummy);
-		if ($field == 'ID') {
-			$field = 'SS_ID';
+	public function getSolrFieldName($field, $classNames = array('Page')) {
+		if (!is_array($classNames)) {
+			$classNames = array($classNames);
 		}
-		$configForType = $this->getSearchableFieldsFor($className);
-		if (isset($fields[$field])) {
-			$hint = isset($configForType[$field]) ? $configForType[$field] : false;
-			return $this->mapper->mapType($field, $fields[$field]['Type'], $hint);
+
+		foreach ($classNames as $className) {
+			$dummy = singleton($className);
+			$fields = $this->objectToFields($dummy);
+			if ($field == 'ID') {
+				$field = 'SS_ID';
+			}
+			if (isset($fields[$field])) {
+				$configForType = $this->getSearchableFieldsFor($className);
+				$hint = isset($configForType[$field]) ? $configForType[$field] : false;
+				return $this->mapper->mapType($field, $fields[$field]['Type'], $hint);
+			}
 		}
 	}
 
@@ -532,11 +587,17 @@ class SolrSearchService {
 	 *
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
-	 * @param String $className
-	 * 				The data object class name. Defaults to 'page'.
+	 * @param String $classNames
+	 * 				A list of potential class types that the field may exist in (ie if searching in multiple types)
 	 */
-	public function getSortFieldName($field, $className='Page') {
-		return $field == 'Title' ? 'title_exact' : $this->getSolrFieldName($field, $className);
+	public function getSortFieldName($field, $classNames = array('Page')) {
+		if ($field == 'Title') {
+			return 'title_exact';
+		}
+		if (!is_array($classNames)) {
+			$classNames = array($classNames);
+		}
+		return $this->getSolrFieldName($field, $classNames);
 	}
 
 	/**
@@ -558,6 +619,10 @@ class SolrSearchService {
 	public function startSolr() {
 		if (!Permission::check('ADMIN')) {
 			return false;
+		}
+		$status = $this->localEngineStatus();
+		if (strlen($status)) {
+			return;
 		}
 		$config = $this->localEngineConfig();
 
@@ -655,6 +720,7 @@ class SolrSchemaMapper {
 		'LastEdited' => 'last_modified',
 		'Content' => 'text',
 		'ClassNameHierarchy' => 'ClassNameHierarchy_ms',
+		'ParentsHierarchy'	=> 'ParentsHierarchy_ms',
 		'SS_Stage' => 'SS_Stage_ms',
 	);
 
@@ -699,18 +765,24 @@ class SolrSchemaMapper {
 					return $field . '_ms';
 				}
 			case 'Varchar': {
-					return $field . '_mt';
-				}
+				return $field . '_mt';
+			}
 			case 'Attr': {
-					return 'attr_' . $field;
-				}
+				return 'attr_' . $field;
+			}
+			case 'Double':
+			case 'Decimal':
+			case 'Float':
+			case 'Money': {
+				return $field . '_f';
+			}
 			case 'Int':
 			case 'Integer': {
-					return $field . '_i';
-				}
+				return $field . '_i';
+			}
 			default: {
-					return $field . '_mt';
-				}
+				return $field . '_mt';
+			}
 		}
 	}
 

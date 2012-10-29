@@ -1,7 +1,23 @@
-2012-08-02 v0.9.1
+
+2012-10-26 v2.0.0
 -----------------
 
+* Updated to use solr 3.6 as the baseline, which means changing
+  all field types from _mt (the SS customised type) to using
+  _txt. Otherwise, no big changes
+
+2012-08-02 v1.0.1
+-----------------
+
+* Reindex task can reindex multiple types at once
 * Hitting 'Reindex' in the admin UI reindexes all configured types
+
+2012-06-15 v1.0.0
+-----------------
+
+* Added ability to select multiple types to search on for a single search 
+  page. Also, this is the first release for ss3!
+
 
 2012-05-18 v0.9.0
 -----------------

@@ -34,7 +34,12 @@ class SolrQueryBuilder {
 			$existing = $this->and[$field];
 		}
 
-		$existing[] = $value;
+		if (is_array($value)) {
+			$existing = $existing + $value;
+		} else {
+			$existing[] = $value;
+		}
+
 		$this->and[$field] = $existing;
 	}
 
@@ -79,8 +84,14 @@ class SolrQueryBuilder {
 		}
 		
 		foreach ($this->and as $field => $valArray) {
+			$innerSep = '';
+			$innerQuery = '';
 			foreach ($valArray as $value) {
-				$rawQuery .= $sep . $field .':' . $value;
+				$innerQuery .= $innerSep . $field .':' . $value;
+				$innerSep = ' OR ';
+			}
+			if (strlen($innerQuery)) {
+				$rawQuery .= $sep . '(' . $innerQuery . ')';
 				$sep = ' AND ';
 			}
 		}

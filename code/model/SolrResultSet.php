@@ -123,10 +123,11 @@ class SolrResultSet
 	 */
 	public function getDataObjects($evaluatePermissions=false) {
 		if (!$this->dataObjects) {
-			$this->dataObjects = new DataObjectSet();
+			$this->dataObjects = ArrayList::create();
 
 			$result = $this->getResult();
 			$documents = $result->response;
+
 			if ($documents && isset($documents->docs)) {
 				$totalAdded = 0;
 				foreach ($documents->docs as $doc) {
@@ -193,8 +194,18 @@ class SolrResultSet
 					}
 				}
 				$this->totalResults = $documents->numFound;
+				
 				// update the dos with stats about this query
-				$this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
+				
+				$this->dataObjects = PaginatedList::create($this->dataObjects);
+				
+				$this->dataObjects->setPageLength($this->queryParameters->limit)
+						->setPageStart($documents->start)
+						->setTotalItems($documents->numFound)
+						->setLimitItems(false);
+				
+//				$paginatedSet->setPaginationFromQuery($set->dataQuery()->query());
+				// $this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
 			}
 
 		}
@@ -214,17 +225,20 @@ class SolrResultSet
 	 *				}
 	 *			)
 	 */
-	public function getFacets($type='fields') {
+	public function getFacets() {
 		$result = $this->getResult();
 		if (!isset($result->facet_counts)) {
 			return;
 		}
 
-		$n = 'facet_'.$type;
-
-		$elems = $result->facet_counts->$n;
+		if (isset($result->facet_counts->exception)) {
+			// $this->logger->error($result->facet_counts->exception)
+			return array();
+		}
 		
-		$result = array();
+		$elems = $result->facet_counts->facet_fields;
+		
+		$facets = array();
 		foreach ($elems as $field => $values) {
 			$elemVals = array();
 			foreach ($values as $vname => $vcount) {
@@ -233,11 +247,35 @@ class SolrResultSet
 				}
 				$r = new stdClass;
 				$r->Name = $vname;
+				$r->Query = $vname;
 				$r->Count = $vcount;
 				$elemVals[] = $r;
 			}
-			$result[$field] = $elemVals;
+			$facets[$field] = $elemVals;
 		}
-		return $result;
+		
+		// see if there's any query facets for things too
+		$query_elems = $result->facet_counts->facet_queries;
+		if ($query_elems) {
+			foreach ($query_elems as $vname => $count) {
+				if ($vname == '_empty_') {
+					continue;
+				}
+				
+				list($field, $query) = explode(':', $vname);
+
+				$r = new stdClass;
+				$r->Type = 'query';
+				$r->Name = $vname;
+				$r->Query = $query;
+				$r->Count = $count;
+				
+				$existing = isset($facets[$field]) ? $facets[$field] : array();
+				$existing[] = $r;
+				$facets[$field] = $existing;
+			}
+		}
+		
+		return $facets;
 	}
 }

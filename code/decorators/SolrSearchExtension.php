@@ -54,10 +54,10 @@ class SolrSearchExtension extends Extension {
 	 */
 	function SearchForm() {
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		$fields = new FieldSet(
+		$fields = new FieldList(
 	      	new TextField("Search", "", $searchText)
 	  	);
-		$actions = new FieldSet(
+		$actions = new FieldList(
 	      	new FormAction('results', 'Search')
 	  	);
 
@@ -69,6 +69,6 @@ class SolrSearchExtension extends Extension {
 	 */
 	public function results() {
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		Director::redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
+		$this->owner->redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
 	}
 }

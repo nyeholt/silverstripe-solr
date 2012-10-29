@@ -45,8 +45,6 @@ class SolrIndexItemJob extends AbstractQueuedJob {
 	}
 
 	public function process() {
-		
-
 		$method = $this->mode == 'index' ? 'index' : 'unindex';
 		$stage = is_null($this->stage) ? null : ($this->stage == 'Stage' ? 'Stage' : 'Live');
 
