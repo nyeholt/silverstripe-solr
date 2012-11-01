@@ -1,3 +1,10 @@
+2012-11-01 v2.0.1
+-----------------
+
+* Fixed issue where the results action doesn't render the _results template 
+  when triggered by a form execution by explicitly calling renderWith and
+  passing the current classname
+
 
 2012-10-26 v2.0.0
 -----------------
