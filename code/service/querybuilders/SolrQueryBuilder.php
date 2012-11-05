@@ -7,9 +7,9 @@
  * @license BSD License http://silverstripe.org/bsd-license/
  */
 class SolrQueryBuilder {
-	
+
 	public $title = 'Default Solr';
-	
+
 	protected $userQuery = '';
 	protected $fields = array('title', 'text');
 	protected $and = array();
@@ -23,11 +23,11 @@ class SolrQueryBuilder {
 	public function baseQuery($query) {
 		$this->userQuery = $query;
 	}
-	
+
 	public function queryFields($fields) {
 		$this->fields = $fields;
 	}
-	
+
 	public function andWith($field, $value) {
 		$existing = array();
 		if (isset($this->and[$field])) {
@@ -41,7 +41,7 @@ class SolrQueryBuilder {
 	public function setParams($params) {
 		$this->params = $params;
 	}
-	
+
 	public function getParams() {
 		return $this->params;
 	}
@@ -64,20 +64,20 @@ class SolrQueryBuilder {
 
 		return $lucene;
 	}
-	
+
 	public function boost($boost) {
 		$this->boost = $boost;
 	}
-	
+
 	public function toString() {
 		$rawQuery = $this->userQuery ? '(' . $this->parse($this->userQuery).')' : '';
-		
+
 		// add in all the clauses;
 		$sep = '';
 		if ($rawQuery) {
 			$sep = ' AND ';
 		}
-		
+
 		foreach ($this->and as $field => $valArray) {
 			foreach ($valArray as $value) {
 				$rawQuery .= $sep . $field .':' . $value;

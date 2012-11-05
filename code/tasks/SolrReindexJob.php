@@ -9,7 +9,7 @@
  */
 if (class_exists('AbstractQueuedJob')) {
 	class SolrReindexJob extends AbstractQueuedJob {
-		
+
 		public function __construct($type = null) {
 			if (!$type && isset($_GET['type'])) {
 				$type = $_GET['type'];
