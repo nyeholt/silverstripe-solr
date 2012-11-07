@@ -256,7 +256,14 @@ class SolrSearchPage extends Page {
 				$fields[] = $this->getSolr()->getSolrFieldName($f, $type);
 			}
 		}
-		return array_merge($fields, (array)array_keys($this->getField('ExtraFacetFields')->getvalue()));
+
+		if($eff = $this->getField('ExtraFacetFields')->getvalue()) {
+			$eff = array_keys($eff);
+		} else {
+			$eff = array();
+		}
+
+		return array_merge($fields, $eff);
 	}
 
 	/**
@@ -350,6 +357,8 @@ class SolrSearchPage extends Page {
 			$filterfields = array_keys($this->FilterFields->getvalues());
 			$filters = array_intersect_key($filterfields, array_flip((array)$_GET['FieldFilter']));
 			$filterquery = (count($filters) > 0) ? implode(array_values($filters), " ") : '';
+		} else {
+			$filterquery = '';
 		}
 
 		$params = array(
@@ -360,10 +369,17 @@ class SolrSearchPage extends Page {
 			// solr requires case-senstive field definitions
 			'sort' => sprintf("%s %s", (($sortBy == 'Score') ? strtolower($sortBy) : $sortBy), $sortDir),
 			'fl' => '*,score',
-			'fq' => $filterquery ? $filterquery : ''
+			'fq' => $filterquery
 		);
 
-		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
+		try {
+			$q = $this->getSolr()->query($builder, $offset, $limit, $params);
+			$this->query = $q;
+		} catch(Exception $e) {
+			if(!Director::isLive()) {
+				throw $e;
+			}
+		}
 
 		return $this->query;
 	}
@@ -591,10 +607,11 @@ class SolrSearchPage_Controller extends Page_Controller {
 					continue;
 				}
 
+				$num = ($n = count($set)) ? $n : 1;
 				$rs->push(new ArrayData(array(
 					'Title' => $title,
 					'Results' => $set,
-					'Score' => $count / count($set),
+					'Score' => $count / $num,
 					'Class'	=> strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $title))
 				)));
 
@@ -605,10 +622,11 @@ class SolrSearchPage_Controller extends Page_Controller {
 				$count += $i->SearchScore;
 			}
 
+			$num = ($n = count($resultSet)) ? $n : 1;
 			$rs->push(new ArrayData(array(
 				'Title' => 'Results',
 				'Results' => $resultSet,
-				'Score' => $count / count($resultSet),
+				'Score' => $count / $num,
 				'Class'	=> 'results'
 			)));
 		}
