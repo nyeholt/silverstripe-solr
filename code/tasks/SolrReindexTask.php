@@ -11,9 +11,9 @@ class SolrReindexTask extends BuildTask
 	protected $title = "Reindex all content within Solr";
 
 	protected $description = "Iterates through all content within the system, re-indexing it in solr";
-	
+
 	protected $types = array();
-	
+
 	public function __construct($types = array()) {
 		parent::__construct();
 		$this->types = $types;
@@ -29,7 +29,7 @@ class SolrReindexTask extends BuildTask
 		if ($type) {
 			$this->types[] = $type;
 		}
-		
+
 		$search = singleton('SolrSearchService');
 
 		if (isset($_GET['delete_all'])) {
@@ -66,7 +66,7 @@ class SolrReindexTask extends BuildTask
 				$count ++;
 			}
 		}
-		
+
 		echo "Reindex complete, $count objects re-indexed<br/>";
 	}
 }

@@ -24,7 +24,7 @@ class SolrSearchPage extends Page {
 		'ExtraFacetFields'	=> 'MultiValueField',
 		'FilterFields'		=> 'MultiValueField',
 		'ResultGroupBy'		=> 'Varchar(255)',
-		'ResultGroupNames'	=> 'MultiValueField'
+		'ResultGroupNames'	=> 'MultiValueField',
 
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
@@ -79,7 +79,7 @@ class SolrSearchPage extends Page {
 		$fields = parent::getCMSFields();
 
 		$fields->addFieldToTab('Root.Content.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing - useful for filterable "data type" lists')), 'Content');
-		
+
 		if (class_exists('ListingTemplate')) {
 			$templates = DataObject::get('ListingTemplate');
 			if ($templates) {
@@ -160,13 +160,13 @@ class SolrSearchPage extends Page {
 
 		$fields->addFieldToTab(
 			'Root.Content.Main',
-			new KeyValueField('ExtraFacetFields', _t('SolrSearchPage.EXTRA_FACET_FIELDS', 'Fields to create facets for (field name, display name)')),
+			new KeyValueField('ExtraFacetFields', _t('SolrSearchPage.EXTRA_FACET_FIELDS', 'Fields to create facets for (solr field name, display name)')),
 			'Content'
 		);
 
 		$fields->addFieldToTab(
 			'Root.Content.Main',
-			new KeyValueField('FilterFields', _t('SolrSearchpage.FILTER_FIELDS', 'Fields to filter by type (needs much better description)')),
+			new KeyValueField('FilterFields', _t('SolrSearchpage.FILTER_FIELDS', 'Fields to filter by type (solr field name, display name)')),
 			'Content'
 		);
 
@@ -222,8 +222,9 @@ class SolrSearchPage extends Page {
 			$page->Title = _t('SolrSearchPage.DEFAULT_PAGE_TITLE', 'Search');
 			$page->Content = '';
 			$page->ResultsPerPage = 10;
-			$page->maxResults = 0;
 			$page->Status = 'New page';
+			$page->SortBy = 'Score';
+			$page->SortDir = 'Descending';
 			$page->write();
 
 			DB::alteration_message('Search page created', 'created');
@@ -255,7 +256,7 @@ class SolrSearchPage extends Page {
 				$fields[] = $this->getSolr()->getSolrFieldName($f, $type);
 			}
 		}
-		return array_merge($fields, array_keys($this->getField('ExtraFacetFields')->getvalue()));
+		return array_merge($fields, (array)array_keys($this->getField('ExtraFacetFields')->getvalue()));
 	}
 
 	/**
@@ -363,6 +364,7 @@ class SolrSearchPage extends Page {
 		);
 
 		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
+
 		return $this->query;
 	}
 
@@ -431,23 +433,22 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
 		$fields->push(new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->data()->dbObject('SortDir')->enumValues(), $sortDir));
 
-		$f = $this->getField('FilterFields')->getValue();
+		if($f = $this->getField('FilterFields')->getValue()) {
+			$cbsf = new CheckBoxSetField('FieldFilter', '', array_values($f));
 
-		$cbsf = new CheckBoxSetField('FieldFilter', '', array_values($f));
-
-		$filterFieldValues = array();
-		if(isset($_GET['FieldFilter'])) {
-			foreach(array_values($f) as $k => $v) {
-				if(in_array($k, (array)$_GET['FieldFilter'])) {
-					$filterFieldValues[] = $k;
+			$filterFieldValues = array();
+			if(isset($_GET['FieldFilter'])) {
+				foreach(array_values($f) as $k => $v) {
+					if(in_array($k, (array)$_GET['FieldFilter'])) {
+						$filterFieldValues[] = $k;
+					}
 				}
+			} else {
+				$filterFieldValues[] = true;
 			}
-		} else {
-			$filterFieldValues[] = true;
+			$cbsf->setValue($filterFieldValues);
+			$fields->push($cbsf);
 		}
-		$cbsf->setValue($filterFieldValues);
-
-		$fields->push($cbsf);
 
 		$actions = new FieldSet(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
 
@@ -460,8 +461,9 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 	public function FacetCrumbs() {
 		$activeFacets = $this->data()->getActiveFacets();
-		$parts = array();
 		$queryString = $this->data()->SearchQuery();
+
+		$parts = new DataObjectSet();
 		if (count($activeFacets)) {
 			foreach ($activeFacets as $facetName => $facetValues) {
 				foreach ($facetValues as $i => $v) {
@@ -469,12 +471,12 @@ class SolrSearchPage_Controller extends Page_Controller {
 					$item->Name = $v;
 					$paramName = urlencode(SolrSearchPage::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
 					$item->RemoveLink = $this->Link('results') . '?' . str_replace($paramName, '', $queryString);
-					$parts[] = $item;
+					$parts->push(new ArrayData($item));
 				}
 			}
 		}
 
-		return new DataObjectSet($parts);
+		return $parts;
 	}
 
 	/**
@@ -622,10 +624,10 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 	  	return $this->customise($data)->renderWith(array('SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 	}
-	
+
 	/**
 	 * Return the results with a template applied to them based on the page's listing template
-	 *  
+	 *
 	 */
 	public function TemplatedResults() {
 		$query = $this->data()->getQuery();

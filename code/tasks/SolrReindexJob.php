@@ -37,7 +37,7 @@ if (class_exists('AbstractQueuedJob')) {
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::disable_subsite_filter();
 			}
-			
+
 			$page = DataObject::get_one($this->reindexType, singleton('SolrUtils')->dbQuote(array($this->reindexType . '.ID >' => $this->lastIndexedID)), true, 'ID ASC');
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::$disable_subsite_filter = false;
