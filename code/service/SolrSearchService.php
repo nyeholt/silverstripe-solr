@@ -26,9 +26,9 @@ class SolrSearchService {
 
 	/**
 	 * A list of all fields that will be searched through by default, if the user hasn't specified
-	 * any in their search query. 
-	 * 
-	 * @var array 
+	 * any in their search query.
+	 *
+	 * @var array
 	 */
 	public static $default_query_fields = array(
 		'title',
@@ -36,34 +36,34 @@ class SolrSearchService {
 	);
 
 	/**
-	 * Determines what mapper class to use to map to solr schema fields. 
+	 * Determines what mapper class to use to map to solr schema fields.
 	 * Change this if you have changed the schema that solr uses by default
-	 * 
+	 *
 	 * @var String
 	 */
 	public static $mapper_class = 'SolrSchemaMapper';
 
 	/**
 	 * The mapper to use to map silverstripe objects to a solr schema
-	 * 
+	 *
 	 * @var SolrSchemaMapper
 	 */
 	protected $mapper;
-	
+
 	/**
 	 * A cache object for query caching
-	 * 
+	 *
 	 * @var Zend_Cache_Core
 	 */
 	protected $cache;
-	
+
 	/**
 	 * How many seconds to cache results for
 	 *
 	 * @var int
 	 */
 	protected $cacheTime = 3600;
-	
+
 	/**
 	 * A mapping of all the available query builders
 	 *
@@ -78,7 +78,7 @@ class SolrSearchService {
 		$this->queryBuilders['default'] = 'SolrQueryBuilder';
 		$this->queryBuilders['dismax'] = 'DismaxSolrSearchBuilder';
 	}
-	
+
 	public function setCache($cache) {
 		$this->cache = $cache;
 	}
@@ -104,7 +104,7 @@ class SolrSearchService {
 	/**
 	 * Add a field to be included in default searches
 	 *
-	 * @param string $field 
+	 * @param string $field
 	 */
 	public function add_default_query_field($field) {
 		self::$default_query_fields[] = $field;
@@ -114,7 +114,7 @@ class SolrSearchService {
 	 * Add a new query parser into the service
 	 *
 	 * @param string $name
-	 * @param object $obj 
+	 * @param object $obj
 	 */
 	public function addQueryBuilder($name, $obj) {
 		$this->queryBuilders[$name] = $obj;
@@ -132,7 +132,7 @@ class SolrSearchService {
 	/**
 	 * Gets the query builder for the given search type
 	 *
-	 * @param SolrQueryBuilder $type 
+	 * @param SolrQueryBuilder $type
 	 */
 	public function getQueryBuilder($type='default') {
 		return isset($this->queryBuilders[$type]) ? new $this->queryBuilders[$type] : new $this->queryBuilders['default'];
@@ -141,24 +141,24 @@ class SolrSearchService {
 	/**
 	 * Assuming here that we're indexing a stdClass object
 	 * with an ID field that is a unique identifier
-	 * 
-	 * Note that the structur eof the object array must be 
-	 * 
+	 *
+	 * Note that the structure of the object array must be
+	 *
 	 * array(
 	 * 		'FieldName' => array(
 	 * 			'Type' => 'Fieldtype (eg date, string, int)',
 	 * 			'Value' => 'Actualvalue'
 	 * 		)
 	 * )
-	 * 
-	 * You should include a field named 'ID' that dictates the 
-	 * ID of the object, and a field named 'ClassName' that is the 
+	 *
+	 * You should include a field named 'ID' that dictates the
+	 * ID of the object, and a field named 'ClassName' that is the
 	 * name of the document's type
-	 * 
+	 *
 	 * @param DataObject $object
 	 * 				The object being indexed
 	 * @param String $stage
-	 * 				If we're indexing for a particular stage or not. 
+	 * 				If we're indexing for a particular stage or not.
 	 *
 	 */
 	public function index($dataObject, $stage=null) {
@@ -177,7 +177,7 @@ class SolrSearchService {
 			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
 				'Title' => array(),
 				'Content' => array(),
-					);
+			);
 		}
 
 		$fieldsToIndex['SS_URL'] = true;
@@ -192,7 +192,7 @@ class SolrSearchService {
 		// set it BOTH stages if it's non-versioned object
 		$fieldsToIndex['SS_Stage'] = true;
 
-		// if it's a versioned object, just save ONE stage value. 
+		// if it's a versioned object, just save ONE stage value.
 		if ($stage) {
 			$object['SS_Stage'] = array('Type' => 'Enum', 'Value' => $stage);
 			$id = $id . '_' . $stage;
@@ -214,7 +214,7 @@ class SolrSearchService {
 		// we're not indexing these fields just at the moment because the conflict
 		unset($object['ID']);
 
-		// a special type hierarchy 
+		// a special type hierarchy
 		$classes = array_values(ClassInfo::ancestry($classType));
 		$object['ClassNameHierarchy'] = array(
 			'Type' => 'MultiValueField',
@@ -303,12 +303,21 @@ class SolrSearchService {
 			$ret[$name] = array('Type' => $type, 'Value' => $value);
 		}
 
+		$rels = Object::combined_static($dataObject->ClassName, 'has_one');
+
+		if($rels) foreach(array_keys($rels) as $rel) {
+			$ret["{$rel}ID"] = array(
+				'Type'  => 'ForeignKey',
+				'Value' => $dataObject->{$rel . "ID"}
+			);
+		}
+
 		return $ret;
 	}
 
 	/**
 	 * Delete a data object from the index
-	 * 
+	 *
 	 * @param DataObject $object
 	 */
 	public function unindex($type, $id=null) {
@@ -317,7 +326,7 @@ class SolrSearchService {
 			$type = $type->class; // get_class($type);
 		}
 		try {
-			// delete all published/non-published versions of this item. 
+			// delete all published/non-published versions of this item.
 			$this->getSolr()->deleteByQuery('id:' . $type . '_' . $id . '*');
 			$this->getSolr()->commit();
 		} catch (Exception $ie) {
@@ -333,6 +342,7 @@ class SolrSearchService {
 	 */
 	public function parseSearch($query, $type='default') {
 		// if there's a colon in the search, assume that the user is doing a custom power search
+		// FIXME: some sort of filtering? -dnz
 		if (strpos($query, ':')) {
 			return $query;
 		}
@@ -357,9 +367,11 @@ class SolrSearchService {
 	 * 			How many items to limit the query to return
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
+	 * @param array $andWith
+	 *			A set of extra and with terms to add to the query
 	 * @return SolrResultSet
 	 */
-	public function query($query, $offset = 0, $limit = 20, $params = array()) {
+	public function query($query, $offset = 0, $limit = 20, $params = array(), $andWith = array()) {
 		if (is_string($query)) {
 			$builder = $this->getQueryBuilder('default');
 			$builder->baseQuery($query);
@@ -382,6 +394,10 @@ class SolrSearchService {
 		$query->andWith('SS_Stage_ms', $stage);
 		// $query = "($query) AND (SS_Stage_ms:$stage)";
 
+		if($andWith) foreach($andWith as $field => $value) {
+			$query->andWith($field, $value);
+		}
+
 		$extraParams = $query->getParams();
 		$params = array_merge($params, $extraParams);
 
@@ -395,13 +411,13 @@ class SolrSearchService {
 			$key = md5($query.$offset.$limit.serialize($params));
 			if ($rawResponse = $this->cache->load($key)) {
 				$response = new Apache_Solr_Response(
-					$rawResponse, 
+					$rawResponse,
 					// we fake the following headers... :o
 					array(
 						'HTTP/1.1 200 OK',
 						'Content-Type: text/plain; charset=utf-8'
-					), 
-					$solr->getCreateDocuments(), 
+					),
+					$solr->getCreateDocuments(),
 					$solr->getCollapseSingleValueArrays()
 				);
 			}
@@ -412,18 +428,18 @@ class SolrSearchService {
 				$response = $this->getSolr()->search($query, $offset, $limit, $params);
 			}
 		}
-		
+
 		$params = new stdClass();
 		$params->offset = $offset;
 		$params->limit = $limit;
 		$params->params = $params;
 
 		$results = new SolrResultSet($query, $response, $params, $this);
-		
+
 		if ($this->cache && !$rawResponse && $key && $response) {
 			$this->cache->save($response->getRawResponse(), $key, array(), $this->cacheTime);
 		}
-		
+
 		return $results;
 	}
 
@@ -450,7 +466,7 @@ class SolrSearchService {
 
 	/**
 	 * Get the solr service client
-	 * 
+	 *
 	 * @return Apache_Solr_Service
 	 */
 	public function getSolr() {
@@ -464,7 +480,7 @@ class SolrSearchService {
 	/**
 	 * Get all the fields that can be indexed / searched on for a particular type
 	 *
-	 * @param string $className 
+	 * @param string $className
 	 */
 	public function getSearchableFieldsFor($className) {
 		if (is_object($className)) {
@@ -480,7 +496,13 @@ class SolrSearchService {
 			}
 		}
 
-		return singleton($className)->searchableFields();
+		$instance = singleton($className);
+
+		if($instance->hasMethod('getSolrSearchableFields')) {
+			return $instance->getSolrSearchableFields();
+		} else {
+			return $instance->searchableFields();
+		}
 	}
 
 	protected $searchableCache = array();
@@ -507,12 +529,15 @@ class SolrSearchService {
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
 	 * @param String $className
-	 * 				The data object class name. Defaults to 'page'. 
+	 * 				The data object class name. Defaults to 'page'.
 	 *
 	 * @return String
 	 *
 	 */
 	public function getSolrFieldName($field, $className='Page') {
+		if (!$className) {
+			$className = 'Page';
+		}
 		$dummy = singleton($className);
 		$fields = $this->objectToFields($dummy);
 		if ($field == 'ID') {
@@ -528,7 +553,7 @@ class SolrSearchService {
 	/**
 	 * Get a field name used for sorting in a query. This is just a hardcoded
 	 * way at the moment to handle the fact that to sort by 'Title', you
-	 * actually want to sort by title_exact (due to tokenization in solr). 
+	 * actually want to sort by title_exact (due to tokenization in solr).
 	 *
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
@@ -645,7 +670,7 @@ class SolrSearchService {
 
 /**
  * Class that defines how fields should be mapped to Solr properties
- * 
+ *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class SolrSchemaMapper {
@@ -667,7 +692,7 @@ class SolrSchemaMapper {
 	 *          The field type
 	 * @param String $value
 	 * 			The value being stored (needed if a multival)
-	 * 
+	 *
 	 * @return String
 	 */
 	public function mapType($field, $type, $hint = '') {
@@ -695,6 +720,7 @@ class SolrSchemaMapper {
 			case 'SS_Datetime': {
 					return $field . '_dt';
 				}
+			case 'Str':
 			case 'Enum': {
 					return $field . '_ms';
 				}
@@ -716,7 +742,7 @@ class SolrSchemaMapper {
 
 	/**
 	 * Convert a value to a format handled by solr
-	 * 
+	 *
 	 * @param mixed $value
 	 * @param string $type
 	 * @return mixed
@@ -731,7 +757,7 @@ class SolrSchemaMapper {
 		} else {
 			switch ($type) {
 				case 'SS_Datetime': {
-						// we don't want a complete iso8601 date, we want it 
+						// we don't want a complete iso8601 date, we want it
 						// in UTC time with a Z at the end. It's okay, php's
 						// strtotime will correctly re-convert this to the correct
 						// timestamp, but this is how Solr wants things
