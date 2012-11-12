@@ -8,7 +8,7 @@
  * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchExtension extends Extension {
-	
+
 	static $allowed_actions = array(
 		'SearchForm',
 		'results',
@@ -26,7 +26,7 @@ class SolrSearchExtension extends Extension {
 
 	/**
 	 * Get the list of facet values for the given term
-	 * 
+	 *
 	 * @param String $term
 	 */
 	public function Facets($term=null) {
@@ -38,7 +38,7 @@ class SolrSearchExtension extends Extension {
 	}
 
 	/**
-	 * The current search query that is being run by the search page. 
+	 * The current search query that is being run by the search page.
 	 *
 	 * @return String
 	 */
@@ -53,10 +53,31 @@ class SolrSearchExtension extends Extension {
 	 * Site search form
 	 */
 	function SearchForm() {
+		$filterFields = ($sp = $this->getSearchPage()) ? $sp->FilterFields->getValue() : array();
+
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
 		$fields = new FieldList(
 	      	new TextField("Search", "", $searchText)
 	  	);
+
+		if($filterFields) {
+			$cbsf = new CheckBoxSetField('FieldFilter', '', array_values($filterFields));
+	        $filterFieldValues = array();
+
+	        if($_GET['FieldFilter']) {
+	            foreach(array_values($filterFields) as $k => $v) {
+	                if(in_array($k, (array)$_GET['FieldFilter'])) {
+	                    $filterFieldValues[] = $k;
+	                }
+	            }
+	        } else {
+	            $filterFieldValues[] = true;
+	        }
+
+			$cbsf->setDefaultItems($filterFieldValues);
+			$fields->push($cbsf);
+		}
+
 		$actions = new FieldList(
 	      	new FormAction('results', 'Search')
 	  	);

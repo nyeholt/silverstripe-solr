@@ -5,7 +5,7 @@
  * This is an alternative encapsulation of search logic as it comprises much more than the out of the
  * box example. To use this instead of the default implementation, your search form call in Page should first
  * retrieve the SolrSearchPage to use as its context.
- * 
+ *
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
@@ -21,14 +21,17 @@ class SolrSearchPage extends Page {
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
 		'FacetFields'						=> 'MultiValueField',
-		'FacetMapping'						=> 'MultiValueField',
 		'FacetQueries'						=> 'MultiValueField',
 		'MinFacetCount'						=> 'Int',
+		'ExtraFacetFields'					=> 'MultiValueField',
+		'FilterFields'						=> 'MultiValueField',
+		//'ResultGroupBy'						=> 'Varchar(255)',
+		//'ResultGroupNames'					=> 'MultiValueField',
 
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
 	);
-	
+
 	public static $many_many = array(
 		'SearchTrees'			=> 'Page',
 	);
@@ -37,9 +40,9 @@ class SolrSearchPage extends Page {
 	 *
 	 * The facets we're interested in for this search page. This will be made a little more
 	 * flexible in later releases.
-	 * 
+	 *
 	 * for example with the alchemiser module -
-	 * 
+	 *
 	 * array (
 	 * 'AlcKeywords_ms',
 	 * 	'AlcPerson_ms',
@@ -70,7 +73,7 @@ class SolrSearchPage extends Page {
 	 * @var String
 	 */
 	public static $filter_param = 'filter';
-	
+
 	/**
 	 *
 	 * @var array
@@ -81,7 +84,7 @@ class SolrSearchPage extends Page {
 		$fields = parent::getCMSFields();
 
 		$fields->addFieldToTab('Root.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing - useful for filterable "data type" lists')), 'Content');
-		
+
 		if (class_exists('ListingTemplate')) {
 			$templates = DataObject::get('ListingTemplate');
 			if ($templates) {
@@ -98,7 +101,7 @@ class SolrSearchPage extends Page {
 		$fields->addFieldToTab('Root.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
 
 		$fields->addFieldToTab('Root.Main', new TreeMultiselectField('SearchTrees', 'Restrict results to these subtrees', 'Page'), 'Content');
-		
+
 		if (!$this->SortBy) {
 			$this->SortBy = 'Created';
 		}
@@ -110,8 +113,9 @@ class SolrSearchPage extends Page {
 		$types = SiteTree::page_type_classes();
 		$source = array_combine($types, $types);
 		asort($source);
-		
-		// add in any explicitly configured 
+		$source = array_merge(array('' => 'Any'), $source);
+
+		// add in any explicitly configured
 		$objects = DataObject::get('SolrTypeConfiguration');
 		if ($objects) {
 			foreach ($objects as $obj) {
@@ -120,9 +124,9 @@ class SolrSearchPage extends Page {
 		}
 
 		ksort($source);
-		
+
 		$source = array_merge($source, self::$additional_search_types);
-		
+
 		$types = new MultiValueDropdownField('SearchType', _t('SolrSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
 		$fields->addFieldToTab('Root.Main', $types, 'Content');
 
@@ -143,34 +147,58 @@ class SolrSearchPage extends Page {
 		}
 
 		$fields->addFieldToTab(
-			'Root.Main', 
+			'Root.Main',
 			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
 			'Content'
 		);
-		
+
+		$objFieldsMapping = array();
+		foreach($objFields as $o) {
+			$om = $this->getSolr()->getSolrFieldName($o, 'Page');
+			$objFieldsMapping[$om] = $o;
+		}
+
 		$fields->addFieldToTab(
-			'Root.Main', 
-			new MultiValueDropdownField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
-			'Content'
-		);
-		
-		$fields->addFieldToTab(
-			'Root.Main', 
-			new KeyValueField('FacetMapping', _t('SolrSearchPage.FACET_MAPPING', 'Mapping of facet title to nice title'), $objFields),
-			'Content'
-		);
-		
-		$fields->addFieldToTab(
-			'Root.Main', 
-			new KeyValueField('FacetQueries', _t('SolrSearchPage.FACET_QUERIES', 'Fields to create query facets for')),
-			'Content'
-		);
-		
-		$fields->addFieldToTab('Root.Main', 
-			new NumericField('MinFacetCount', _t('SolrSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2), 
+			'Root.Main',
+			new KeyValueField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Defined Fields to create facets for'), $objFields, $objFieldsMapping),
 			'Content'
 		);
 
+		$fields->addFieldToTab(
+			'Root.Main',
+			new KeyValueField('ExtraFacetFields', _t('SolrSearchPage.EXTRA_FACET_FIELDS', 'Fields to create facets for (solr field name, display name)')),
+			'Content'
+		);
+
+		$fields->addFieldToTab(
+			'Root.Main',
+			new KeyValueField('FacetQueries', _t('SolrSearchPage.FACET_QUERIES', 'Fields to create query facets for')),
+			'Content'
+		);
+
+		$fields->addFieldToTab('Root.Main',
+			new NumericField('MinFacetCount', _t('SolrSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2),
+			'Content'
+		);
+
+		$fields->addFieldToTab(
+			'Root.Main',
+			new KeyValueField('FilterFields', _t('SolrSearchpage.FILTER_FIELDS', 'Fields to filter by type (solr field name, display name)')),
+			'Content'
+		);
+/*
+		$fields->addFieldToTab(
+			'Root.Main',
+			new TextField('ResultGroupBy', _t('SolrSearchPage.RESULT_GROUP_BY', 'Field to Group Results By, leave blank for no grouping')),
+			'Content'
+		);
+
+		$fields->addFieldToTab(
+			'Root.Main',
+			new KeyValueField('ResultGroupNames', _t('SolrSearchPage.RESULT_GROUP_NAMES', 'Display Names for Result Groups (field, display name)')),
+			'Content'
+		);
+*/
 		return $fields;
 	}
 
@@ -184,13 +212,13 @@ class SolrSearchPage extends Page {
 		if (!$listType) {
 			$listType = $this->searchableTypes('Page');
 		}
-		
+
 		$availableFields = singleton('SolrSearchService')->getAllSearchableFieldsFor($listType);
 		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
-		$objFields['score'] = 'Score';
+		$objFields['Score'] = 'Score';
 
 		ksort($objFields);
 		return $objFields;
@@ -213,19 +241,21 @@ class SolrSearchPage extends Page {
 				$page->Content = '';
 				$page->ResultsPerPage = 10;
 				$page->Status = 'New page';
+				$page->SortBy = 'Score';
+				$page->SortDir = 'Descending';
 				$page->write();
 
 				DB::alteration_message('Search page created', 'created');
-			}	
+			}
 		}
-		
+
 	}
 
 	/**
-	 * Get the solr instance. 
-	 * 
+	 * Get the solr instance.
+	 *
 	 * Note that we do this as a method just in case we decide in future
-	 * that different pages can utilise different solr instances.. 
+	 * that different pages can utilise different solr instances..
 	 */
 	public function getSolr() {
 		if (!$this->solr) {
@@ -233,26 +263,33 @@ class SolrSearchPage extends Page {
 		}
 		return $this->solr;
 	}
-	
+
 	/**
 	 * Figures out the list of fields to use in faceting, based on configured / defaults
 	 */
 	public function fieldsForFacets() {
 		$fields = self::$facets;
-		if ($this->FacetFields && $ff = $this->FacetFields->getValues()) {
+		if ($this->FacetFields && $ff = $this->FacetFields->getValue()) {
 			$fields = array();
-			$types = $this->searchableTypes('Page');
-			foreach ($ff as $f) {
-				$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
-				$fields[] = $fieldName;
+
+			//$type = (strlen($this->SearchType) ? $this->SearchType : 'Page');
+			$type = 'Page';
+			foreach ($ff as $f => $n) {
+				$fields[] = $this->getSolr()->getSolrFieldName($f, $type);
 			}
 		}
 
-		return $fields;
+		if($eff = $this->getField('ExtraFacetFields')->getvalue()) {
+			$eff = array_keys($eff);
+		} else {
+			$eff = array();
+		}
+
+		return array_merge($fields, $eff);
 	}
 
 	/**
-	 * Get the list of field -> query items to be used for faceting by query 
+	 * Get the list of field -> query items to be used for faceting by query
 	 */
 	public function queryFacets() {
 		$fields = array();
@@ -264,7 +301,7 @@ class SolrSearchPage extends Page {
 
 	/**
 	 * Get the currently active query for this page, if any
-	 * 
+	 *
 	 * @return SolrResultSet
 	 */
 	public function getQuery() {
@@ -278,7 +315,7 @@ class SolrSearchPage extends Page {
 
 		$query = null;
 		$builder = $this->getSolr()->getQueryBuilder($this->QueryType);
-		
+
 		if (isset($_GET['Search'])) {
 			$query = $_GET['Search'];
 
@@ -296,14 +333,14 @@ class SolrSearchPage extends Page {
 				$types = array($fixedType);
 			}
 		}
-		
+
 		// (strlen($this->SearchType) ? $this->SearchType : null);
 
 		$fields = $this->getSelectableFields();
-		
+
 		// if we've explicitly set a sort by, then we want to make sure we have a type
 		// so we can resolve what the field name in solr is. Otherwise we don't care about type
-		// overly much 
+		// overly much
 		if (!count($types) && $sortBy) {
 			// default to page
 			$types = array('Page');
@@ -313,7 +350,7 @@ class SolrSearchPage extends Page {
 			$sortBy = 'score';
 		}
 
-		$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
+		$sortDir = ($sortDir == 'Ascending') ? 'asc' : 'desc';
 
 		$activeFacets = $this->getActiveFacets();
 		if (count($activeFacets)) {
@@ -331,14 +368,14 @@ class SolrSearchPage extends Page {
 			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $types);
 			$builder->andWith('ClassNameHierarchy_ms', $types);
 		}
-		
+
 		if ($this->SearchTrees()->count()) {
 			$parents = $this->SearchTrees()->column('ID');
 			$builder->andWith('ParentsHierarchy_ms', $parents);
 		}
 
 		if (!$sortBy) {
-			$sortBy = 'score';
+			$sortBy = 'Score';
 		}
 
 		$selectedFields = $this->SearchOnFields->getValues();
@@ -368,13 +405,23 @@ class SolrSearchPage extends Page {
 			$builder->boost($boostSetting);
 		}
 
+		if(isset($_GET['FieldFilter'])) {
+			$filterfields = array_keys($this->FilterFields->getvalues());
+			$filters = array_intersect_key($filterfields, array_flip((array)$_GET['FieldFilter']));
+			$filterquery = (count($filters) > 0) ? implode(array_values($filters), " ") : '';
+		} else {
+			$filterquery = '';
+		}
+
 		$params = array(
 			'facet' => 'true',
 			'facet.field' => $this->fieldsForFacets(),
 			'facet.limit' => 10,
 			'facet.mincount' => $this->MinFacetCount ? $this->MinFacetCount : 1,
-			'sort' => "$sortBy $sortDir",
-			'fl' => '*,score'
+			// solr requires case-senstive field definitions
+			'sort' => sprintf("%s %s", (($sortBy == 'Score') ? strtolower($sortBy) : $sortBy), $sortDir),
+			'fl' => '*,score',
+			'fq' => $filterquery
 		);
 
 		$fq = $this->queryFacets();
@@ -382,7 +429,16 @@ class SolrSearchPage extends Page {
 			$params['facet.query'] = array_keys($fq);
 		}
 
-		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
+
+		try {
+			$q = $this->getSolr()->query($builder, $offset, $limit, $params);
+			$this->query = $q;
+		} catch(Exception $e) {
+			if(!Director::isLive()) {
+				throw $e;
+			}
+		}
+
 		return $this->query;
 	}
 
@@ -392,7 +448,7 @@ class SolrSearchPage extends Page {
 	public function getActiveFacets() {
 		return isset($_GET[self::$filter_param]) ? $_GET[self::$filter_param] : array();
 	}
-	
+
 	/**
 	 * get the list of types that we've selected to search on
 	 */
@@ -430,82 +486,6 @@ class SolrSearchPage extends Page {
 			}
 		}
 	}
-	
-	/**
-	 * Retrieve all facets in the result set in a way that can be iterated 
-	 * over conveniently. 
-	 * 
-	 * @return \ArrayList 
-	 */
-	public function AllFacets() {
-		$facets = $this->currentFacets();
-		$result = array();
-		$mapping = $this->facetFieldMapping();
-		foreach ($facets as $title => $items) {
-			$object = new ViewableData();
-			$object->Items = $this->currentFacets($title);
-			$title = isset($mapping[$title]) ? $mapping[$title] : $title;
-			$object->Title = Varchar::create_field('Varchar', $title);
-			$result[] = $object;
-		}
-		return new ArrayList($result);
-	}
-	
-	/**
-	 * Retrieve the mapping of facet field name (eg FieldName_mt) 
-	 * mapped to the user entered nice name
-	 * 
-	 * @return type 
-	 */
-	protected function facetFieldMapping() {
-		$fields = array();
-		if ($this->FacetMapping && $ff = $this->FacetMapping->getValues()) {
-			$types = $this->searchableTypes('Page');
-			foreach ($ff as $f => $mapped) {
-				$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
-				$fields[$fieldName] = $mapped;
-			}
-		}
-		return $fields;
-	}
-
-	/**
-	 * Get the list of facet values for the given term
-	 *
-	 * @param String $term
-	 */
-	public function currentFacets($term=null) {
-		if (!$this->getQuery()) {
-			return new ArrayList(array());
-		}
-
-		$facets = $this->getQuery()->getFacets();
-		$queryFacets = $this->queryFacets();
-
-		if ($term) {
-			// return just that term
-			$ret = isset($facets[$term]) ? $facets[$term] : null;
-			// lets update them all and add a link parameter
-			$result = array();
-			if ($ret) {
-				foreach ($ret as $facetTerm) {
-					// if it's a query facet, then we may have a label for it 
-					if (isset($queryFacets[$facetTerm->Name])) {
-						$facetTerm->Name = $queryFacets[$facetTerm->Name];
-					}
-					$sq = $this->SearchQuery();
-					$sep = strlen($sq) ? '&amp;' : '';
-					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=$facetTerm->Query";
-					$facetTerm->QuotedSearchLink = $this->Link('results') . '?' . $sq .$sep. self::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
-					$result[] = new ArrayData($facetTerm);
-				}
-			}
-
-			return new ArrayList($result);
-		}
-
-		return new ArrayList($facets);
-	}
 }
 
 class SolrSearchPage_Controller extends Page_Controller {
@@ -513,14 +493,14 @@ class SolrSearchPage_Controller extends Page_Controller {
 	protected function getSolr() {
 		return $this->data()->getSolr();
 	}
-	
+
 	public function index() {
 		if ($this->StartWithListing) {
 			$_GET['SortBy'] = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 			$_GET['SortDir'] = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
 			$_GET['Search'] = '*';
 			$this->DefaultListing = true;
-			
+
 			return $this->results();
 		}
 		return array();
@@ -538,8 +518,25 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
 		$fields->push(new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->data()->dbObject('SortDir')->enumValues(), $sortDir));
 
+		if($f = $this->getField('FilterFields')->getValue()) {
+			$cbsf = new CheckBoxSetField('FieldFilter', '', array_values($f));
+
+			$filterFieldValues = array();
+			if(isset($_GET['FieldFilter'])) {
+				foreach(array_values($f) as $k => $v) {
+					if(in_array($k, (array)$_GET['FieldFilter'])) {
+						$filterFieldValues[] = $k;
+					}
+				}
+			} else {
+				$filterFieldValues[] = true;
+			}
+			$cbsf->setValue($filterFieldValues);
+			$fields->push($cbsf);
+		}
+
 		$actions = new FieldList(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
-		
+
 		$form = new Form($this, 'Form', $fields, $actions);
 		$form->addExtraClass('searchPageForm');
 		$form->setFormMethod('GET');
@@ -549,8 +546,9 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 	public function FacetCrumbs() {
 		$activeFacets = $this->data()->getActiveFacets();
-		$parts = array();
 		$queryString = $this->data()->SearchQuery();
+
+		$parts = new ArrayList();
 		if (count($activeFacets)) {
 			foreach ($activeFacets as $facetName => $facetValues) {
 				foreach ($facetValues as $i => $v) {
@@ -558,13 +556,90 @@ class SolrSearchPage_Controller extends Page_Controller {
 					$item->Name = $v;
 					$paramName = urlencode(SolrSearchPage::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
 					$item->RemoveLink = $this->Link('results') . '?' . str_replace($paramName, '', $queryString);
-					$parts[] = new ArrayData($item);
+					$parts->push(new ArrayData($item));
 				}
 			}
 		}
 
-		return new ArrayList($parts);
+		return $parts;
 	}
+
+	/**
+	 * Get the list of facet values for the given term
+	 *
+	 * @param String $term
+	 */
+	public function currentFacets($term=null) {
+		if (!$this->getQuery()) {
+			return new ArrayList();
+		}
+		$facets = $this->getQuery()->getFacets();
+
+		if ($term) {
+			// return just that term
+			$ret = isset($facets[$term]) ? $facets[$term] : null;
+			// lets update them all and add a link parameter
+			if ($ret) {
+				foreach ($ret as $facetTerm) {
+					$sq = urldecode($this->SearchQuery());
+					$sep = strlen($sq) ? '&amp;' : '';
+					$facetTerm->SearchLink = $this->Link('results') . '?' . $sq .$sep. SolrSearchpage::$filter_param . "[$term][]=$facetTerm->Name";
+					$facetTerm->QuotedSearchLink = $this->Link('results') . '?' . $sq .$sep. SolrSearchPage::$filter_param . "[$term][]=&quot;$facetTerm->Name&quot;";
+				}
+			}
+			return new ArrayList($ret);
+		}
+
+		return $facets;
+	}
+
+	/*
+	 * Count the actual facets
+	 * @return int
+	 */
+	function numFacets()
+	{
+		$f = $this->currentFacets();
+		return (count($f, COUNT_RECURSIVE) - count($f));
+	}
+
+    /**
+     * Retrieve all facets in the result set in a way that can be iterated
+     * over conveniently.
+     *
+     * @return \ArrayList
+     */
+	public function AllFacets() {
+        $facets = $this->currentFacets();
+        $result = array();
+
+		$niceNames = $this->getField('ExtraFacetFields')->getValue();
+		if (!$niceNames) {
+			$niceNames = array();
+		}
+
+		$definedFacets = $this->getField('FacetFields')->getValue();
+		if (!$definedFacets) {
+			$definedFacets = array();
+		}
+		$niceNames = array_merge($niceNames, array_flip($definedFacets));
+
+		if($facets) {
+			foreach ($facets as $title => $items) {
+				$niceTitle = (array_key_exists($title, $niceNames)) ? $niceNames[$title] : $title;
+				$result[$title] = new ArrayData(array('Title' => $niceTitle, 'Facets' => new ArrayList()));
+				foreach($items as $i) {
+					if($this->FacetCrumbs()->find('Name', sprintf('"%s"', $i->Name))) continue;
+					$i->Title = $niceTitle;
+
+					$i->Link = $this->Link(sprintf('results?%s&%s[%s][]=%s', $this->SearchQuery(), SolrSearchPage::$filter_param, $title, $i->Name));
+					$i->QuotedSearchLink = $this->Link(sprintf('results?%s&%s[%s][]=%%22%s%%22', $this->SearchQuery(), SolrSearchPage::$filter_param, $title, $i->Name));
+					$result[$title]->Facets->push(new ArrayData($i));
+				}
+			}
+		}
+        return new ArrayList($result);
+    }
 
 	/**
 	 * Process and render search results
@@ -573,9 +648,48 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$query = $this->data()->getQuery();
 
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
-		
-		$results = $query ? $query->getDataObjects() : ArrayList::create();
-		
+
+		$resultSet = $query ? $query->getDataObjects() : ArrayList::create();
+		$sortby  = (!isset($_GET['SortBy']) || $_GET['SortBy'] == 'any') ? $this->SortBy : $_GET['SortBy'];
+		$sortdir = (!isset($_GET['SortDir'])) ? $this->SortDir : $_GET['SortDir'];
+		$sortdir = ($sortdir == 'Descending') ? 'DESC' : 'ASC';
+
+/*
+		if($this->ResultGroupBy) {
+			$rs = new ArrayList();
+
+			$niceNames = $this->getField('ResultGroupNames')->getvalue();
+			$resultSet = $resultSet->groupBy($this->ResultGroupBy);
+			foreach($resultSet as $g => $set) {
+				$title = (array_key_exists($g, $niceNames)) ? $niceNames[$g] : 'Other Results';
+
+				// not very efficient.
+				$count = (float)0;
+				foreach($set as $i) {
+					$count += $i->SearchScore;
+				}
+
+				if($ds = $rs->find('Ttile', $title)) {
+					$ds->count += $count;
+					$ds->Results->merge($set);
+					$ds->sort($sortby, $sortdir);
+					continue;
+				}
+
+				$num = ($n = count($set)) ? $n : 1;
+				$rs->push(new ArrayData(array(
+					'Title' => $title,
+					'Results' => $set,
+					'Score' => $count / $num,
+					'Class'	=> strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $title))
+				)));
+
+			}
+			$resultSet = $rs;
+		}
+*/
+		$resultSet->sort($sortby, $sortdir);
+
 		if ($query) {
 			$resultData = array(
 				'TotalResults'		=> $query->getTotalResults()
@@ -585,7 +699,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 		}
 
 	  	$data = array(
-	     	'Results'		=> $results,
+	     	'Results'		=> $resultSet,
 	     	'Query'			=> Varchar::create_field('Varchar', $term),
 	      	'Title'			=> $this->data()->Title,
 			'ResultData'	=> ArrayData::create($resultData)
@@ -594,10 +708,10 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$me = $this->class . '_results';
 	  	return $this->customise($data)->renderWith(array($me, 'SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 	}
-	
+
 	/**
 	 * Return the results with a template applied to them based on the page's listing template
-	 *  
+	 *
 	 */
 	public function TemplatedResults() {
 		$query = $this->data()->getQuery();

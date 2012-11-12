@@ -1,8 +1,8 @@
 <?php
- 
+
 /**
  * A decorator that adds the ability to index a DataObject in Solr
- * 
+ *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  *
@@ -10,7 +10,7 @@
 class SolrIndexable extends DataExtension {
 	/**
 	 * We might not want to index, eg during a data load
-	 * 
+	 *
 	 * @var boolean
 	 */
 	public static $indexing = true;
@@ -21,18 +21,18 @@ class SolrIndexable extends DataExtension {
 	 * @var boolean
 	 */
 	public static $index_draft = true;
-	
+
 	/**
 	 * @var array
 	 */
 	public static $dependencies = array(
 		'searchService'		=> '%$SolrSearchService',
 	);
-	
+
 	public static $db = array(
 		'ResultBoost'		=> 'Int',
 	);
-	
+
 	protected function createIndexJob($item, $stage = null, $mode = 'index') {
 		$job = new SolrIndexItemJob($item, $stage, $mode);
 		Injector::inst()->get('QueuedJobService')->queueJob($job);
@@ -59,12 +59,12 @@ class SolrIndexable extends DataExtension {
 		if (!self::$indexing) return;
 
 		$changes = $this->owner->getChangedFields(true, 2);
-		
+
 		if (count($changes)) {
-			
+
 			$stage = null;
 			// if it's being written and a versionable, then save only in the draft
-			// repository. 
+			// repository.
 			if ($this->owner->hasExtension('Versioned')) {
 				$stage = 'Stage';
 			}
@@ -79,10 +79,10 @@ class SolrIndexable extends DataExtension {
 	}
 
 	/**
-	 * If unpublished, we delete from the index then reindex the 'stage' version of the 
+	 * If unpublished, we delete from the index then reindex the 'stage' version of the
 	 * content
 	 *
-	 * @return 
+	 * @return
 	 */
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;

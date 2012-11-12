@@ -70,7 +70,7 @@ class SolrResultSet
 	}
 
 	public function getErrors() {
-		
+
 	}
 
 	/**
@@ -138,13 +138,13 @@ class SolrResultSet
 						list($type, $id) = $bits;
 						$stage = Versioned::current_stage();
 					}
-					
+
 					if (!$type || !$id) {
 						singleton('SolrUtils')->log("Invalid solr document ID $doc->id", SS_Log::WARN);
 						continue;
 					}
 
-					// a double sanity check for the stage here. 
+					// a double sanity check for the stage here.
 					if ($currentStage = Versioned::current_stage()) {
 						if ($currentStage != $stage) {
 							continue;
