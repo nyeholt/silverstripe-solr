@@ -9,7 +9,7 @@
 class SolrAdminController extends ModelAdmin {
 	public static $menu_title = 'Solr';
 	public static $url_segment = 'solr';
-	
+
 	public static $managed_models = array(
 		'SolrTypeConfiguration'
 	);
@@ -18,30 +18,30 @@ class SolrAdminController extends ModelAdmin {
 		'ReindexForm',
 		'EditForm',
 	);
-	
+
 	public static $dependencies = array(
 		'searchService' => '%$SolrSearchService',
 	);
 
 	public function init() {
 		parent::init();
-		
+
 		Requirements::javascript('solr/javascript/solr.js');
 	}
-	
+
 	/**
 	 *
 	 * @param SS_Request $request
-	 * @return Form 
+	 * @return Form
 	 */
 	public function getEditForm($id = null, $fields = null) {
 		$form = parent::getEditForm($id, $fields);
-		
-		
+
+
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 //			return $form;
 		}
-		
+
 		if (!Permission::check('ADMIN')) {
 			return $form;
 		}
@@ -50,9 +50,9 @@ class SolrAdminController extends ModelAdmin {
 
 		$config = $this->searchService->localEngineConfig();
 		$allow = $config->RunLocal;
-		
+
 		$fields->push(new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
-		
+
 		if ($allow) {
 			$status = $this->searchService->localEngineStatus();
 
@@ -64,17 +64,17 @@ class SolrAdminController extends ModelAdmin {
 
 			$log = $this->searchService->getLogData(100);
 			$log = array_reverse($log);
-			
+
 			$fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log')));
-			
+
 			$logtxt->setColumns(20)->setRows(15)->setValue(implode($log));
 		}
 
-		
+
 		$form->Actions()->push(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
-		
+
 		$form->Actions()->push(new FormAction('reindex', _t('SolrAdmin.REINDEX', 'Reindex')));
-		
+
 //		$actions = new FieldSet();
 //		$form = new Form($this, 'EditForm', $fields, $actions);
 		return $form;
@@ -88,7 +88,7 @@ class SolrAdminController extends ModelAdmin {
 		$config = $this->searchService->localEngineConfig();
 		$config->RunLocal = $data['RunLocal'];
 		$this->searchService->saveEngineConfig($config);
-		
+
 		if (isset($data['Start']) && $data['Start']) {
 			$this->searchService->startSolr();
 			sleep(2);
@@ -101,9 +101,9 @@ class SolrAdminController extends ModelAdmin {
 		} else {
 			$this->redirectBack();
 		}
-		
+
 	}
-	
+
 	public function reindex($data, Form $form) {
 		$task = singleton('SolrReindexTask');
 		if ($task) {
