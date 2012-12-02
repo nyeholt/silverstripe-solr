@@ -30,43 +30,55 @@ class SolrReindexTask extends BuildTask
 			$this->types[] = $type;
 		}
 
-		$search = singleton('SolrSearchService');
+		// Shoaib - for some reason when the [Reindex] button is hit in ModelAdmin $request does not have $type variable set
+		// it gets set in the constructor from SolarAdminController
+		
+		foreach ($this->types as $type) {
 
-		if (isset($_GET['delete_all'])) {
-			$search->getSolr()->deleteByQuery('*:*');
-		} else {
-			$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $type);
-		}
-		$search->getSolr()->commit();
+			$search = singleton('SolrSearchService');
 
-		if (ClassInfo::exists('QueuedJob')) {
-			$job = new SolrReindexJob($type);
-			$svc = singleton('QueuedJobService');
-			$svc->queueJob($job);
-			echo "<p>Reindexing job has been queued</p>";
-			return;
-		}
-
-		// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
-		$pages = DataObject::get($type);
-
-		/* @var $search SolrSearchService */
-		$count = 0;
-		foreach ($pages as $page) {
-			if ($page->hasField('Status')) {
-				$search->index($page, 'Draft');
-				if ($page->Status == 'Published') {
-					$search->index($page, 'Live');
-				}
-				echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
-				$count ++;
+			if (isset($_GET['delete_all'])) {
+				$search->getSolr()->deleteByQuery('*:*');
 			} else {
-				$search->index($page);
-				echo "<p>Reindexed $type ID#$page->ID</p>\n";
-				$count ++;
+				$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $type);
 			}
+			$search->getSolr()->commit();
+
+			if (ClassInfo::exists('QueuedJob')) {
+				$job = new SolrReindexJob($type);
+				$svc = singleton('QueuedJobService');
+				$svc->queueJob($job);
+				echo "<p>Reindexing job has been queued for " . $type . "</p>";
+				//return;
+			}
+
 		}
 
-		echo "Reindex complete, $count objects re-indexed<br/>";
+		if (ClassInfo::exists('QueuedJob')) 
+			 return;
+
+			// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
+		foreach ($this->types as $type) {
+			$pages = DataObject::get($type);
+
+			/* @var $search SolrSearchService */
+			$count = 0;
+			foreach ($pages as $page) {
+				if ($page->hasField('Status')) {
+					$search->index($page, 'Draft');
+					if ($page->Status == 'Published') {
+						$search->index($page, 'Live');
+					}
+					echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
+					$count ++;
+				} else {
+					$search->index($page);
+					echo "<p>Reindexed $type ID#$page->ID</p>\n";
+					$count ++;
+				}
+			}
+
+			echo "Reindex complete, $count objects re-indexed<br/>";
+		}
 	}
 }
