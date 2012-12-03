@@ -126,7 +126,7 @@ class SolrResultSet
 			$this->dataObjects = ArrayList::create();
 
 			$result = $this->getResult();
-			$documents = $result->response;
+			$documents = $result && isset($result->response) ? $result->response : null;
 
 			if ($documents && isset($documents->docs)) {
 				$totalAdded = 0;
