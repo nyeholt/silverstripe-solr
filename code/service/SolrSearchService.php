@@ -42,6 +42,13 @@ class SolrSearchService {
 	 * @var String
 	 */
 	public static $mapper_class = 'SolrSchemaMapper';
+	
+	/**
+	 * The Solr transport to use if needed
+	 *
+	 * @var Apache_Solr_HttpTransport_Interface
+	 */
+	public $solrTransport;
 
 	/**
 	 * The mapper to use to map silverstripe objects to a solr schema
@@ -483,7 +490,10 @@ class SolrSearchService {
 	 */
 	public function getSolr() {
 		if (!$this->client) {
-			$this->client = new Apache_Solr_Service(self::$solr_details['host'], self::$solr_details['port'], self::$solr_details['context']);
+			if (!$this->solrTransport) {
+				$this->solrTransport = new Apache_Solr_HttpTransport_Curl;
+			}
+			$this->client = new Apache_Solr_Service(self::$solr_details['host'], self::$solr_details['port'], self::$solr_details['context'], $this->solrTransport);
 		}
 
 		return $this->client;
