@@ -1,0 +1,18 @@
+{
+	"name": "silverstripe/solr",
+	"description": "Solr integration for SilverStripe. Note that this is NOT related to the silverstripe/fulltext package.",
+	"type": "silverstripe-module",
+	"keywords": ["silverstripe", "solr", "search"],
+	"license": "BSD-3-Clause",
+	"authors": [
+	{
+		"name": "Marcus Nyeholt",
+		"email": "marcus@silverstirpe.com.au"
+	}
+	],
+	"require":
+	{
+		"silverstripe/cms": ">=3.0.0",
+		"silverstripe/multivaluefield": "dev-master"
+	}
+}

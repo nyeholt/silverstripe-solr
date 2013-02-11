@@ -790,6 +790,9 @@ class SolrSchemaMapper {
 			case 'Integer': {
 				return $field . '_i';
 			}
+			case 'SolrGeoPoint': {
+				return $field . '_p';
+			}
 			default: {
 				return $field . '_txt';
 			}
@@ -825,6 +828,9 @@ class SolrSchemaMapper {
 				case 'HTMLText': {
 						return strip_tags($value);
 					}
+				case 'SolrGeoPoint': {
+					return $value->y . ',' . $value->x;
+				}
 				default: {
 						return $value;
 					}
