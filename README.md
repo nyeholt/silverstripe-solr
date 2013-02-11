@@ -1,6 +1,11 @@
 Solr Search Module
 ==================
 
+A module that adds the ability to index content in a Solr instances, and to then search that content.
+
+Provides a SolrSearchPage type that allows CMS authors to configure a search page within the CMS
+to display results without needing to perform code behind to determine how the search works. 
+
 Maintainer Contact
 ------------------
 Marcus Nyeholt
