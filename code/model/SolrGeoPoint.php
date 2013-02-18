@@ -50,7 +50,7 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 
 	public function compositeDatabaseFields() {
 		return array(
-			$this->name => "SolrGeoPoint"
+			'' => "SolrGeoPoint"
 		);
 	}
 

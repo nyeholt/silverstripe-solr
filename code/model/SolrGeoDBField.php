@@ -54,7 +54,9 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 	 */
 	function addToQuery(&$query) {
 		parent::addToQuery($query);
-		$query->addSelect("AsText({$this->name}) AS {$this->name}_AsText");
+		$query->selectField("AsText({$this->name})", "{$this->name}");
+		
+		// $query->addSelect("AsText({$this->name}) AS {$this->name}_AsText");
 		// $query->select[] = "AsText({$this->name}) AS {$this->name}_AsText";
 	}
 
@@ -74,7 +76,7 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 		} else if(is_array($value) && $this->hasMethod('setAsArray')) {
 			$this->setAsArray($value);
 		} else {
-			user_error("{$this->class}::setValue() - Bad value " . var_export($value, true), E_USER_ERROR);
+			// user_error("{$this->class}::setValue() - Bad value " . var_export($value, true), E_USER_ERROR);
 		}
 
 		$this->isChanged = true;
