@@ -14,11 +14,16 @@ class SolrQueryBuilder {
 	protected $fields = array('title', 'text');
 	protected $and = array();
 	protected $params = array();
+	
+	protected $filters = array();
+	
 	/**
 	 * an array of field => amount to boost
 	 * @var array
 	 */
 	protected $boost = array();
+	
+	protected $sort;
 
 	public function baseQuery($query) {
 		$this->userQuery = $query;
@@ -26,6 +31,10 @@ class SolrQueryBuilder {
 	
 	public function queryFields($fields) {
 		$this->fields = $fields;
+	}
+	
+	public function sortBy($field, $direction) {
+		$this->sort = "$field $direction";
 	}
 	
 	public function andWith($field, $value) {
@@ -48,6 +57,12 @@ class SolrQueryBuilder {
 	}
 	
 	public function getParams() {
+		if (count($this->filters)) {
+			$this->params['fq'] = implode(' AND ', $this->filters);
+		}
+		if ($this->sort) {
+			$this->params['sort'] = $this->sort;
+		}
 		return $this->params;
 	}
 
@@ -97,5 +112,32 @@ class SolrQueryBuilder {
 		}
 
 		return $rawQuery;
+	}
+	
+	/**
+	 * Add a filter query clause. 
+	 * 
+	 * Filter queries simply restrict the result set without affecting the score of results
+	 * 
+	 * @param string $query
+	 */
+	public function addFilter($query) {
+		$this->filters[] = $query;
+	}
+	
+	/**
+	 * Apply a geo field restriction around a particular point
+	 * 
+	 * @param string $point 
+	 *					The point in "lat,lon" format
+	 * @param string $field
+	 * @param float $radius
+	 */
+	public function restrictNearPoint($point, $field, $radius) {
+		$this->addFilter("{!geofilt}");
+		
+		$this->params['sfield'] = $field;
+		$this->params['pt'] = $point;
+		$this->params['d'] = $radius;
 	}
 }

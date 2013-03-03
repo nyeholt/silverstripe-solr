@@ -154,6 +154,12 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 	function getLng() {
 		return $this->x;
 	}
+	
+	public function latLon() {
+		if ($this->x && $this->y) {
+			return "{$this->getLat()},{$this->getLng()}";
+		}
+	}
 
 	function setLat($lat) {
 		$this->y = (float)$lat;

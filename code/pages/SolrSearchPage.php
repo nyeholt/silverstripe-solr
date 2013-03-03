@@ -24,6 +24,8 @@ class SolrSearchPage extends Page {
 		'FacetMapping'						=> 'MultiValueField',
 		'FacetQueries'						=> 'MultiValueField',
 		'MinFacetCount'						=> 'Int',
+		
+		'FilterFields'						=> 'MultiValueField',
 
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
@@ -147,6 +149,14 @@ class SolrSearchPage extends Page {
 			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
 			'Content'
 		);
+		
+		$fields->addFieldToTab(
+			'Root.Main',
+			$kv = new KeyValueField('FilterFields', _t('SolrSearchpage.FILTER_FIELDS', 'Fields to filter by')),
+			'Content'
+		);
+		
+		$kv->setRightTitle("Lucene clauses that don't affect score");
 		
 		$fields->addFieldToTab(
 			'Root.Main', 
@@ -367,6 +377,17 @@ class SolrSearchPage extends Page {
 			}
 			$builder->boost($boostSetting);
 		}
+		
+		if(isset($_GET['FieldFilter'])) {
+			$filterfields = array_keys($this->FilterFields->getvalues());
+			$filters = array_intersect_key($filterfields, array_flip((array)$_GET['FieldFilter']));
+			if (count($filters)) {
+				foreach ($filters as $filter) {
+					$builder->addFilter($filter);
+				}
+			}
+			
+		} 
 
 		$params = array(
 			'facet' => 'true',

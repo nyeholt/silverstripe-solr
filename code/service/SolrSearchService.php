@@ -139,10 +139,11 @@ class SolrSearchService {
 	/**
 	 * Gets the query builder for the given search type
 	 *
-	 * @param SolrQueryBuilder $type 
+	 * @param string $type 
+	 * @return SolrQueryBuilder
 	 */
 	public function getQueryBuilder($type='default') {
-		return isset($this->queryBuilders[$type]) ? new $this->queryBuilders[$type] : new $this->queryBuilders['default'];
+		return isset($this->queryBuilders[$type]) ? Injector::inst()->create($this->queryBuilders[$type]) : Injector::inst()->create($this->queryBuilders['default']);
 	}
 
 	/**
