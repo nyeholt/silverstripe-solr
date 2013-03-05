@@ -1,3 +1,13 @@
+2013-03-05 v2.2.0
+-----------------
+
+* Added geo spatial options for geo-restriction of results on SolrSearchPage
+* Moved parts of SolrSearchPage to SolrQueryBuilder so that things like sorting
+  are part of the query building process, not manually applied to a params
+  array
+* Fixed some issues with the indexing process to make clear distinction between
+  Live and Stage by retrieving the right content from Versioned:: methods
+
 2013-02-14 v2.1.1
 -----------------
 

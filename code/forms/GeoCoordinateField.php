@@ -23,8 +23,8 @@ class GeoCoordinateField extends FormField {
 
 	function Field($properties = array()) {
 		return "<div class=\"fieldgroup\">" .
-			"<div class=\"fieldgroupField\">" . $this->xField->SmallFieldHolder() . "</div>" . 
 			"<div class=\"fieldgroupField\">" . $this->yField->SmallFieldHolder() . "</div>" . 
+			"<div class=\"fieldgroupField\">" . $this->xField->SmallFieldHolder() . "</div>" . 
 		"</div>";
 	}
 

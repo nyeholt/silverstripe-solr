@@ -45,18 +45,25 @@ if (class_exists('AbstractQueuedJob')) {
 				$this->isComplete = true;
 				return;
 			}
+			
+			$mode = Versioned::get_reading_mode();
+			Versioned::reading_stage('Stage');
 
 			// index away
 			$service = singleton('SolrSearchService');
 			// only explicitly index live/stage versions if the object has the appropriate extension
 			if ($page->hasExtension('Versioned')) {
 				$service->index($page, 'Stage');
-				if ($page->Status == 'Published' || !$page->Status) {
-					$service->index($page, 'Live');
+				$live = Versioned::get_one_by_stage($page->ClassName, 'Live', '"ID" = ' . $page->ID);
+				if ($live) {
+					$service->index($live, 'Live');
+					echo "<p>Reindexed Live version of $live->Title</p>\n";
 				}
 			} else {
 				$service->index($page);
 			}
+
+			Versioned::set_reading_mode($mode);
 
 			$this->currentStep++;
 			$this->lastIndexedID = $page->ID;

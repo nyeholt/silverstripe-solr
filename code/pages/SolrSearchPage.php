@@ -20,17 +20,26 @@ class SolrSearchPage extends Page {
 		'SearchType'						=> 'MultiValueField',	// types that a user can search within
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
+
+		// faceting fields
 		'FacetFields'						=> 'MultiValueField',
 		'FacetMapping'						=> 'MultiValueField',
 		'FacetQueries'						=> 'MultiValueField',
 		'MinFacetCount'						=> 'Int',
-		
+
+		// filter fields (not used for relevance, just for restricting data set)
 		'FilterFields'						=> 'MultiValueField',
 
+		// geo spatial options
+		'GeoRestrictionField'				=> 'Varchar(64)',
+		'GeoCentre'							=> 'SolrGeoPoint',
+		'GeoRadius'							=> 'Double',
+		'DistanceSort'						=> "Enum(',asc,desc','asc')",
+		
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
 	);
-	
+
 	public static $many_many = array(
 		'SearchTrees'			=> 'Page',
 	);
@@ -78,12 +87,21 @@ class SolrSearchPage extends Page {
 	 * @var array
 	 */
 	public static $additional_search_types = array();
+	
+	public static $dependencies = array(
+		'solrSearchService'			=> '%$SolrSearchService',
+	);
+
+	/**
+	 * @var SolrSearchService
+	 */
+	public $solrSearchService;
 
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
 
 		$fields->addFieldToTab('Root.Main', new CheckboxField('StartWithListing', _t('SolrSearchPage.START_LISTING', 'Display initial listing - useful for filterable "data type" lists')), 'Content');
-		
+
 		if (class_exists('ListingTemplate')) {
 			$templates = DataObject::get('ListingTemplate');
 			if ($templates) {
@@ -100,7 +118,7 @@ class SolrSearchPage extends Page {
 		$fields->addFieldToTab('Root.Main',new DropdownField('ResultsPerPage', _t('SolrSearchPage.RESULTS_PER_PAGE', 'Results per page'), $perPage), 'Content');
 
 		$fields->addFieldToTab('Root.Main', new TreeMultiselectField('SearchTrees', 'Restrict results to these subtrees', 'Page'), 'Content');
-		
+
 		if (!$this->SortBy) {
 			$this->SortBy = 'Created';
 		}
@@ -122,7 +140,7 @@ class SolrSearchPage extends Page {
 		}
 
 		ksort($source);
-		
+
 		$source = array_merge($source, self::$additional_search_types);
 		
 		$types = new MultiValueDropdownField('SearchType', _t('SolrSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
@@ -130,7 +148,7 @@ class SolrSearchPage extends Page {
 
 		$fields->addFieldToTab('Root.Main', new MultiValueDropdownField('SearchOnFields', _t('SolrSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
 
-		$parsers = singleton('SolrSearchService')->getQueryBuilders();
+		$parsers = $this->solrSearchService->getQueryBuilders();
 		$options = array();
 		foreach ($parsers as $key => $objCls) {
 			$obj = new $objCls;
@@ -158,6 +176,8 @@ class SolrSearchPage extends Page {
 		
 		$kv->setRightTitle("Lucene clauses that don't affect score");
 		
+		$fields->addFieldToTab('Root.Main', new HeaderField('FacetHeader', _t('SolrSearchPage.FACET_HEADER', 'Facet Settings')), 'Content');
+		
 		$fields->addFieldToTab(
 			'Root.Main', 
 			new MultiValueDropdownField('FacetFields', _t('SolrSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
@@ -180,6 +200,39 @@ class SolrSearchPage extends Page {
 			new NumericField('MinFacetCount', _t('SolrSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2), 
 			'Content'
 		);
+		
+		
+		// geo spatial field stuff
+		$fields->addFieldToTab('Root.Main', $geoHeader = new HeaderField('GeoHeader', _t('SolrSearchPage.GEO_HEADER', 'Geospatial Settings')), 'Content');
+		
+		$fields->addFieldToTab('Root.Main',
+			new GeoCoordinateField('GeoCentre', _t('SolrSearchPage.GEO_CENTRE', 'Centre for geo restriction')),
+			'Content'
+		);
+		
+		$geoFields = $this->getGeoSelectableFields();
+		$geoFields = array_merge(array('' => ''), $geoFields);
+		$fields->addFieldToTab('Root.Main', 
+			$geoField = new DropdownField('GeoRestrictionField', _t('SolrSearchPage.RESTRICT_BY', 'Geo field to restrict within radius'), $geoFields), 
+			'Content'
+		);
+		$geoField->setRightTitle('Leave the geo field blank and no geospatial restriction will be used');
+
+		$fields->addFieldToTab('Root.Main', 
+			new NumericField('GeoRadius', _t('SolrSearchPage.RESTRICT_RADIUS', 'Restrict results within radius (in km)')), 
+			'Content'
+		);
+
+		$distanceOpts = array(
+			'' => 'None', 
+			'asc' => 'Nearest to furthest',
+			'desc' => 'Furthest to nearest', 
+		);
+
+		$fields->addFieldToTab('Root.Main', 
+			new DropdownField('DistanceSort', _t('SolrSearchPage.SORT_BY_DISTANCE', 'Sort by distance from point'), $distanceOpts), 
+			'Content'
+		);
 
 		return $fields;
 	}
@@ -188,22 +241,58 @@ class SolrSearchPage extends Page {
 	 * Return the fields that can be selected for sorting operations.
 	 *
 	 * @param String $listType
-	 * @return string
+	 * @return array
 	 */
-	public function getSelectableFields($listType=null) {
+	public function getSelectableFields($listType = null, $excludeGeo = true) {
 		if (!$listType) {
 			$listType = $this->searchableTypes('Page');
 		}
-		
-		$availableFields = singleton('SolrSearchService')->getAllSearchableFieldsFor($listType);
+
+		$availableFields = $this->solrSearchService->getAllSearchableFieldsFor($listType);
 		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
 		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
 		$objFields['score'] = 'Score';
-
+		
+		if ($excludeGeo) {
+			// need to filter out any fields that are of geopoint type, as we can't use those for search
+			if (!is_array($listType)) {
+				$listType = array($listType);
+			}
+			foreach ($listType as $classType) {
+				$db = Config::inst()->get($classType, 'db');
+				foreach ($db as $name => $type) {
+					if (is_subclass_of($type, 'SolrGeoPoint') || $type == 'SolrGeoPoint') {
+						unset($objFields[$name]);
+					}
+				}
+			}
+		}
+		
 		ksort($objFields);
 		return $objFields;
+	}
+	
+	/**
+	 * Get a list of geopoint fields that are selectable 
+	 */
+	public function getGeoSelectableFields() {
+		$all = $this->getSelectableFields(null, false);
+		$listTypes = $this->searchableTypes('Page');
+		$geoFields = array();
+		
+		foreach ($listTypes as $classType) {
+			$db = Config::inst()->get($classType, 'db');
+			foreach ($db as $name => $type) {
+				if (is_subclass_of($type, 'SolrGeoPoint') || $type == 'SolrGeoPoint') {
+					$geoFields[$name] = $name;
+				}
+			}
+		}
+
+		ksort($geoFields);
+		return $geoFields;
 	}
 
 	/**
@@ -239,7 +328,7 @@ class SolrSearchPage extends Page {
 	 */
 	public function getSolr() {
 		if (!$this->solr) {
-			$this->solr = singleton('SolrSearchService');
+			$this->solr = $this->solrSearchService;
 		}
 		return $this->solr;
 	}
@@ -338,7 +427,7 @@ class SolrSearchPage extends Page {
 		$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
 
 		if (count($types)) {
-			$sortBy = singleton('SolrSearchService')->getSortFieldName($sortBy, $types);
+			$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
 			$builder->andWith('ClassNameHierarchy_ms', $types);
 		}
 		
@@ -350,6 +439,8 @@ class SolrSearchPage extends Page {
 		if (!$sortBy) {
 			$sortBy = 'score';
 		}
+		
+		$builder->sortBy($sortBy, $sortDir);
 
 		$selectedFields = $this->SearchOnFields->getValues();
 
@@ -388,13 +479,29 @@ class SolrSearchPage extends Page {
 			}
 			
 		} 
+		
+		// geo fields
+		if ($this->GeoRestrictionField) {
+			$mappedField = $this->getSolr()->getSolrFieldName($this->GeoRestrictionField, $types);
+			$radius = $this->GeoRadius ? $this->GeoRadius : 5;
+			$centre = $this->GeoCentre instanceof SolrGeoPoint ? $this->GeoCentre->latLon() : null;
+			
+			// allow an extension to decide how to geosearch
+			if (!$centre && $this->hasMethod('updateGeoSearch')) {
+				$this->extend('updateGeoSearch', $builder, $query, $mappedField, $radius);
+			} else if ($centre && $mappedField) {
+				$builder->restrictNearPoint($centre, $mappedField, $radius);
+				if ($this->DistanceSort) {
+					$builder->sortBy('geodist()', strtolower($this->DistanceSort));
+				}
+			}
+		}
 
 		$params = array(
 			'facet' => 'true',
 			'facet.field' => $this->fieldsForFacets(),
 			'facet.limit' => 10,
 			'facet.mincount' => $this->MinFacetCount ? $this->MinFacetCount : 1,
-			'sort' => "$sortBy $sortDir",
 			'fl' => '*,score'
 		);
 
@@ -402,6 +509,8 @@ class SolrSearchPage extends Page {
 		if (count($fq)) {
 			$params['facet.query'] = array_keys($fq);
 		}
+		
+		$this->extend('updateQueryBuilder', $builder);
 
 		$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 		return $this->query;

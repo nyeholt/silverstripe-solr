@@ -72,7 +72,9 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 	 * @param string $wktString
 	 */
 	function setAsWKT($wktString) {
-		preg_match('/^POINT\(([0-9.\-]+) ([0-9.\-]+)\)$/', $wktString, $matches);
+		parent::setAsWKT($wktString);
+		// check the wkt now
+		preg_match('/^POINT\(([0-9.\-]+) ([0-9.\-]+)\)$/', $this->wkt, $matches);
 		if(!$matches) return false;
 
 		$this->x = (float)$matches[1];

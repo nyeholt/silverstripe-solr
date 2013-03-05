@@ -79,7 +79,11 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 			// user_error("{$this->class}::setValue() - Bad value " . var_export($value, true), E_USER_ERROR);
 		}
 
-		$this->isChanged = true;
+		if ($markChanged) {
+			$this->isChanged = true;
+		} else {
+			$this->isChanged = false;
+		}
 	}
 
 	/**

@@ -53,17 +53,25 @@ class SolrReindexTask extends BuildTask
 				$svc->queueJob($job);
 				echo "<p>Reindexing job for $type has been queued</p>";
 			} else {
+
+				$mode = Versioned::get_reading_mode();
+				Versioned::reading_stage('Stage');
+
 				// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
 				$pages = DataObject::get($type);
 
 				/* @var $search SolrSearchService */
 
 				foreach ($pages as $page) {
-					if ($page->hasField('Status')) {
-						$search->index($page, 'Draft');
-						if ($page->Status == 'Published') {
-							$search->index($page, 'Live');
+					if ($page->hasExtension('Versioned')) {
+						$search->index($page, 'Stage');
+						
+						$live = Versioned::get_one_by_stage($page->ClassName, 'Live', "\"$page->ClassName\".\"ID\" = $page->ID");
+						if ($live) {
+							$search->index($live, 'Live');
+							echo "<p>Reindexed Live version of $live->Title</p>\n";
 						}
+
 						echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
 						$count ++;
 					} else {
@@ -72,6 +80,8 @@ class SolrReindexTask extends BuildTask
 						$count ++;
 					}
 				}
+				
+				Versioned::set_reading_mode($mode);
 			}
 		}
 		
