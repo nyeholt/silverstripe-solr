@@ -7,9 +7,13 @@
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  */
-class SolrResultSet
-{
+class SolrResultSet {
 
+	/**
+	 * A list of solr field type suffixes to look for and swap out
+	 */
+	static $solr_attrs = array('txt', 'ms', 's', 't');
+	
 	/**
 	 * The raw lucene query issued to solr
 	 * @var String
@@ -152,14 +156,23 @@ class SolrResultSet
 					}
 					if (strpos($id, SolrSearchService::RAW_DATA_KEY) === 0) {
 						$data = array(
-							'ID'		=> $id,
+							'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, $id),
 							'Title'		=> $doc->title[0],
-							'Link'		=> $doc->attr_SS_URL[0],
 						);
 
+						if (isset($doc->attr_SS_URL[0])) {
+							$data['Link'] = $doc->attr_SS_URL[0];
+						}
+
 						foreach ($doc as $key => $val) {
-							if (strpos($key, 'attr_') === 0 && $key != 'attr_SS_URL') {
-								$name = str_replace('attr_', '', $key);
+							if ($key != 'attr_SS_URL') {
+								$name = null;
+								if (strpos($key, 'attr_') === 0) {
+									$name = str_replace('attr_', '', $key);
+								} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $str, $matches)) {
+									$name = $matches[1];
+								}
+
 								$val = $doc->$key;
 								if (is_array($val) && count($val) == 1) {
 									$data[$name] = $val[0];

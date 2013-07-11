@@ -51,23 +51,34 @@ class SolrIndexingTest extends SapphireTest
 			'ID' => 1,
 			'ClassName' => 'Page'
 		);
+
 		// call onAfterPublish, we expect the 
 		$searchService = $this->getMock('SolrSearchService', array('index'));
 		$searchService->expects($this->once())
 			->method('index');
 			// ->with($this->equalTo($indexFields));
 			
-		global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = $searchService;
+		Injector::inst()->registerService($searchService, 'SolrSearchService');
 		
 		// now save the item and hope it gets indexed
 		$item->extend('onAfterPublish', $item);
 	}
+	
+	public function testIndexObject() {
+		$search = new SolrSearchService;
+
+		$converted = $search->convertObjectToDocument(array(
+			'ID'		=> 1,
+			'Title'		=> 'This document',
+			'Category'	=> 'Docs',
+			'Tags'		=> array('green', 'food')
+		));
+	}
 
 	public function testStoreIndexAndQuery()
 	{
-		global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		
+		Injector::inst()->registerService(new SolrSearchService());
 
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
@@ -88,12 +99,13 @@ class SolrIndexingTest extends SapphireTest
 		$this->assertEquals(1, count($results->docs));
 		$this->assertEquals('Page_1_Live', $results->docs[0]->id);
 		
+		
+		
 	}
 
 	public function testQueryForObjects()
 	{
-	    global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		Injector::inst()->registerService(new SolrSearchService());
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
@@ -109,17 +121,25 @@ class SolrIndexingTest extends SapphireTest
 		$results = $search->query('text:"Text Content"');
 		$results = $results->getDataObjects();
 		
-		$this->assertTrue($results instanceof DataObjectSet);
-		$this->assertEquals(1, $results->Count());
+		$this->assertTrue($results instanceof SS_List);
+		$this->assertEquals(1, $results->count());
 		$item = $results->First();
 		$this->assertEquals('Page', $item->ClassName);
 		$this->assertEquals(1, $item->ID);
+		
+		$search->unindex($item);
+		
+		$results = $search->query('text:"Text Content"');
+		$results = $results->getDataObjects();
+		
+		$this->assertTrue($results instanceof SS_List);
+		$this->assertEquals(0, $results->count());
+		
 	}
 
 	public function testFacetQuery()
 	{
-		global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		Injector::inst()->registerService(new SolrSearchService());
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
@@ -153,8 +173,7 @@ class SolrIndexingTest extends SapphireTest
 
 	public function testMultipleFacetQuery()
 	{
-		global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		Injector::inst()->registerService(new SolrSearchService());
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');
@@ -191,8 +210,7 @@ class SolrIndexingTest extends SapphireTest
 	}
 
 	public function testStageQuerying() {
-		global $_SINGLETONS;
-		$_SINGLETONS['SolrSearchService'] = new SolrSearchService();
+		Injector::inst()->registerService(new SolrSearchService());
 		// we should be able to perform a query for documents with 'text content'
 		// and receive back some valid data
 		$search = singleton('SolrSearchService');

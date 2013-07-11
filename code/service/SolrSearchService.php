@@ -7,7 +7,7 @@
  * @license http://silverstripe.org/bsd-license/
  */
 class SolrSearchService {
-	const RAW_DATA_KEY = 'SOLRRAWDATA';
+	const RAW_DATA_KEY = 'SOLRRAWDATA_';
 
 	public static $config_file = 'solr/config';
 	public static $java_bin = '/usr/bin/java';
@@ -170,9 +170,49 @@ class SolrSearchService {
 	 *
 	 */
 	public function index($dataObject, $stage=null) {
+
+		$document = $this->convertObjectToDocument($dataObject, $stage);
+
+		if ($document) {
+			try {
+				$this->getSolr()->addDocument($document);
+				$this->getSolr()->commit();
+				$this->getSolr()->optimize();
+			} catch (Exception $ie) {
+				SS_Log::log($ie, SS_Log::ERR);
+			}
+		}
+	}
+	
+	public function indexMultiple($objects, $stage = null) {
+		foreach ($objects as $object) {
+			$document = $this->convertObjectToDocument($object, $stage);
+			if ($document) {
+				try {
+					$this->getSolr()->addDocument($document);
+				} catch (Exception $ie) {
+					SS_Log::log($ie, SS_Log::ERR);
+				}
+			}
+		}
+		
+		try {
+			$this->getSolr()->commit();
+			$this->getSolr()->optimize();
+		} catch (Exception $ie) {
+			SS_Log::log($ie, SS_Log::ERR);
+		}
+	}
+
+	public function convertObjectToDocument($dataObject, $stage = null) {
 		$document = new Apache_Solr_Document();
 		$fieldsToIndex = array();
+		$object = null;
 
+		// whether the original item is an object or array. 
+		// determines how we treat the object later when checking all the fields
+		$sourceObject = true;
+		
 		$id = 0;
 		if (is_object($dataObject)) {
 			$fieldsToIndex = $this->getSearchableFieldsFor($dataObject); // $dataObject->searchableFields();
@@ -182,10 +222,8 @@ class SolrSearchService {
 			$object = $dataObject;
 			$id = isset($dataObject['ID']) ? $dataObject['ID'] : 0;
 
-			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array(
-				'Title' => array(),
-				'Content' => array(),
-			);
+			$fieldsToIndex = isset($object['index_fields']) ? $object['index_fields'] : array_flip(array_keys($object));
+			$sourceObject = false;
 		}
 
 		$fieldsToIndex['SS_URL'] = true;
@@ -209,6 +247,10 @@ class SolrSearchService {
 			$object['SS_Stage'] = array('Type' => 'Enum', 'Value' => array('Stage', 'Live'));
 		}
 
+		if (!$id) {
+			return false;
+		}
+
 		// specially handle the subsite module - this has serious implications for our search
 		// @TODO we want to genercise this later for other modules to hook into it!
 		if (ClassInfo::exists('Subsite')) {
@@ -218,13 +260,13 @@ class SolrSearchService {
 			}
 		}
 
-		$classType = isset($object['ClassName']) ? $object['ClassName']['Value'] : 'INVALID_CLASS_TYPE';
+		$classType = isset($object['ClassName']) ? $object['ClassName']['Value'] : null;
 
-		// we're not indexing these fields just at the moment because the conflict
+		// we're not indexing the ID field because it conflicts with Solr's internal ID
 		unset($object['ID']);
 
 		// a special type hierarchy 
-		if ($classType != 'INVALID_CLASS_TYPE') {
+		if ($classType) {
 			$classes = array_values(ClassInfo::ancestry($classType));
 			$object['ClassNameHierarchy'] = array(
 				'Type' => 'MultiValueField',
@@ -235,8 +277,19 @@ class SolrSearchService {
 		}
 
 		foreach ($object as $field => $valueDesc) {
-			if (!is_array($valueDesc)) {
+			if (!$valueDesc) {
 				continue;
+			}
+			if (!is_array($valueDesc) || !isset($valueDesc['Type'])) {
+				// if we're indexing an object and there's no valueDesc, just skip this field
+				if ($sourceObject) {
+					continue;
+				}
+
+				$valueDesc = array(
+					'Value'		=> $valueDesc,
+					'Type'		=> $this->mapper->mapValue($field, $valueDesc),
+				);
 			}
 
 			$type = $valueDesc['Type'];
@@ -257,7 +310,7 @@ class SolrSearchService {
 				continue;
 			}
 
-			$value = $this->mapper->mapValue($value, $type);
+			$value = $this->mapper->convertValue($value, $type);
 
 			if (is_array($value)) {
 				foreach ($value as $v) {
@@ -268,18 +321,11 @@ class SolrSearchService {
 			}
 		}
 
-		if ($id) {
-			try {
-				$document->id = $classType . '_' . $id;
-				$this->getSolr()->addDocument($document);
-				$this->getSolr()->commit();
-				$this->getSolr()->optimize();
-			} catch (Exception $ie) {
-				SS_Log::log($ie, SS_Log::ERR);
-			}
-		}
+		$document->id = $classType ? $classType . '_' . $id : SolrSearchService::RAW_DATA_KEY . $id;
+
+		return $document;
 	}
-	
+
 	/**
 	 * Get a solr field representing the parents hierarchy (if applicable)
 	 * 
@@ -330,9 +376,6 @@ class SolrSearchService {
 
 			if ($type == 'MultiValueField') {
 				$value = $value->getValues();
-//				if (!$value || count($value) == 0) {
-//					continue;
-//				}
 			}
 
 			$ret[$name] = array('Type' => $type, 'Value' => $value);
@@ -346,14 +389,20 @@ class SolrSearchService {
 	 * 
 	 * @param DataObject $object
 	 */
-	public function unindex($type, $id=null) {
-		if (is_object($type)) {
-			$id = $type->ID;
-			$type = $type->class; // get_class($type);
+	public function unindex($typeOrId) {
+		$id = $typeOrId;
+		
+		if (is_object($typeOrId)) {
+			$type = $typeOrId->class; // get_class($type);
+			$id = $type . '_' . $typeOrId->ID;
+		} else {
+			$id = self::RAW_DATA_KEY . $id;
 		}
+
 		try {
-			// delete all published/non-published versions of this item. 
-			$this->getSolr()->deleteByQuery('id:' . $type . '_' . $id . '*');
+			// delete all published/non-published versions of this item, so delete _* too
+			$this->getSolr()->deleteByQuery('id:' . $id);
+			$this->getSolr()->deleteByQuery('id:' . $id .'_*');
 			$this->getSolr()->commit();
 		} catch (Exception $ie) {
 			SS_Log::log($ie, SS_Log::ERR);
@@ -403,7 +452,6 @@ class SolrSearchService {
 		// be very specific about the subsite support :). 
 		if (ClassInfo::exists('Subsite')) {
 			$query->andWith('SubsiteID_i', Subsite::currentSubsiteID());
-			// $query = "($query) AND (SubsiteID_i:".Subsite::currentSubsiteID().')';
 		}
 
 		// add the stage details in - we should probably use an extension mechanism for this,
@@ -794,10 +842,30 @@ class SolrSchemaMapper {
 			case 'SolrGeoPoint': {
 				return $field . '_p';
 			}
+			case 'String': {
+				return $field . '_s';
+			}
 			default: {
 				return $field . '_txt';
 			}
 		}
+	}
+	
+	/**
+	 * Map a raw PHP value to a type
+	 * 
+	 * @param mixed $value
+	 */
+	public function mapValue($name, $value) {
+		// just store as an untokenised string
+		$type = 'String';
+
+		// or an array of strings
+		if (is_array($value)) {
+			$type = 'MultiValueField';
+		}
+
+		return $type; 
 	}
 
 	/**
@@ -807,11 +875,11 @@ class SolrSchemaMapper {
 	 * @param string $type
 	 * @return mixed
 	 */
-	public function mapValue($value, $type) {
+	public function convertValue($value, $type) {
 		if (is_array($value)) {
 			$newReturn = array();
 			foreach ($value as $v) {
-				$newReturn[] = $this->mapValue($v, $type);
+				$newReturn[] = $this->convertValue($v, $type);
 			}
 			return $newReturn;
 		} else {

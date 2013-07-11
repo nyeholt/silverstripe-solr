@@ -44,7 +44,7 @@ class SolrIndexable extends DataExtension {
 	function onAfterPublish() {
 		if (!self::$indexing) return;
 
-		if (class_exists('SolrIndexItemJob')) {
+		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
 			$this->createIndexJob($this->owner, 'Live');
 		} else {
 			// make sure only the fields that are highlighted in searchable_fields are included!!
@@ -87,7 +87,7 @@ class SolrIndexable extends DataExtension {
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;
 
-		if (class_exists('SolrIndexItemJob')) {
+		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
 			$this->createIndexJob($this->owner, null, 'unindex');
 			$this->createIndexJob($this->owner, 'Stage');
 		} else {
@@ -98,7 +98,7 @@ class SolrIndexable extends DataExtension {
 
 	function onAfterDelete() {
 		if (!self::$indexing) return;
-		if (class_exists('SolrIndexItemJob')) {
+		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
 			$this->createIndexJob($this->owner, null, 'unindex');
 		} else {
 			$this->searchService->unindex($this->owner);
