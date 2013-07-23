@@ -49,6 +49,13 @@ class SolrSearchService {
 	 * @var Apache_Solr_HttpTransport_Interface
 	 */
 	public $solrTransport;
+	
+	/**
+	 * The underlying query transport api
+	 *
+	 * @var Apache_Solr_Service
+	 */
+	public $client;
 
 	/**
 	 * The mapper to use to map silverstripe objects to a solr schema
@@ -169,9 +176,9 @@ class SolrSearchService {
 	 * 				If we're indexing for a particular stage or not. 
 	 *
 	 */
-	public function index($dataObject, $stage=null) {
+	public function index($dataObject, $stage=null, $fieldBoost = array()) {
 
-		$document = $this->convertObjectToDocument($dataObject, $stage);
+		$document = $this->convertObjectToDocument($dataObject, $stage, $fieldBoost);
 
 		if ($document) {
 			try {
@@ -184,9 +191,9 @@ class SolrSearchService {
 		}
 	}
 	
-	public function indexMultiple($objects, $stage = null) {
+	public function indexMultiple($objects, $stage = null, $fieldBoost = array()) {
 		foreach ($objects as $object) {
-			$document = $this->convertObjectToDocument($object, $stage);
+			$document = $this->convertObjectToDocument($object, $stage, $fieldBoost);
 			if ($document) {
 				try {
 					$this->getSolr()->addDocument($document);
@@ -204,7 +211,7 @@ class SolrSearchService {
 		}
 	}
 
-	public function convertObjectToDocument($dataObject, $stage = null) {
+	public function convertObjectToDocument($dataObject, $stage = null, $fieldBoost = array()) {
 		$document = new Apache_Solr_Document();
 		$fieldsToIndex = array();
 		$object = null;
@@ -312,11 +319,18 @@ class SolrSearchService {
 
 			$value = $this->mapper->convertValue($value, $type);
 
+			$boost = false;
+			
+			if (isset($fieldBoost["$fieldName:$value"])) {
+				$boost = $fieldBoost["$fieldName:$value"];
+			}
+
 			if (is_array($value)) {
 				foreach ($value as $v) {
-					$document->addField($fieldName, $v);
+					$document->addField($fieldName, $v, $boost);
 				}
 			} else {
+				$document->setField($fieldName, $value, $boost);
 				$document->$fieldName = $value;
 			}
 		}
@@ -381,6 +395,15 @@ class SolrSearchService {
 			$ret[$name] = array('Type' => $type, 'Value' => $value);
 		}
 
+		$rels = Object::combined_static($dataObject->ClassName, 'has_one');
+
+		if($rels) foreach(array_keys($rels) as $rel) {
+			$ret["{$rel}ID"] = array(
+				'Type'  => 'ForeignKey',
+				'Value' => $dataObject->{$rel . "ID"}
+			);
+		}
+
 		return $ret;
 	}
 
@@ -441,9 +464,11 @@ class SolrSearchService {
 	 * 			How many items to limit the query to return
 	 * @param array $params
 	 * 			A set of parameters to be passed along with the query
+	 * @param array $andWith
+	 *			A set of extra and with terms to add to the query
 	 * @return SolrResultSet
 	 */
-	public function query($query, $offset = 0, $limit = 20, $params = array()) {
+	public function query($query, $offset = 0, $limit = 20, $params = array(), $andWith = array()) {
 		if (is_string($query)) {
 			$builder = $this->getQueryBuilder('default');
 			$builder->baseQuery($query);
@@ -464,6 +489,12 @@ class SolrSearchService {
 
 		if(!isset($params['ignore_stage']) || !$params['ignore_stage']) {
 			$query->andWith('SS_Stage_ms', $stage);
+		}
+
+		if($andWith) {
+			foreach($andWith as $field => $value) {
+				$query->andWith($field, $value);
+			}
 		}
 
 		$extraParams = $query->getParams();
@@ -507,7 +538,7 @@ class SolrSearchService {
 		if ($this->cache && !$rawResponse && $key && $response) {
 			$this->cache->save($response->getRawResponse(), $key, array(), $this->cacheTime);
 		}
-		
+
 		return $results;
 	}
 
@@ -530,7 +561,7 @@ class SolrSearchService {
 		return $this->query('*', 0, 1, array('facet' => 'true', 'facet.field' => $fields, 'facet.limit' => 10, 'facet.mincount' => 1));
 	}
 
-	protected $client;
+	
 
 	/**
 	 * Get the solr service client
@@ -820,6 +851,7 @@ class SolrSchemaMapper {
 			case 'SS_Datetime': {
 					return $field . '_dt';
 				}
+			case 'Str':
 			case 'Enum': {
 					return $field . '_ms';
 				}

@@ -20,6 +20,7 @@ class SolrSearchPage extends Page {
 		'SearchType'						=> 'MultiValueField',	// types that a user can search within
 		'SearchOnFields'					=> 'MultiValueField',
 		'BoostFields'						=> 'MultiValueField',
+		'BoostMatchFields'					=> 'MultiValueField',
 
 		// faceting fields
 		'FacetFields'						=> 'MultiValueField',
@@ -167,6 +168,14 @@ class SolrSearchPage extends Page {
 			new KeyValueField('BoostFields', _t('SolrSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
 			'Content'
 		);
+
+		$fields->addFieldToTab(
+			'Root.Content.Main',
+			$f = new KeyValueField('BoostMatchFields', _t('SolrSearchPage.BOOST_MATCH_FIELDS', 'Boost fields with field/value matches'), array(), $boostVals),
+			'Content'
+		);
+
+		$f->setRightTitle('Enter a Solr field name, followed by the value to boost if found in the result set, eg "title:Home" ');
 		
 		$fields->addFieldToTab(
 			'Root.Main',
@@ -469,6 +478,12 @@ class SolrSearchPage extends Page {
 			$builder->boost($boostSetting);
 		}
 		
+		if ($boost = $this->BoostMatchFields->getValues()) {
+			if (count($boost)) {
+				$builder->boostFieldValues($boost);
+			}
+		}
+
 		if(isset($_GET['FieldFilter'])) {
 			$filterfields = array_keys($this->FilterFields->getvalues());
 			$filters = array_intersect_key($filterfields, array_flip((array)$_GET['FieldFilter']));

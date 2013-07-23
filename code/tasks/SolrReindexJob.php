@@ -9,6 +9,8 @@
  */
 if (class_exists('AbstractQueuedJob')) {
 	class SolrReindexJob extends AbstractQueuedJob {
+
+		static $at_a_time = 100;
 		
 		public function __construct($type = null) {
 			if (!$type && isset($_GET['type'])) {
@@ -25,6 +27,8 @@ if (class_exists('AbstractQueuedJob')) {
 
 		public function setup() {
 			$this->lastIndexedID = 0;
+			$service = singleton('SolrSearchService');
+			$service->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $this->reindexType);
 		}
 
 		/**
@@ -35,13 +39,14 @@ if (class_exists('AbstractQueuedJob')) {
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::disable_subsite_filter();
 			}
+
+			$pages = DataObject::get($this->reindexType, '"' . $this->reindexType.'"."ID" > ' . $this->lastIndexedID, 'ID ASC', '', '0, ' . self::$at_a_time);
 			
-			$page = DataObject::get_one($this->reindexType, singleton('SolrUtils')->dbQuote(array($this->reindexType . '.ID >' => $this->lastIndexedID)), true, 'ID ASC');
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::$disable_subsite_filter = false;
 			}
 
-			if (!$page || !$page->exists()) {
+			if (!$pages || !$pages->count()) {
 				$this->isComplete = true;
 				return;
 			}
@@ -51,22 +56,44 @@ if (class_exists('AbstractQueuedJob')) {
 
 			// index away
 			$service = singleton('SolrSearchService');
-			// only explicitly index live/stage versions if the object has the appropriate extension
-			if ($page->hasExtension('Versioned')) {
-				$service->index($page, 'Stage');
-				$live = Versioned::get_one_by_stage($page->ClassName, 'Live', '"ID" = ' . $page->ID);
-				if ($live) {
-					$service->index($live, 'Live');
-					echo "<p>Reindexed Live version of $live->Title</p>\n";
+			
+			$live = array();
+			$stage = array();
+			$all = array();
+			
+			foreach ($pages as $page) {
+				// only explicitly index live/stage versions if the object has the appropriate extension
+				if ($page->hasExtension('Versioned')) {
+					$stage[] = $page;
+					
+					$livePage = Versioned::get_one_by_stage($page->ClassName, 'Live', '"ID" = ' . $page->ID);
+					if ($livePage) {
+						$live[] = $livePage;
+					}
+				} else {
+					$all[] = $page;
 				}
-			} else {
-				$service->index($page);
+				
+				$this->lastIndexedID = $page->ID;
 			}
+
+			if (count($all)) {
+				$service->indexMultiple($all);
+			}
+			
+			if (count($stage)) {
+				$service->indexMultiple($stage, 'Stage');
+			}
+
+			if (count($live)) {
+				$service->indexMultiple($live, 'Live');
+			}
+			
 
 			Versioned::set_reading_mode($mode);
 
-			$this->currentStep++;
 			$this->lastIndexedID = $page->ID;
+			$this->currentStep += $pages->count();
 		}
 	}
 }

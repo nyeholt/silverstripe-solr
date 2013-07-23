@@ -154,9 +154,9 @@ class SolrResultSet {
 							continue;
 						}
 					}
-					if (strpos($id, SolrSearchService::RAW_DATA_KEY) === 0) {
+					if (strpos($doc->id, SolrSearchService::RAW_DATA_KEY) === 0) {
 						$data = array(
-							'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, $id),
+							'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id),
 							'Title'		=> $doc->title[0],
 						);
 
@@ -169,7 +169,7 @@ class SolrResultSet {
 								$name = null;
 								if (strpos($key, 'attr_') === 0) {
 									$name = str_replace('attr_', '', $key);
-								} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $str, $matches)) {
+								} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $key, $matches)) {
 									$name = $matches[1];
 								}
 

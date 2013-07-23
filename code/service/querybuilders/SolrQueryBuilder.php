@@ -23,6 +23,13 @@ class SolrQueryBuilder {
 	 */
 	protected $boost = array();
 	
+	/**
+	 * Field:value => boost amount
+	 *
+	 * @var array
+	 */
+	protected $boostFieldValues = array();
+	
 	protected $sort;
 
 	public function baseQuery($query) {
@@ -89,6 +96,10 @@ class SolrQueryBuilder {
 		$this->boost = $boost;
 	}
 	
+	public function boostFieldValues($boost) {
+		$this->boostFieldValues = $boost;
+	}
+
 	public function toString() {
 		$rawQuery = $this->userQuery ? '(' . $this->parse($this->userQuery).')' : '';
 		
@@ -109,6 +120,15 @@ class SolrQueryBuilder {
 				$rawQuery .= $sep . '(' . $innerQuery . ')';
 				$sep = ' AND ';
 			}
+		}
+		
+		$sep = '';
+		if ($rawQuery) {
+			$sep = ' OR ';
+		}
+		foreach ($this->boostFieldValues as $field => $boost) {
+			$rawQuery .= $sep . $field . '^' . $boost;
+			$sep = ' OR ';
 		}
 
 		return $rawQuery;
