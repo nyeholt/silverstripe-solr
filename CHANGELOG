@@ -1,3 +1,15 @@
+2013-07-20 v2.3.0
+-----------------
+
+* Added indexMultiple method to search service to allow multiple items
+  to be indexed at once
+* Added boostValues option to SolrSearch page to allow users to configure
+  a field matching a certain value to be boosted higher in results
+* Fixed some references to raw data key to make it easier to index arbitrary
+  data
+* Made client for the search service injectable
+
+
 2013-03-05 v2.2.0
 -----------------
 
