@@ -719,7 +719,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
 		
-		$results = $query ? $query->getDataObjects() : ArrayList::create();
+		$results = $query ? $query->getDataObjects(true) : ArrayList::create();
 		
 		if ($query) {
 			$resultData = array(

@@ -197,7 +197,13 @@ class SolrResultSet {
 						}
 
 						if (!$evaluatePermissions || $object->canView()) {
-							$this->dataObjects->push($object);
+							if ($object->hasMethod('canShowInSearch')) {
+								if ($object->canShowInSearch()) {
+									$this->dataObjects->push($object);
+								}
+							} else {
+								$this->dataObjects->push($object);
+							}
 						}
 
 						$totalAdded++;

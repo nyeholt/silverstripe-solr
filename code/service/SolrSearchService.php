@@ -222,6 +222,9 @@ class SolrSearchService {
 		
 		$id = 0;
 		if (is_object($dataObject)) {
+			if ($dataObject->hasMethod('hasField') && $dataObject->hasField('ShowInSearch') && !$dataObject->ShowInSearch) {
+				return;
+			}
 			$fieldsToIndex = $this->getSearchableFieldsFor($dataObject); // $dataObject->searchableFields();
 			$object = $this->objectToFields($dataObject);
 			$id = $dataObject->ID;

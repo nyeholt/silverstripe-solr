@@ -44,11 +44,22 @@ class SolrIndexable extends DataExtension {
 	function onAfterPublish() {
 		if (!self::$indexing) return;
 
-		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
-			$this->createIndexJob($this->owner, 'Live');
-		} else {
-			// make sure only the fields that are highlighted in searchable_fields are included!!
-			$this->searchService->index($this->owner, 'Live');
+		if ($this->canShowInSearch()) {
+			if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
+				$this->createIndexJob($this->owner, 'Live');
+			} else {
+				// make sure only the fields that are highlighted in searchable_fields are included!!
+				$this->searchService->index($this->owner, 'Live');
+			}
+		}
+	}
+
+	public function onBeforeWrite() {
+		parent::onBeforeWrite();
+		
+		// immediately unindex any stuff that shouldn't be show in search
+		if ($this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
+			singleton('SolrSearchService')->unindex($this->owner);
 		}
 	}
 
@@ -69,13 +80,23 @@ class SolrIndexable extends DataExtension {
 				$stage = 'Stage';
 			}
 
-			if (class_exists('SolrIndexItemJob')) {
-				$this->createIndexJob($this->owner, $stage);
-			} else {
-				// make sure only the fields that are highlighted in searchable_fields are included!!
-				$this->searchService->index($this->owner, $stage);
+			if ($this->canShowInSearch()) {
+				if (class_exists('SolrIndexItemJob')) {
+					$this->createIndexJob($this->owner, $stage);
+				} else {
+					// make sure only the fields that are highlighted in searchable_fields are included!!
+					$this->searchService->index($this->owner, $stage);
+				}
 			}
 		}
+	}
+	
+	public function canShowInSearch() {
+		if ($this->owner->hasField('ShowInSearch')) {
+			return $this->owner->ShowInSearch;
+		}
+		
+		return true;
 	}
 
 	/**
