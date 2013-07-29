@@ -579,7 +579,7 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
 
-		$resultSet = ($query) ? $query->getDataObjects() : new DataObjectSet();
+		$resultSet = ($query) ? $query->getDataObjects(true) : new DataObjectSet();
 
 		$sortby  = (!isset($_GET['SortBy']) || $_GET['SortBy'] == 'any') ? $this->SortBy : $_GET['SortBy'];
 		$sortdir = (!isset($_GET['SortDir'])) ? $this->SortDir : $_GET['SortDir'];
