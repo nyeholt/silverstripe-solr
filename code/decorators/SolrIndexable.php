@@ -37,11 +37,22 @@ class SolrIndexable extends DataObjectDecorator {
 	function onAfterPublish() {
 		if (!self::$indexing) return;
 
-		if (class_exists('SolrIndexItemJob')) {
-			$this->createIndexJob($this->owner, 'Live');
-		} else {
-			// make sure only the fields that are highlighted in searchable_fields are included!!
-			singleton('SolrSearchService')->index($this->owner, 'Live');
+		if ($this->owner->ShowInSearch) {
+			if (class_exists('SolrIndexItemJob')) {
+				$this->createIndexJob($this->owner, 'Live');
+			} else {
+				// make sure only the fields that are highlighted in searchable_fields are included!!
+				singleton('SolrSearchService')->index($this->owner, 'Live');
+			}
+		}
+	}
+	
+	public function onBeforeWrite() {
+		parent::onBeforeWrite();
+		
+		// immediately unindex any stuff that shouldn't be show in search
+		if ($this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
+			singleton('SolrSearchService')->unindex($this->owner);
 		}
 	}
 
@@ -62,11 +73,13 @@ class SolrIndexable extends DataObjectDecorator {
 				$stage = 'Stage';
 			}
 
-			if (class_exists('SolrIndexItemJob')) {
-				$this->createIndexJob($this->owner, $stage);
-			} else {
-				// make sure only the fields that are highlighted in searchable_fields are included!!
-				singleton('SolrSearchService')->index($this->owner, $stage);
+			if ($this->owner->ShowInSearch) {
+				if (class_exists('SolrIndexItemJob')) {
+					$this->createIndexJob($this->owner, $stage);
+				} else {
+					// make sure only the fields that are highlighted in searchable_fields are included!!
+					singleton('SolrSearchService')->index($this->owner, $stage);
+				}
 			}
 		}
 	}
