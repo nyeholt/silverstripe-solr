@@ -31,17 +31,47 @@ class SolrQueryBuilder {
 	protected $boostFieldValues = array();
 	
 	protected $sort;
+	
+	/**
+	 *
+	 * @var array
+	 */
+	protected $facets = array('fields' => array(), 'queries' => array());
+	
+	/**
+	 * Per-field facet limits
+	 *
+	 * @var array
+	 */
+	protected $facetFieldLimits = array();
+	
+	/**
+	 * Number of facets to return
+	 *
+	 * @var int
+	 */
+	protected $facetLimit = 50;
+	
+	/**
+	 * Number of items with faces to be included
+	 *
+	 * @var int
+	 */
+	protected $facetCount = 1;
 
 	public function baseQuery($query) {
 		$this->userQuery = $query;
+		return $this;
 	}
 	
 	public function queryFields($fields) {
 		$this->fields = $fields;
+		return $this;
 	}
 	
 	public function sortBy($field, $direction) {
 		$this->sort = "$field $direction";
+		return $this;
 	}
 	
 	public function andWith($field, $value) {
@@ -57,10 +87,34 @@ class SolrQueryBuilder {
 		}
 
 		$this->and[$field] = $existing;
+		return $this;
 	}
 
 	public function setParams($params) {
 		$this->params = $params;
+		return $this;
+	}
+	
+	public function addFacetFields($fields, $limit = 0) {
+		$this->facets['fields'] = array_unique(array_merge($this->facets['fields'], $fields));
+		$this->facetLimit = $limit;
+		if ($limit) {
+			$this->facetLimit = $limit;
+		}
+		return $this;
+	}
+	
+	public function addFacetQueries($queries, $limit = 0) {
+		$this->facets['queries'] = array_unique(array_merge($this->facets['queries'], $queries));
+		if ($limit) {
+			$this->facetLimit = $limit;
+		}
+		
+		return $this;
+	}
+	
+	public function addFacetFieldLimit($field, $limit) {
+		$this->facetFieldLimits[$field] = $limit;
 	}
 	
 	public function getParams() {
@@ -70,7 +124,37 @@ class SolrQueryBuilder {
 		if ($this->sort) {
 			$this->params['sort'] = $this->sort;
 		}
+
+		$this->facetParams();
+
 		return $this->params;
+	}
+	
+	protected function facetParams() {
+		if (isset($this->facets['fields']) && count($this->facets['fields'])) {
+			$this->params['facet'] = 'true';
+			
+			$this->params['facet.field'] = $this->facets['fields'];
+		}
+		
+		if (isset($this->facets['queries']) && count($this->facets['queries'])) {
+			$this->params['facet'] = 'true';
+			$this->params['facet.query'] = $this->facets['queries'];
+		}
+		
+		if ($this->facetLimit) {
+			$this->params['facet.limit'] = $this->facetLimit;
+		}
+		
+		if (count($this->facetFieldLimits)) {
+			foreach ($this->facetFieldLimits as $field => $limit) {
+				$this->params['f.' . $field . '.facet.limit'] = $limit;
+			}
+		}
+
+		$this->params['facet.mincount'] = $this->facetCount ? $this->facetCount : 1;
+		
+		
 	}
 
 	public function parse($string) {
@@ -141,8 +225,12 @@ class SolrQueryBuilder {
 	 * 
 	 * @param string $query
 	 */
-	public function addFilter($query) {
+	public function addFilter($query, $value = null) {
+		if ($value) {
+			$query = "$query:$value";
+		}
 		$this->filters[] = $query;
+		return $this;
 	}
 	
 	/**
@@ -159,5 +247,7 @@ class SolrQueryBuilder {
 		$this->params['sfield'] = $field;
 		$this->params['pt'] = $point;
 		$this->params['d'] = $radius;
+
+		return $this;
 	}
 }

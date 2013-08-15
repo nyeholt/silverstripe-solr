@@ -148,12 +148,6 @@ class SolrResultSet {
 						continue;
 					}
 
-					// a double sanity check for the stage here. 
-					if ($currentStage = Versioned::current_stage()) {
-						if ($currentStage != $stage) {
-							continue;
-						}
-					}
 					if (strpos($doc->id, SolrSearchService::RAW_DATA_KEY) === 0) {
 						$data = array(
 							'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id),
@@ -187,6 +181,13 @@ class SolrResultSet {
 						if (!class_exists($type)) {
 							continue;
 						}
+						// a double sanity check for the stage here. 
+						if ($currentStage = Versioned::current_stage()) {
+							if ($currentStage != $stage) {
+								continue;
+							}
+						}
+
 						$object = DataObject::get_by_id($type, $id);
 					}
 

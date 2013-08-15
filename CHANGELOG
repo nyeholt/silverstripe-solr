@@ -1,3 +1,10 @@
+2013-08-15 v2.4.0
+-----------------
+
+* Added application of facet information to the query builder object instead of requiring it to be a custom process
+* Made the query set*/add*() methods more fluent
+* Renamed some methods in SolrSearchService to be more self-commenting
+
 2013-07-20 v2.3.0
 -----------------
 

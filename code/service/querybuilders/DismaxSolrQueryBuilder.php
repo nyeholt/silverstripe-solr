@@ -14,7 +14,6 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 	}
 
 	public function getParams() {
-		
 		$fields = '';
 		$sep = '';
 		foreach ($this->fields as $field) {
@@ -38,6 +37,12 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 		}
 		
 		$this->params['bq'] = $ac;
+		
+		if ($this->sort) {
+			$this->params['sort'] = $this->sort;
+		}
+		
+		$this->facetParams();
 		
 		return $this->params;
 	}

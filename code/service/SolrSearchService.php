@@ -298,7 +298,7 @@ class SolrSearchService {
 
 				$valueDesc = array(
 					'Value'		=> $valueDesc,
-					'Type'		=> $this->mapper->mapValue($field, $valueDesc),
+					'Type'		=> $this->mapper->mapValueToType($field, $valueDesc),
 				);
 			}
 
@@ -314,7 +314,7 @@ class SolrSearchService {
 				continue;
 			}
 
-			$fieldName = $this->mapper->mapType($field, $type, $fieldsToIndex[$field]);
+			$fieldName = $this->mapper->mapFieldNameFromType($field, $type, $fieldsToIndex[$field]);
 
 			if (!$fieldName) {
 				continue;
@@ -322,17 +322,15 @@ class SolrSearchService {
 
 			$value = $this->mapper->convertValue($value, $type);
 
-			$boost = false;
-			
-			if (isset($fieldBoost["$fieldName:$value"])) {
-				$boost = $fieldBoost["$fieldName:$value"];
-			}
-
 			if (is_array($value)) {
 				foreach ($value as $v) {
-					$document->addField($fieldName, $v, $boost);
+					$document->addField($fieldName, $v);
 				}
 			} else {
+				$boost = false;
+				if (isset($fieldBoost["$fieldName:$value"])) {
+					$boost = $fieldBoost["$fieldName:$value"];
+				}
 				$document->setField($fieldName, $value, $boost);
 				$document->$fieldName = $value;
 			}
@@ -668,7 +666,7 @@ class SolrSearchService {
 			if (isset($fields[$field])) {
 				$configForType = $this->getSearchableFieldsFor($className);
 				$hint = isset($configForType[$field]) ? $configForType[$field] : false;
-				return $this->mapper->mapType($field, $fields[$field]['Type'], $hint);
+				return $this->mapper->mapFieldNameFromType($field, $fields[$field]['Type'], $hint);
 			}
 		}
 	}
@@ -829,7 +827,7 @@ class SolrSchemaMapper {
 	 * 
 	 * @return String
 	 */
-	public function mapType($field, $type, $hint = '') {
+	public function mapFieldNameFromType($field, $type, $hint = '') {
 		if (isset($this->solrFields[$field])) {
 			return $this->solrFields[$field];
 		}
@@ -842,10 +840,14 @@ class SolrSchemaMapper {
 			return str_replace(':field', $field, $hint);
 		}
 
+		if ($pos = strpos($field, ':')) {
+			$field = substr($field, 0, $pos);
+		}
+
 		// otherwise, lets use a generic field for it
 		switch ($type) {
 			case 'MultiValueField': {
-					return $field . '_txt';
+					return $field . '_ms';
 				}
 			case 'Text':
 			case 'HTMLText': {
@@ -889,15 +891,32 @@ class SolrSchemaMapper {
 	/**
 	 * Map a raw PHP value to a type
 	 * 
+	 * @param string $name
+	 *					The name of the field. If there is a ':' character, the type is assumed to be that
+	 *					which follows the ':'
 	 * @param mixed $value
+	 *					The value being checked
 	 */
-	public function mapValue($name, $value) {
+	public function mapValueToType($name, $value) {
 		// just store as an untokenised string
 		$type = 'String';
+		
+		if (strpos($name, ':')) {
+			list($name, $type) = explode(':', $name);
+			return $type;
+		}
 
 		// or an array of strings
 		if (is_array($value)) {
 			$type = 'MultiValueField';
+		}
+		
+		if (is_double($value)) {
+			return 'Double';
+		}
+		
+		if (is_int($value)) {
+			return 'Int';
 		}
 
 		return $type; 
@@ -936,10 +955,9 @@ class SolrSchemaMapper {
 					return $value->y . ',' . $value->x;
 				}
 				default: {
-						return $value;
-					}
+					return $value;
+				}
 			}
 		}
 	}
-
 }
