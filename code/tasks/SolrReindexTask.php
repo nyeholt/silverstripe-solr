@@ -66,7 +66,8 @@ class SolrReindexTask extends BuildTask
 					if ($page->hasExtension('Versioned')) {
 						$search->index($page, 'Stage');
 						
-						$live = Versioned::get_one_by_stage($page->ClassName, 'Live', "\"$page->ClassName\".\"ID\" = $page->ID");
+						$baseTable = $page->baseTable();
+						$live = Versioned::get_one_by_stage($page->ClassName, 'Live', "\"$baseTable\".\"ID\" = $page->ID");
 						if ($live) {
 							$search->index($live, 'Live');
 							echo "<p>Reindexed Live version of $live->Title</p>\n";
