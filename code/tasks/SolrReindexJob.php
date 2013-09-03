@@ -66,7 +66,10 @@ if (class_exists('AbstractQueuedJob')) {
 				if ($page->hasExtension('Versioned')) {
 					$stage[] = $page;
 					
-					$livePage = Versioned::get_one_by_stage($page->ClassName, 'Live', '"ID" = ' . $page->ID);
+					$base = $page->baseTable();
+					$idField = '"' . $base . '_Live"."ID"';
+					$livePage = Versioned::get_one_by_stage($page->ClassName, 'Live', $idField . ' = ' . $page->ID);
+
 					if ($livePage) {
 						$live[] = $livePage;
 					}

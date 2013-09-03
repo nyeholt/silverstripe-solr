@@ -1,3 +1,8 @@
+2013-09-03 v2.4.1
+-----------------
+
+* Added SolrQueryBuilder::removeFilter() to remove a previously applied filter
+
 2013-08-15 v2.4.0
 -----------------
 

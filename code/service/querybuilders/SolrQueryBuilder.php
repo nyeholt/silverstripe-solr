@@ -229,10 +229,24 @@ class SolrQueryBuilder {
 		if ($value) {
 			$query = "$query:$value";
 		}
-		$this->filters[] = $query;
+		$this->filters[$query] = $query;
 		return $this;
 	}
 	
+	/**
+	 * Remove a filter in place on this query
+	 * 
+	 * @param string $query
+	 * @param mixed $value
+	 */
+	public function removeFilter($query, $value = null) {
+		if ($value) {
+			$query = "$query:$value";
+		}
+		unset($this->filters[$query]);
+		return $this;
+	}
+
 	/**
 	 * Apply a geo field restriction around a particular point
 	 * 
