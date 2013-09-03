@@ -16,7 +16,7 @@ Requirements
 
 * Solr 3.6 installed and running (a test instance is included, but for production
 use, please install and configure)
-* The multivaluefield module from http://github.com/nyeholt/silverstripe/silverstripe-multivaluefield
+* The multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield
 
 Documentation
 -------------
