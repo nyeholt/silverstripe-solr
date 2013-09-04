@@ -130,6 +130,15 @@ class SolrQueryBuilder {
 		return $this->params;
 	}
 	
+	/**
+	 * Return the base search term
+	 * 
+	 * @return string
+	 */
+	public function getUserQuery() {
+		return $this->userQuery;
+	}
+	
 	protected function facetParams() {
 		if (isset($this->facets['fields']) && count($this->facets['fields'])) {
 			$this->params['facet'] = 'true';

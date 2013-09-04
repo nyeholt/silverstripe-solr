@@ -49,7 +49,7 @@ class SolrAdminController extends ModelAdmin {
 		$fields = $form->Fields();
 
 		$config = $this->searchService->localEngineConfig();
-		$allow = $config->RunLocal;
+		$allow = $config ? $config->RunLocal : null;
 		
 		$fields->push(new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
 		

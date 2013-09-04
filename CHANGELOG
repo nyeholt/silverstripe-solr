@@ -1,3 +1,10 @@
+2013-09-04 v2.5.0
+-----------------
+
+* Moved geo spatial search options into a standalone extension class that 
+  can be applied to SolrSearchPage if/when desired instead of requiring
+  its presence. Fixes issue where pgsql or sqlite would die on install
+
 2013-09-03 v2.4.1
 -----------------
 

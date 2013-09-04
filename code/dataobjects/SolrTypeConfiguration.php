@@ -42,7 +42,7 @@ class SolrTypeConfiguration extends DataObject {
 		
 		$objFields = array();
 		
-		$dbFields = array_keys(DataObject::combined_static($type, 'db'));
+		$dbFields = array_keys(Config::inst()->get($type, 'db'));
 		$objFields = array_combine($dbFields, $dbFields);
 		
 		asort($objFields);

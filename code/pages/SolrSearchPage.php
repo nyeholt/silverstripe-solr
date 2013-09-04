@@ -30,12 +30,6 @@ class SolrSearchPage extends Page {
 
 		// filter fields (not used for relevance, just for restricting data set)
 		'FilterFields'						=> 'MultiValueField',
-
-		// geo spatial options
-		'GeoRestrictionField'				=> 'Varchar(64)',
-		'GeoCentre'							=> 'SolrGeoPoint',
-		'GeoRadius'							=> 'Double',
-		'DistanceSort'						=> "Enum(',asc,desc','asc')",
 		
 		// not a has_one, because we may not have the listing page module
 		'ListingTemplateID'					=> 'Int',
@@ -170,7 +164,7 @@ class SolrSearchPage extends Page {
 		);
 
 		$fields->addFieldToTab(
-			'Root.Content.Main',
+			'Root.Main',
 			$f = new KeyValueField('BoostMatchFields', _t('SolrSearchPage.BOOST_MATCH_FIELDS', 'Boost fields with field/value matches'), array(), $boostVals),
 			'Content'
 		);
@@ -210,39 +204,8 @@ class SolrSearchPage extends Page {
 			'Content'
 		);
 		
+		$this->extend('updateSolrCMSFields', $fields);
 		
-		// geo spatial field stuff
-		$fields->addFieldToTab('Root.Main', $geoHeader = new HeaderField('GeoHeader', _t('SolrSearchPage.GEO_HEADER', 'Geospatial Settings')), 'Content');
-		
-		$fields->addFieldToTab('Root.Main',
-			new GeoCoordinateField('GeoCentre', _t('SolrSearchPage.GEO_CENTRE', 'Centre for geo restriction')),
-			'Content'
-		);
-		
-		$geoFields = $this->getGeoSelectableFields();
-		$geoFields = array_merge(array('' => ''), $geoFields);
-		$fields->addFieldToTab('Root.Main', 
-			$geoField = new DropdownField('GeoRestrictionField', _t('SolrSearchPage.RESTRICT_BY', 'Geo field to restrict within radius'), $geoFields), 
-			'Content'
-		);
-		$geoField->setRightTitle('Leave the geo field blank and no geospatial restriction will be used');
-
-		$fields->addFieldToTab('Root.Main', 
-			new NumericField('GeoRadius', _t('SolrSearchPage.RESTRICT_RADIUS', 'Restrict results within radius (in km)')), 
-			'Content'
-		);
-
-		$distanceOpts = array(
-			'' => 'None', 
-			'asc' => 'Nearest to furthest',
-			'desc' => 'Furthest to nearest', 
-		);
-
-		$fields->addFieldToTab('Root.Main', 
-			new DropdownField('DistanceSort', _t('SolrSearchPage.SORT_BY_DISTANCE', 'Sort by distance from point'), $distanceOpts), 
-			'Content'
-		);
-
 		return $fields;
 	}
 
@@ -281,27 +244,6 @@ class SolrSearchPage extends Page {
 		
 		ksort($objFields);
 		return $objFields;
-	}
-	
-	/**
-	 * Get a list of geopoint fields that are selectable 
-	 */
-	public function getGeoSelectableFields() {
-		$all = $this->getSelectableFields(null, false);
-		$listTypes = $this->searchableTypes('Page');
-		$geoFields = array();
-		
-		foreach ($listTypes as $classType) {
-			$db = Config::inst()->get($classType, 'db');
-			foreach ($db as $name => $type) {
-				if (is_subclass_of($type, 'SolrGeoPoint') || $type == 'SolrGeoPoint') {
-					$geoFields[$name] = $name;
-				}
-			}
-		}
-
-		ksort($geoFields);
-		return $geoFields;
 	}
 
 	/**
@@ -492,26 +434,8 @@ class SolrSearchPage extends Page {
 					$builder->addFilter($filter);
 				}
 			}
-			
 		} 
 		
-		// geo fields
-		if ($this->GeoRestrictionField) {
-			$mappedField = $this->getSolr()->getSolrFieldName($this->GeoRestrictionField, $types);
-			$radius = $this->GeoRadius ? $this->GeoRadius : 5;
-			$centre = $this->GeoCentre instanceof SolrGeoPoint ? $this->GeoCentre->latLon() : null;
-			
-			// allow an extension to decide how to geosearch
-			if (!$centre && $this->hasMethod('updateGeoSearch')) {
-				$this->extend('updateGeoSearch', $builder, $query, $mappedField, $radius);
-			} else if ($centre && $mappedField) {
-				$builder->restrictNearPoint($centre, $mappedField, $radius);
-				if ($this->DistanceSort) {
-					$builder->sortBy('geodist()', strtolower($this->DistanceSort));
-				}
-			}
-		}
-
 		$params = array(
 			'facet' => 'true',
 			'facet.field' => $this->fieldsForFacets(),
@@ -541,7 +465,7 @@ class SolrSearchPage extends Page {
 	/**
 	 * get the list of types that we've selected to search on
 	 */
-	protected function searchableTypes($default = null) {
+	public function searchableTypes($default = null) {
 		$listType = $this->SearchType ? $this->SearchType->getValues() : null;
 		if (!$listType) {
 			$listType = $default ? array($default) : null;
