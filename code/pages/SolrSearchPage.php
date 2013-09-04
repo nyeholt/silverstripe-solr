@@ -578,6 +578,10 @@ class SolrSearchPage extends Page {
 }
 
 class SolrSearchPage_Controller extends Page_Controller {
+	
+	private static $allowed_actions = array(
+		'Form',
+	);
 
 	protected function getSolr() {
 		return $this->data()->getSolr();

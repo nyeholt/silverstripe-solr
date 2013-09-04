@@ -28,7 +28,7 @@ class SolrReindexTask extends BuildTask
 			$this->types[] = $type;
 		} elseif(!$this->types) {
 			foreach(ClassInfo::subclassesFor('DataObject') as $class) {
-				if(Object::has_extension($class, 'SolrIndexable')) {
+				if($class::has_extension('SolrIndexable')) {
 					$this->types[] = $class;
 				}
 			}

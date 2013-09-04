@@ -374,7 +374,7 @@ class SolrSearchService {
 	protected function objectToFields($dataObject) {
 		$ret = array();
 
-		$fields = Object::combined_static($dataObject->ClassName, 'db');
+		$fields = Config::inst()->get($dataObject->ClassName, 'db');
 		$fields['Created'] = 'SS_Datetime';
 		$fields['LastEdited'] = 'SS_Datetime';
 
@@ -396,7 +396,7 @@ class SolrSearchService {
 			$ret[$name] = array('Type' => $type, 'Value' => $value);
 		}
 
-		$rels = Object::combined_static($dataObject->ClassName, 'has_one');
+		$rels = Config::inst()->get($dataObject->ClassName, 'has_one');
 
 		if($rels) foreach(array_keys($rels) as $rel) {
 			$ret["{$rel}ID"] = array(

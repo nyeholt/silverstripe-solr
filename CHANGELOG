@@ -1,3 +1,10 @@
+2013-09-04 v3.0.0
+-----------------
+
+* Updated for compatibility with SS 3.1 by introducing private
+  static references, causing backwards compatibility breakages
+
+
 2013-09-04 v2.5.0
 -----------------
 

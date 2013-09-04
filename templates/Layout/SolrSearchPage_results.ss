@@ -1,9 +1,9 @@
 <div class="typography">
 	<% if FacetCrumbs %>
 	<ul class="facetCrumbs">
-		<% control FacetCrumbs %>
+		<% loop FacetCrumbs %>
 		<li><a href="$RemoveLink">$Name</a></li>
-		<% end_control %>
+		<% end_loop %>
 	</ul>
 	<% end_if %>
 
@@ -15,7 +15,7 @@
 		$TemplatedResults
 		<% else %>
 	    <ul id="SearchResults">
-	      <% control Results %>
+	      <% loop Results %>
 	        <li>
 	            <% if MenuTitle %>
 	              <h3><a class="searchResultHeader" href="$Link">$MenuTitle</a></h3>
@@ -27,7 +27,7 @@
 			  <% end_if %>
 	          <a class="readMoreLink" href="$Link" title="Read more about &quot;{$Title}&quot;">Read more about &quot;{$Title}&quot;...</a>
 	        </li>
-	      <% end_control %>
+	      <% end_loop %>
 	    </ul>
 		<% end_if %>
 	  <% else %>
@@ -43,13 +43,13 @@
 	        <a class="prev" href="$Results.PrevLink" title="View the previous page">Prev</a>
 	      <% end_if %>
 	      <span>
-	        <% control Results.PaginationSummary(5) %>
+	        <% loop Results.PaginationSummary(5) %>
 	          <% if CurrentBool %>
 	            $PageNum
 	          <% else %>
 	            <a href="$Link" title="View page number $PageNum">$PageNum</a>
 	          <% end_if %>
-	        <% end_control %>
+	        <% end_loop %>
 	      </span>
       
 	    </div>
