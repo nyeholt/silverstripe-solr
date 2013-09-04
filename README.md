@@ -7,7 +7,8 @@ to display results without needing to perform code behind to determine how the s
 
 # Version information
 
-The 2.0 branch is compatible with SilverStripe 3.0
+* The 2.0 branch is compatible with SilverStripe 3.0
+* The master branch is compatible with SilverStripe 3.1
 
 # Maintainer Contact
 
