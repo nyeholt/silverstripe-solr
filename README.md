@@ -1,34 +1,36 @@
-Solr Search Module
-==================
+# Solr Search Module
 
 A module that adds the ability to index content in a Solr instances, and to then search that content.
 
 Provides a SolrSearchPage type that allows CMS authors to configure a search page within the CMS
 to display results without needing to perform code behind to determine how the search works. 
 
-Maintainer Contact
-------------------
+# Version information
+
+The 2.0 branch is compatible with SilverStripe 3.0
+
+# Maintainer Contact
+
 Marcus Nyeholt
+
 <marcus (at) silverstripe (dot) com (dot) au>
 
-Requirements
-------------
+# Requirements
 
 * Solr 3.6 installed and running (a test instance is included, but for production
 use, please install and configure)
 * The multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield
 
-Documentation
--------------
+# Documentation
+
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
 
-Licensing
------------------------------------------------
+# Licensing
+
 Solr is licensed under the Apache License
 This module is licensed under the BSD license
 
-Quick Usage Overview
------------------------------------------------
+# Quick Usage Overview
 
 ## Install Solr (packages available for most OSes)
 
@@ -55,7 +57,7 @@ supported
 	DataObject::add_extension('SiteTree', 'SolrIndexable');
 
 By default, the solr indexer will index Title and Content fields. If you want
-other fields indexed too, add them to your $searchable_fields static
+other fields indexed too, add them to your $searchable\_fields static
 variable in your class type. 
 
 ## Configure your search page
@@ -66,7 +68,7 @@ This should be published before being able to perform searches.
 ## Add the search extension
 
 Finally, the search mechanism needs to be hooked up to your pages. This can be done
-by adding the SolrSearchExtension to your Page_Controller class to make available
+by adding the SolrSearchExtension to your Page\_Controller class to make available
 the various template hooks
 
 	Object::add_extension('Page_Controller', 'SolrSearchExtension');
@@ -81,16 +83,14 @@ First, you need to tell the search page what you're going to be faceting on
 	SolrSearchPage::$facets = array('MetaKeywords_ms');
 
 then make sure that field (MetaKeywords) is included in the list of fields to
-index via the searchable_fields static
+index via the searchable\_fields static
 
-Template Options
-----------------
+## Template Options
 
-To customise search results display, provide a SolrSearchPage_results.ss
+To customise search results display, provide a SolrSearchPage\_results.ss
 file in your theme's templates directory. 
 
-API
----
+# API
 
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
 
@@ -107,8 +107,7 @@ To set the java path (if different from /usr/bin/java), set
 to the appropriate path
 
 
-Troubleshooting
----------------
+# Troubleshooting
 
 If you aren't getting any search results, first make sure Solr is running. 
 
