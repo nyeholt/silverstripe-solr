@@ -12,7 +12,7 @@ class SolrResultSet {
 	/**
 	 * A list of solr field type suffixes to look for and swap out
 	 */
-	static $solr_attrs = array('txt', 'ms', 's', 't');
+	static $solr_attrs = array('txt', 'ms', 's', 't', 'i', 'dt', 'f', 'p');
 	
 	/**
 	 * The raw lucene query issued to solr
@@ -165,6 +165,8 @@ class SolrResultSet {
 									$name = str_replace('attr_', '', $key);
 								} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $key, $matches)) {
 									$name = $matches[1];
+								} else {
+									$name = $key;
 								}
 
 								$val = $doc->$key;
