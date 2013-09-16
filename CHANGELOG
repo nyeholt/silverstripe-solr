@@ -1,3 +1,9 @@
+2013-09-16 v2.5.1
+-----------------
+
+* Added _i, _f and _p fields as being attributes that get parsed/renamed
+  in result sets for non-data objects
+
 2013-09-04 v2.5.0
 -----------------
 
