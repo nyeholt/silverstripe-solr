@@ -21,7 +21,7 @@ class SolrSearchExtension extends Extension {
 	 */
     public function getSearchPage() {
 		// get the search page for this site, if applicable... otherwise use the default
-		return DataObject::get_one('SolrSearchPage', '"ParentID" = 0');
+		return SolrSearchPage::get()->first();
 	}
 
 	/**
@@ -30,7 +30,7 @@ class SolrSearchExtension extends Extension {
 	 * @param String $term
 	 */
 	public function Facets($term=null) {
-		$sp = $this->getSearchPage();
+		$sp = $this->owner->getSearchPage();
 		if ($sp) {
 			$facets = $sp->currentFacets($term);
 			return $facets;
@@ -43,7 +43,7 @@ class SolrSearchExtension extends Extension {
 	 * @return String
 	 */
 	public function SearchQuery() {
-		$sp = $this->getSearchPage();
+		$sp = $this->owner->getSearchPage();
 		if ($sp) {
 			return $sp->SearchQuery();
 		}
@@ -69,6 +69,6 @@ class SolrSearchExtension extends Extension {
 	 */
 	public function results() {
 		$searchText = isset($_REQUEST['Search']) ? $_REQUEST['Search'] : 'Search';
-		$this->owner->redirect($this->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
+		$this->owner->redirect($this->owner->getSearchPage()->Link('results').'?Search='.rawurlencode($searchText));
 	}
 }

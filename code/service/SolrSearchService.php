@@ -404,6 +404,20 @@ class SolrSearchService {
 				'Value' => $dataObject->{$rel . "ID"}
 			);
 		}
+		
+		if ($dataObject->hasMethod('additionalSolrValues')) {
+			$extras = $dataObject->extend('additionalSolrValues');
+			if ($extras && is_array($extras)) {
+				foreach ($extras as $add) {
+					foreach ($add as $k => $v) {
+						$ret[$k] = array(
+							'Type'		=> $this->mapper->mapValueToType($k, $v),
+							'Value'		=> $v,
+						);
+					}
+				}
+			}
+		}
 
 		return $ret;
 	}
@@ -586,7 +600,9 @@ class SolrSearchService {
 	 * @param string $className 
 	 */
 	public function getSearchableFieldsFor($className) {
+		$sng = null;
 		if (is_object($className)) {
+			$sng = $className;
 			$className = get_class($className);
 		}
 
@@ -599,7 +615,9 @@ class SolrSearchService {
 			}
 		}
 
-		$sng = singleton($className);
+		if (!$sng) {
+			$sng = singleton($className);
+		}
 
 		if($sng->hasMethod('getSolrSearchableFields')) {
 			return $sng->getSolrSearchableFields();

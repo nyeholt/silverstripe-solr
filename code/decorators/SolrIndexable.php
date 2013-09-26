@@ -45,12 +45,7 @@ class SolrIndexable extends DataExtension {
 		if (!self::$indexing) return;
 
 		if ($this->canShowInSearch()) {
-			if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
-				$this->createIndexJob($this->owner, 'Live');
-			} else {
-				// make sure only the fields that are highlighted in searchable_fields are included!!
-				$this->searchService->index($this->owner, 'Live');
-			}
+			$this->searchService->index($this->owner, 'Live');
 		}
 	}
 
@@ -59,7 +54,7 @@ class SolrIndexable extends DataExtension {
 		
 		// immediately unindex any stuff that shouldn't be show in search
 		if ($this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
-			singleton('SolrSearchService')->unindex($this->owner);
+			$this->searchService->unindex($this->owner);
 		}
 	}
 
@@ -69,9 +64,10 @@ class SolrIndexable extends DataExtension {
 	public function onAfterWrite() {
 		if (!self::$indexing) return;
 
-		$changes = $this->owner->getChangedFields(true, 2);
-		
-		if (count($changes)) {
+		// No longer doing the 'ischanged' check to avoid problems with multivalue field NOT being indexed
+//		$changes = $this->owner->getChangedFields(true, 2);
+//		
+//		if (count($changes)) {
 			
 			$stage = null;
 			// if it's being written and a versionable, then save only in the draft
@@ -81,14 +77,9 @@ class SolrIndexable extends DataExtension {
 			}
 
 			if ($this->canShowInSearch()) {
-				if (class_exists('SolrIndexItemJob')) {
-					$this->createIndexJob($this->owner, $stage);
-				} else {
-					// make sure only the fields that are highlighted in searchable_fields are included!!
-					$this->searchService->index($this->owner, $stage);
-				}
+				$this->searchService->index($this->owner, $stage);
 			}
-		}
+//		}
 	}
 	
 	public function canShowInSearch() {
@@ -108,21 +99,12 @@ class SolrIndexable extends DataExtension {
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;
 
-		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
-			$this->createIndexJob($this->owner, null, 'unindex');
-			$this->createIndexJob($this->owner, 'Stage');
-		} else {
-			$this->searchService->unindex($this->owner);
-			$this->searchService->index($this->owner, 'Stage');
-		}
+		$this->searchService->unindex($this->owner);
+		$this->searchService->index($this->owner, 'Stage');
 	}
 
 	function onAfterDelete() {
 		if (!self::$indexing) return;
-		if (class_exists('SolrIndexItemJob') && !SapphireTest::is_running_test()) {
-			$this->createIndexJob($this->owner, null, 'unindex');
-		} else {
-			$this->searchService->unindex($this->owner);
-		}
+		$this->searchService->unindex($this->owner);
 	}
 }

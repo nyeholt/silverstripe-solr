@@ -1,3 +1,16 @@
+
+2013-09-27 v3.1.0
+-----------------
+
+* API Always index/unindex individual items immediately instead of using a 
+  queuedjob for one-time indexing
+* Change getSearchPage reference to find any search page, and change other 
+  methods to look for the getSearchPage metho
+* API Added an additional CustomFacets option for search pages so that 
+  additional faceting info can be added for queri
+* API Allow extensions to add addition field/values to be indexed for data 
+  objects
+
 2013-09-16 v2.5.1
 -----------------
 
