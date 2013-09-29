@@ -694,11 +694,20 @@ class SolrSearchPage_Controller extends Page_Controller {
 		$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
 		
 		$results = $query ? $query->getDataObjects(true) : ArrayList::create();
+
+		$elapsed = null;
 		
 		if ($query) {
 			$resultData = array(
 				'TotalResults'		=> $query->getTotalResults()
 			);
+			$time = $query->getTimeTaken();
+			if($time) {
+				$elapsed = $time / 1000;
+			}
+			else if(!is_null($time)) {
+				$elapsed = '< 0.001';
+			}
 		} else {
 			$resultData = array();
 		}
@@ -707,7 +716,8 @@ class SolrSearchPage_Controller extends Page_Controller {
 	     	'Results'		=> $results,
 	     	'Query'			=> Varchar::create_field('Varchar', $term),
 	      	'Title'			=> $this->data()->Title,
-			'ResultData'	=> ArrayData::create($resultData)
+			'ResultData'	=> ArrayData::create($resultData),
+			'TimeTaken'		=> $elapsed
 	  	);
 
 		$me = $this->class . '_results';

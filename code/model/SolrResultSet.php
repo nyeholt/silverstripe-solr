@@ -300,4 +300,14 @@ class SolrResultSet {
 		
 		return $facets;
 	}
+
+	/**
+	 * Gets the query's elapsed time.
+	 *
+	 * @return Int
+	 */
+	public function getTimeTaken() {
+		return ($this->result ? $this->result->responseHeader->QTime : null);
+	}
+
 }
