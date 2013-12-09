@@ -96,6 +96,7 @@ class SolrQueryBuilder {
 	}
 	
 	public function addFacetFields($fields, $limit = 0) {
+		$a = array_merge($this->facets['fields'], $fields);
 		$this->facets['fields'] = array_unique(array_merge($this->facets['fields'], $fields));
 		$this->facetLimit = $limit;
 		if ($limit) {
@@ -119,7 +120,7 @@ class SolrQueryBuilder {
 	
 	public function getParams() {
 		if (count($this->filters)) {
-			$this->params['fq'] = implode(' AND ', $this->filters);
+			$this->params['fq'] = array_values($this->filters);
 		}
 		if ($this->sort) {
 			$this->params['sort'] = $this->sort;
@@ -143,7 +144,7 @@ class SolrQueryBuilder {
 		if (isset($this->facets['fields']) && count($this->facets['fields'])) {
 			$this->params['facet'] = 'true';
 			
-			$this->params['facet.field'] = $this->facets['fields'];
+			$this->params['facet.field'] = array_values($this->facets['fields']);
 		}
 		
 		if (isset($this->facets['queries']) && count($this->facets['queries'])) {

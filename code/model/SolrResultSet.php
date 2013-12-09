@@ -125,7 +125,7 @@ class SolrResultSet {
 	 *
 	 * @return DataObjectSet
 	 */
-	public function getDataObjects($evaluatePermissions=false) {
+	public function getDataObjects($evaluatePermissions=false, $expandRawObjects = true) {
 		if (!$this->dataObjects) {
 			$this->dataObjects = ArrayList::create();
 
@@ -149,36 +149,9 @@ class SolrResultSet {
 					}
 
 					if (strpos($doc->id, SolrSearchService::RAW_DATA_KEY) === 0) {
-						$data = array(
-							'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id),
-							'Title'		=> $doc->title[0],
-						);
+						$object = $this->inflateRawResult($doc, $expandRawObjects);
 
-						if (isset($doc->attr_SS_URL[0])) {
-							$data['Link'] = $doc->attr_SS_URL[0];
-						}
-
-						foreach ($doc as $key => $val) {
-							if ($key != 'attr_SS_URL') {
-								$name = null;
-								if (strpos($key, 'attr_') === 0) {
-									$name = str_replace('attr_', '', $key);
-								} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $key, $matches)) {
-									$name = $matches[1];
-								} else {
-									$name = $key;
-								}
-
-								$val = $doc->$key;
-								if (is_array($val) && count($val) == 1) {
-									$data[$name] = $val[0];
-								} else {
-									$data[$name] = $val;
-								}
-							}
-						}
-
-						$object = new ArrayData($data);
+						// $object = new ArrayData($data);
 					} else {
 						if (!class_exists($type)) {
 							continue;
@@ -234,7 +207,68 @@ class SolrResultSet {
 
 		return $this->dataObjects;
 	}
+	
+	/**
+	 * Inflate a raw result into an object of a particular type
+	 * 
+	 * If the raw result has a SolrSearchService::SERIALIZED_OBJECT field,
+	 * and convertToObject is true, that serialized data will be used to create
+	 * a new object of type $doc['SS_TYPE']
+	 * 
+	 * @param array $doc
+	 * @param boolean $convertToObject
+	 */
+	protected function inflateRawResult($doc, $convertToObject = true) {
+		
+		$field = SolrSearchService::SERIALIZED_OBJECT . '_t';
+		if (isset($doc->$field) && $convertToObject) {
+			$raw = unserialize($doc->$field);
+			if (isset($raw['SS_TYPE'])) {
+				$class = $raw['SS_TYPE'];
 
+				$object = Injector::inst()->create($class);
+				$object->update($raw);
+				
+				$object->ID = str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id);
+				
+				return $object;
+			} 
+			
+			return ArrayData::create($raw);
+		}
+
+		$data = array(
+			'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id),
+			'Title'		=> $doc->title[0],
+		);
+
+		if (isset($doc->attr_SS_URL[0])) {
+			$data['Link'] = $doc->attr_SS_URL[0];
+		}
+
+		foreach ($doc as $key => $val) {
+			if ($key != 'attr_SS_URL') {
+				$name = null;
+				if (strpos($key, 'attr_') === 0) {
+					$name = str_replace('attr_', '', $key);
+				} else if (preg_match('/(.*?)_('. implode('|', self::$solr_attrs) .')$/', $key, $matches)) {
+					$name = $matches[1];
+				}
+
+				$val = $doc->$key;
+				if (is_array($val) && count($val) == 1) {
+					$data[$name] = $val[0];
+				} else {
+					$data[$name] = $val;
+				}
+			}
+		}
+		
+		return ArrayData::create($data);
+	}
+
+	protected $returnedFacets;
+	
 	/**
 	 * Gets the details about facets found in this query
 	 *
@@ -248,6 +282,10 @@ class SolrResultSet {
 	 *			)
 	 */
 	public function getFacets() {
+		if ($this->returnedFacets) {
+			return $this->returnedFacets;
+		}
+		
 		$result = $this->getResult();
 		if (!isset($result->facet_counts)) {
 			return;
@@ -298,7 +336,8 @@ class SolrResultSet {
 			}
 		}
 		
-		return $facets;
+		$this->returnedFacets = $facets;
+		return $this->returnedFacets;
 	}
 
 	/**
@@ -309,5 +348,4 @@ class SolrResultSet {
 	public function getTimeTaken() {
 		return ($this->result ? $this->result->responseHeader->QTime : null);
 	}
-
 }

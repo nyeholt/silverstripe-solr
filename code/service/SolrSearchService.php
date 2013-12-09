@@ -8,6 +8,8 @@
  */
 class SolrSearchService {
 	const RAW_DATA_KEY = 'SOLRRAWDATA_';
+	
+	const SERIALIZED_OBJECT = 'raw_dataobject';
 
 	public static $config_file = 'solr/config';
 	public static $java_bin = '/usr/bin/java';
@@ -192,22 +194,31 @@ class SolrSearchService {
 	}
 	
 	public function indexMultiple($objects, $stage = null, $fieldBoost = array()) {
+		$docs = array();
 		foreach ($objects as $object) {
 			$document = $this->convertObjectToDocument($object, $stage, $fieldBoost);
 			if ($document) {
-				try {
-					$this->getSolr()->addDocument($document);
-				} catch (Exception $ie) {
-					SS_Log::log($ie, SS_Log::ERR);
-				}
+				$docs[] = $document;
 			}
 		}
-		
-		try {
-			$this->getSolr()->commit();
-			$this->getSolr()->optimize();
-		} catch (Exception $ie) {
-			SS_Log::log($ie, SS_Log::ERR);
+
+		if (count($docs)) {
+			try {
+				$this->getSolr()->addDocuments($docs);
+			} catch (Exception $ie) {
+				SS_Log::log($ie, SS_Log::ERR);
+				throw $ie;
+			}
+			
+			try {
+				$this->getSolr()->commit();
+				// disabled for now for performance reasons - the single
+				// index call above will trigger an optimize still though
+				// $this->getSolr()->optimize();
+			} catch (Exception $ie) {
+				SS_Log::log($ie, SS_Log::ERR);
+				throw $ie;
+			}
 		}
 	}
 
@@ -357,6 +368,10 @@ class SolrSearchService {
 			while ($parent && $parent->ParentID) {
 				$parents[] = $parent->ParentID;
 				$parent = $parent->Parent();
+				// fix for odd behaviour - in some instance a node is being assigned as its own parent. 
+				if ($parent->ParentID == $parent->ID) {
+					$parent = null;
+				}
 			}
 			$parentsField['Value'] = $parents;
 			return $parentsField;
