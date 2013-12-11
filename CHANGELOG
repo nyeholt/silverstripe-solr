@@ -1,3 +1,13 @@
+2013-12-11 v3.2.1
+-----------------
+
+* Decreased frequency of 'optimize' calls to be 1 in 100
+
+2013-12-06 v3.2.0
+-----------------
+
+* Updated to solr 4
+* Improved storing of dataobjects in the index
 
 2013-09-27 v3.1.0
 -----------------

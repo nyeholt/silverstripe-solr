@@ -186,7 +186,11 @@ class SolrSearchService {
 			try {
 				$this->getSolr()->addDocument($document);
 				$this->getSolr()->commit();
-				$this->getSolr()->optimize();
+				
+				// optimize every so often
+				if (mt_rand(0, 100) == 42) {
+					$this->getSolr()->optimize();
+				}
 			} catch (Exception $ie) {
 				SS_Log::log($ie, SS_Log::ERR);
 			}
