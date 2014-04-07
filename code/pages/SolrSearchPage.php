@@ -107,7 +107,7 @@ class SolrSearchPage extends Page {
 			}
 
 			$label = _t('SolrSearchPage.CONTENT_TEMPLATE', 'Listing Template - if not set, theme template will be used');
-			$fields->addFieldToTab('Root.Main', new DropdownField('ListingTemplateID', $label, $templates, '', null, '(results template)'), 'Content');
+			$fields->addFieldToTab('Root.Main', DropdownField::create('ListingTemplateID', $label, $templates, '', null)->setEmptyString('(results template)'), 'Content');
 		}
 
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
