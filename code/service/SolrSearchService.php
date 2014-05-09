@@ -827,7 +827,7 @@ class SolrSearchService {
 			$data = fread($fp, $chunklen) . $data;
 			if (substr_count($data, "\n") >= $num_to_get + 1) {
 				preg_match("!(.*?\n){" . ($num_to_get - 1) . "}$!", $data, $match);
-				return $match[0];
+				return isset($match[0]) ? $match[0] : null;
 			}
 		}
 		fclose($fp);

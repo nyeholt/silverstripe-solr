@@ -1,0 +1,6 @@
+name: SolrSiteTreePermissionIndexJob
+---
+Injector:
+  SolrSiteTreePermissionIndexJob:
+    properties:
+      searchService: %$SolrSearchService
