@@ -3,33 +3,18 @@
 A module that adds the ability to index content in a Solr instances, and to then search that content.
 
 Provides a SolrSearchPage type that allows CMS authors to configure a search page within the CMS
-to display results without needing to perform code behind to determine how the search works. 
+to display results without needing to perform code behind to determine how the search works.
 
-# Version information
+# Version Information
 
 * The 2.0 branch is compatible with SilverStripe 3.0
 * The master branch is compatible with SilverStripe 3.1
-
-# Maintainer Contact
-
-Marcus Nyeholt
-
-<marcus (at) silverstripe (dot) com (dot) au>
 
 # Requirements
 
 * Solr 4.0 installed and running (a test instance is included, but for production
 use, please install and configure)
 * The multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield
-
-# Documentation
-
-[GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
-
-# Licensing
-
-Solr is licensed under the Apache License
-This module is licensed under the BSD license
 
 # Quick Usage Overview
 
@@ -42,7 +27,7 @@ settings will be fine for evaluation.
 
 If you are running a custom Solr instance, make sure to copy the
 *solr/solr/solr/conf/schema.xml* file to your solr instance - there are
-a couple of custom types defined that SilverStripe uses. 
+a couple of custom types defined that SilverStripe uses.
 
 If you have a configuration different to the default locahost:8983/solr
 configuration, you can configure things by calling
@@ -93,7 +78,6 @@ Object::add_extension('Page_Controller', 'SolrSearchExtension');
 
 Now, add your searchform wherever you like in your Page template using $SearchForm
 
-
 ## Using facets
 
 First, you need to tell the search page what you're going to be faceting on
@@ -103,9 +87,12 @@ SolrSearchPage::$facets = array('MetaKeywords_ms');
 ```
 
 then make sure that field (MetaKeywords) is included in the list of fields to
-index via the searchable\_fields static
+index via the searchable\_fields static.
 
-## Template Options
+`*_ms` represents a multivalue field.
+`*_as` represents a sortable field (which doesn't require tokenization).
+
+## Template options
 
 To customise search results display, provide a SolrSearchPage\_results.ss
 file in your theme's templates directory. 
@@ -113,7 +100,6 @@ file in your theme's templates directory.
 # API
 
 [GitHub Wiki](http://wiki.github.com/nyeholt/silverstripe-solr)
-
 
 # Administration
 
@@ -128,9 +114,17 @@ SolrSearchService::$java_bin
 
 to the appropriate path
 
-
 # Troubleshooting
 
-If you aren't getting any search results, first make sure Solr is running. 
+If you aren't getting any search results, first make sure Solr is running and has been indexed.
 
+# Maintainer Contact
 
+Marcus Nyeholt
+
+<marcus (at) silverstripe (dot) com (dot) au>
+
+# Licensing
+
+Solr is licensed under the Apache License
+This module is licensed under the BSD license

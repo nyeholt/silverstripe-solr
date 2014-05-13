@@ -33,7 +33,7 @@ class SolrSearchService {
 	 * @var array 
 	 */
 	public static $default_query_fields = array(
-		'title',
+		'title_as',
 		'text'
 	);
 
@@ -719,9 +719,6 @@ class SolrSearchService {
 	 * 				A list of potential class types that the field may exist in (ie if searching in multiple types)
 	 */
 	public function getSortFieldName($field, $classNames = array('Page')) {
-		if ($field == 'Title') {
-			return 'title_exact';
-		}
 		if (!is_array($classNames)) {
 			$classNames = array($classNames);
 		}
@@ -844,7 +841,7 @@ class SolrSearchService {
 class SolrSchemaMapper {
 
 	protected $solrFields = array(
-		'Title' => 'title',
+		'Title' => 'title_as',
 		'LastEdited' => 'last_modified',
 		'Content' => 'text',
 		'ClassNameHierarchy' => 'ClassNameHierarchy_ms',

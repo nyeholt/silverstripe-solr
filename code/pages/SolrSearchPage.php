@@ -107,7 +107,8 @@ class SolrSearchPage extends Page {
 			}
 
 			$label = _t('SolrSearchPage.CONTENT_TEMPLATE', 'Listing Template - if not set, theme template will be used');
-			$fields->addFieldToTab('Root.Main', new DropdownField('ListingTemplateID', $label, $templates, '', null, '(results template)'), 'Content');
+			$fields->addFieldToTab('Root.Main', $template = new DropdownField('ListingTemplateID', $label, $templates, '', null), 'Content');
+			$template->setEmptyString('(results template)');
 		}
 
 		$perPage = array('5' => '5', '10' => '10', '15' => '15', '20' => '20');
@@ -120,7 +121,13 @@ class SolrSearchPage extends Page {
 		}
 
 		$objFields = $this->getSelectableFields();
-		$fields->addFieldToTab('Root.Main', new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields), 'Content');
+
+		// Remove content and groups from being sortable (as they are not relevant).
+
+		$sortFields = $objFields;
+		unset($sortFields['Content']);
+		unset($sortFields['Groups']);
+		$fields->addFieldToTab('Root.Main', new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $sortFields), 'Content');
 		$fields->addFieldToTab('Root.Main', new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->dbObject('SortDir')->enumValues()), 'Content');
 
 		$types = SiteTree::page_type_classes();
@@ -236,7 +243,7 @@ class SolrSearchPage extends Page {
 
 		$availableFields = $this->solrSearchService->getAllSearchableFieldsFor($listType);
 		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
-		$objFields['LastEdited'] = 'LastEdited';
+		$objFields['LastEdited'] = 'Last Edited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
 		$objFields['score'] = 'Score';
@@ -652,6 +659,11 @@ class SolrSearchPage_Controller extends Page_Controller {
 		);
 
 		$objFields = $this->data()->getSelectableFields();
+
+		// Remove content and groups from being sortable (as they are not relevant).
+
+		unset($objFields['Content']);
+		unset($objFields['Groups']);
 		$objFields = array_merge(array('' => 'Any'), $objFields);
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
