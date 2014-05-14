@@ -708,18 +708,15 @@ class SolrSearchPage_Controller extends Page_Controller {
 		
 		$results = $query ? $query->getDataObjects(true) : ArrayList::create();
 
-		$elapsed = null;
+		$elapsed = '< 0.001';
 		
 		if ($query) {
 			$resultData = array(
-				'TotalResults'		=> $query->getTotalResults()
+				'TotalResults' => (($total = $query->getTotalResults()) ? $total : 0)
 			);
 			$time = $query->getTimeTaken();
 			if($time) {
 				$elapsed = $time / 1000;
-			}
-			else if(!is_null($time)) {
-				$elapsed = '< 0.001';
 			}
 		} else {
 			$resultData = array();

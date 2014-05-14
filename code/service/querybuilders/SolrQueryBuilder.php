@@ -199,7 +199,7 @@ class SolrQueryBuilder {
 
 	/**
 	 *	Wrap wildcard characters around individual terms of an input string, useful when dealing with "alpha only sort" fields.
-	 *	NOTE: The support for custom query syntax of an input string is still fairly limited and currently does not handle: {} [] ^ ~ : \
+	 *	NOTE: The support for custom query syntax of an input string is currently limited to: * () "" OR || AND && NOT ! + -
 	 *	@param string
 	 *	@return string
 	 */
@@ -236,7 +236,7 @@ class SolrQueryBuilder {
 
 				// Appropriately handle each individual term depending on the "search phrase" state and any custom query syntax.
 
-				if($quotation || ($term === 'OR') || ($term === 'AND') || ($term === 'NOT') || (strpos($term, '+') === 0) || (strpos($term, '-') === 0)) {
+				if($quotation || ($term === 'OR') || ($term === '||') || ($term === 'AND') || ($term === '&&') || ($term === 'NOT') || ($term === '!') || (strpos($term, '+') === 0) || (strpos($term, '-') === 0)) {
 					$terms[] = $term;
 				}
 				else {

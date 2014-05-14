@@ -556,9 +556,16 @@ class SolrSearchService {
 			}
 		}
 		if (!$response) {
-			// execute the query
+
+			// Execute the query and log any errors on failure, always displaying the search results to the user.
+
 			if ($this->isConnected()) {
-				$response = $this->getSolr()->search($query, $offset, $limit, $params);
+				try {
+					$response = $this->getSolr()->search($query, $offset, $limit, $params);
+				}
+				catch(Exception $e) {
+					SS_Log::log($e, SS_Log::NOTICE);
+				}
 			}
 		}
 		
