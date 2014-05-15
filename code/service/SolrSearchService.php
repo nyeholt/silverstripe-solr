@@ -889,20 +889,17 @@ class SolrSchemaMapper {
 		switch ($type) {
 			case 'MultiValueField': {
 					return $field . '_ms';
-				}
+			}
 			case 'Text':
 			case 'HTMLText': {
 					return $field . '_t';
-				}
+			}
 			case 'SS_Datetime': {
 					return $field . '_dt';
-				}
+			}
 			case 'Str':
 			case 'Enum': {
 					return $field . '_ms';
-				}
-			case 'Varchar': {
-				return $field . '_txt';
 			}
 			case 'Attr': {
 				return 'attr_' . $field;
@@ -923,8 +920,9 @@ class SolrSchemaMapper {
 			case 'String': {
 				return $field . '_s';
 			}
+			case 'Varchar':
 			default: {
-				return $field . '_txt';
+				return $field . '_as';
 			}
 		}
 	}

@@ -664,7 +664,15 @@ class SolrSearchPage_Controller extends Page_Controller {
 
 		unset($objFields['Content']);
 		unset($objFields['Groups']);
-		$objFields = array_merge(array('' => 'Any'), $objFields);
+
+		// Remove any custom field types and display the sortable options nicely to the user.
+
+		foreach($objFields as &$field) {
+			if($customType = strpos($field, ':')) {
+				$field = substr($field, 0, $customType);
+			}
+			$field = ltrim(preg_replace('/[A-Z]+[^A-Z]/', ' $0', $field));
+		}
 		$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
 		$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
 		$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
