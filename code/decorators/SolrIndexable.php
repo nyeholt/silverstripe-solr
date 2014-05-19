@@ -115,6 +115,15 @@ class SolrIndexable extends DataExtension {
 
 	public function reindex($stage = null) {
 
+		// Make sure the current data object is not orphaned.
+
+		if($this->owner->ParentID > 0) {
+			$parent = $this->owner->getParent();
+			if(is_null($parent) || ($parent === false)) {
+				return;
+			}
+		}
+
 		// Make sure the extension requirements have been met before enabling the custom site tree search index, since this may impact performance.
 
 		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree') && SiteTree::has_extension('SiteTreePermissionIndexExtension') && SolrSearchPage::has_extension('SolrSearchPagePermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
