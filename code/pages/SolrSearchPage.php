@@ -411,12 +411,12 @@ class SolrSearchPage extends Page {
 
 		if (count($types)) {
 			$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
-			$builder->andWith('ClassNameHierarchy_ms', $types);
+			$builder->addFilter('ClassNameHierarchy_ms', implode(' OR ', $types));
 		}
 		
 		if ($this->SearchTrees()->count()) {
 			$parents = $this->SearchTrees()->column('ID');
-			$builder->andWith('ParentsHierarchy_ms', $parents);
+			$builder->addFilter('ParentsHierarchy_ms', implode(' OR ', $parents));
 		}
 
 		if (!$sortBy) {

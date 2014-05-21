@@ -12,7 +12,7 @@ class SolrResultSet {
 	/**
 	 * A list of solr field type suffixes to look for and swap out
 	 */
-	static $solr_attrs = array('txt', 'ms', 's', 't', 'i', 'dt', 'f', 'p');
+	static $solr_attrs = array('as', 'ms', 's', 't', 'i', 'dt', 'f', 'p');
 	
 	/**
 	 * The raw lucene query issued to solr
