@@ -243,7 +243,7 @@ class SolrSearchPage extends Page {
 
 		$availableFields = $this->solrSearchService->getAllSearchableFieldsFor($listType);
 		$objFields = array_combine(array_keys($availableFields), array_keys($availableFields));
-		$objFields['LastEdited'] = 'Last Edited';
+		$objFields['LastEdited'] = 'LastEdited';
 		$objFields['Created'] = 'Created';
 		$objFields['ID'] = 'ID';
 		$objFields['score'] = 'Score';
