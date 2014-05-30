@@ -45,7 +45,7 @@ class SolrIndexable extends DataExtension {
 		if (!self::$indexing) return;
 
 		if ($this->canShowInSearch()) {
-			$this->searchService->index($this->owner, 'Live');
+			$this->reindex('Live');
 		}
 	}
 
@@ -77,7 +77,7 @@ class SolrIndexable extends DataExtension {
 			}
 
 			if ($this->canShowInSearch()) {
-				$this->searchService->index($this->owner, $stage);
+				$this->reindex($stage);
 			}
 //		}
 	}
@@ -100,11 +100,45 @@ class SolrIndexable extends DataExtension {
 		if (!self::$indexing) return;
 
 		$this->searchService->unindex($this->owner);
-		$this->searchService->index($this->owner, 'Stage');
+		$this->reindex('Stage');
 	}
 
 	function onAfterDelete() {
 		if (!self::$indexing) return;
 		$this->searchService->unindex($this->owner);
 	}
+
+	/**
+	 *	Index the current data object for a particular stage.
+	 *	@param string
+	 */
+
+	public function reindex($stage = null) {
+
+		// Make sure the current data object is not orphaned.
+
+		if($this->owner->ParentID > 0) {
+			$parent = $this->owner->getParent();
+			if(is_null($parent) || ($parent === false)) {
+				return;
+			}
+		}
+
+		// Make sure the extension requirements have been met before enabling the custom site tree search index, since this may impact performance.
+
+		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree') && SiteTree::has_extension('SiteTreePermissionIndexExtension') && SolrSearchPage::has_extension('SolrSearchPagePermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
+
+			// Queue a job to handle the recursive indexing.
+
+			$indexing = new SolrSiteTreePermissionIndexJob($this->owner, $stage);
+			singleton('QueuedJobService')->queueJob($indexing);
+		}
+		else {
+
+			// When the requirements haven't been met, trigger a normal index.
+
+			$this->searchService->index($this->owner, $stage);
+		}
+	}
+
 }

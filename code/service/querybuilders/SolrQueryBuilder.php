@@ -11,12 +11,18 @@ class SolrQueryBuilder {
 	public $title = 'Default Solr';
 	
 	protected $userQuery = '';
-	protected $fields = array('title', 'text');
+	protected $fields = array('title_as', 'text');
 	protected $and = array();
 	protected $params = array();
-	
 	protected $filters = array();
-	
+
+	/**
+	 *	Allow "alpha only sort" fields to be wrapped in wildcard characters when queried against.
+	 *	@var boolean
+	 */
+
+	protected $enableQueryWildcard = true;
+
 	/**
 	 * an array of field => amount to boost
 	 * @var array
@@ -176,7 +182,12 @@ class SolrQueryBuilder {
 		$sep = '';
 		$lucene = '';
 		foreach ($this->fields as $field) {
-			$lucene .= $sep . $field . ':' . $string;
+			$lucene .= $sep . $field . ':(';
+
+			// Wrap wildcard characters around the individual terms for any "alpha only sort" fields.
+
+			$lucene .= ($this->enableQueryWildcard && (substr($field, -3) === '_as')) ? $this->wildcard($string) : $string;
+			$lucene .= ')';
 			if (isset($this->boost[$field])) {
 				$lucene .= '^' . $this->boost[$field];
 			}
@@ -184,6 +195,67 @@ class SolrQueryBuilder {
 		}
 
 		return $lucene;
+	}
+
+	/**
+	 *	Wrap wildcard characters around individual terms of an input string, useful when dealing with "alpha only sort" fields.
+	 *	NOTE: The support for custom query syntax of an input string is currently limited to: * () "" OR || AND && NOT ! + -
+	 *	@param string
+	 *	@return string
+	 */
+
+	public function wildcard($string) {
+
+		// Appropriately handle the input string if it only consists of a single term, where wildcard characters should not be wrapped around quotations.
+
+		$single = (strpos($string, ' ') === false);
+		if($single && (strpos($string, '"') === false)) {
+			return "*{$string}*";
+		}
+		else if($single) {
+			return $string;
+		}
+
+		// Parse each individual term of the input string.
+
+		$string = explode(' ', $string);
+		$terms = array();
+		if(is_array($string)) {
+			$quotation = false;
+			foreach($string as $term) {
+
+				// Parse a "search phrase" by storing the current state, where wildcard characters should no longer be wrapped.
+
+				if(($quotations = substr_count($term, '"')) > 0) {
+					if($quotations === 1) {
+						$quotation = !$quotation;
+					}
+					$terms[] = $term;
+					continue;
+				}
+
+				// Appropriately handle each individual term depending on the "search phrase" state and any custom query syntax.
+
+				if($quotation || ($term === 'OR') || ($term === '||') || ($term === 'AND') || ($term === '&&') || ($term === 'NOT') || ($term === '!') || (strpos($term, '+') === 0) || (strpos($term, '-') === 0)) {
+					$terms[] = $term;
+				}
+				else {
+					$term = "*{$term}*";
+
+					// When dealing with custom grouping, make sure the search terms have been wrapped.
+
+					$term = str_replace(array(
+						'*(',
+						')*'
+					), array(
+						'(*',
+						'*)'
+					), $term);
+					$terms[] = $term;
+				}
+			}
+		}
+		return implode(' ', $terms);
 	}
 	
 	public function boost($boost) {

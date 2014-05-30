@@ -62,7 +62,18 @@ if (class_exists('AbstractQueuedJob')) {
 			$all = array();
 			
 			foreach ($pages as $page) {
-				// only explicitly index live/stage versions if the object has the appropriate extension
+
+				// Make sure the current page is not orphaned.
+
+				if($page->ParentID > 0) {
+					$parent = $page->getParent();
+					if(is_null($parent) || ($parent === false)) {
+						continue;
+					}
+				}
+
+				// Appropriately index the current page, taking versioning into account.
+
 				if ($page->hasExtension('Versioned')) {
 					$stage[] = $page;
 					

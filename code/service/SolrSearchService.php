@@ -33,7 +33,7 @@ class SolrSearchService {
 	 * @var array 
 	 */
 	public static $default_query_fields = array(
-		'title',
+		'title_as',
 		'text'
 	);
 
@@ -556,9 +556,16 @@ class SolrSearchService {
 			}
 		}
 		if (!$response) {
-			// execute the query
+
+			// Execute the query and log any errors on failure, always displaying the search results to the user.
+
 			if ($this->isConnected()) {
-				$response = $this->getSolr()->search($query, $offset, $limit, $params);
+				try {
+					$response = $this->getSolr()->search($query, $offset, $limit, $params);
+				}
+				catch(Exception $e) {
+					SS_Log::log($e, SS_Log::NOTICE);
+				}
 			}
 		}
 		
@@ -719,9 +726,6 @@ class SolrSearchService {
 	 * 				A list of potential class types that the field may exist in (ie if searching in multiple types)
 	 */
 	public function getSortFieldName($field, $classNames = array('Page')) {
-		if ($field == 'Title') {
-			return 'title_exact';
-		}
 		if (!is_array($classNames)) {
 			$classNames = array($classNames);
 		}
@@ -827,7 +831,7 @@ class SolrSearchService {
 			$data = fread($fp, $chunklen) . $data;
 			if (substr_count($data, "\n") >= $num_to_get + 1) {
 				preg_match("!(.*?\n){" . ($num_to_get - 1) . "}$!", $data, $match);
-				return $match[0];
+				return isset($match[0]) ? $match[0] : null;
 			}
 		}
 		fclose($fp);
@@ -844,7 +848,7 @@ class SolrSearchService {
 class SolrSchemaMapper {
 
 	protected $solrFields = array(
-		'Title' => 'title',
+		'Title' => 'title_as',
 		'LastEdited' => 'last_modified',
 		'Content' => 'text',
 		'ClassNameHierarchy' => 'ClassNameHierarchy_ms',
@@ -885,20 +889,17 @@ class SolrSchemaMapper {
 		switch ($type) {
 			case 'MultiValueField': {
 					return $field . '_ms';
-				}
+			}
 			case 'Text':
 			case 'HTMLText': {
 					return $field . '_t';
-				}
+			}
 			case 'SS_Datetime': {
 					return $field . '_dt';
-				}
+			}
 			case 'Str':
 			case 'Enum': {
 					return $field . '_ms';
-				}
-			case 'Varchar': {
-				return $field . '_txt';
 			}
 			case 'Attr': {
 				return 'attr_' . $field;
@@ -919,8 +920,9 @@ class SolrSchemaMapper {
 			case 'String': {
 				return $field . '_s';
 			}
+			case 'Varchar':
 			default: {
-				return $field . '_txt';
+				return $field . '_as';
 			}
 		}
 	}

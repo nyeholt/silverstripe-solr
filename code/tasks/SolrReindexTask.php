@@ -63,6 +63,18 @@ class SolrReindexTask extends BuildTask
 				/* @var $search SolrSearchService */
 
 				foreach ($pages as $page) {
+
+					// Make sure the current page is not orphaned.
+
+					if($page->ParentID > 0) {
+						$parent = $page->getParent();
+						if(is_null($parent) || ($parent === false)) {
+							continue;
+						}
+					}
+
+					// Appropriately index the current page, taking versioning into account.
+
 					if ($page->hasExtension('Versioned')) {
 						$search->index($page, 'Stage');
 						
