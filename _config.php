@@ -19,6 +19,6 @@ if (($solr_module_dir = basename(dirname(__FILE__))) != 'solr') {
 	exit("The solr module must be installed in /solr, not in $solr_module_dir");
 }
 
-if (!class_exists('MultiValueField')) {
-	exit("The solr module requires the multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield");
+if (!class_exists('SearchPage')) {
+	exit("The solr module requires the extensible search module");
 }
