@@ -167,17 +167,6 @@ if(class_exists('SearchPage')) {
 		}
 
 		/**
-		 * Get the list of field -> query items to be used for faceting by query
-		 */
-		public function queryFacets() {
-			$fields = array();
-			if ($this->FacetQueries && $fq = $this->FacetQueries->getValues()) {
-				$fields = array_flip($fq);
-			}
-			return $fields;
-		}
-
-		/**
 		 * Get the currently active query for this page, if any
 		 *
 		 * @return SolrResultSet
@@ -326,33 +315,6 @@ if(class_exists('SearchPage')) {
 		}
 
 		/**
-		 * Returns a url parameter string that was just used to execute the current query.
-		 *
-		 * This is useful for ensuring the parameters used in the search can be passed on again
-		 * for subsequent queries.
-		 *
-		 * @param array $exclusions
-		 *			A list of elements that should be excluded from the final query string
-		 *
-		 * @return String
-		 */
-		function SearchQuery() {
-			$parts = parse_url($_SERVER['REQUEST_URI']);
-			if(!$parts) {
-				throw new InvalidArgumentException("Can't parse URL: " . $uri);
-			}
-
-			// Parse params and add new variable
-			$params = array();
-			if(isset($parts['query'])) {
-				parse_str($parts['query'], $params);
-				if (count($params)) {
-					return http_build_query($params);
-				}
-			}
-		}
-
-		/**
 		 * Retrieve all facets in the result set in a way that can be iterated
 		 * over conveniently.
 		 *
@@ -478,59 +440,8 @@ if(class_exists('SearchPage')) {
 
 	class SolrSearchPage_Controller extends SearchPage_Controller {
 
-		private static $allowed_actions = array(
-			'Form',
-			'results',
-		);
-
 		protected function getSolr() {
 			return $this->data()->getSolr();
-		}
-
-		public function index() {
-			if ($this->StartWithListing) {
-				$_GET['SortBy'] = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
-				$_GET['SortDir'] = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
-				$_GET['Search'] = '*:*';
-				$this->DefaultListing = true;
-
-				return $this->results();
-			}
-			return array();
-		}
-
-		public function Form() {
-			$fields = new FieldList(
-				new TextField('Search', _t('SolrSearchPage.SEARCH','Search'), isset($_GET['Search']) ? $_GET['Search'] : '')
-			);
-
-			$objFields = $this->data()->getSelectableFields();
-
-			// Remove content and groups from being sortable (as they are not relevant).
-
-			unset($objFields['Content']);
-			unset($objFields['Groups']);
-
-			// Remove any custom field types and display the sortable options nicely to the user.
-
-			foreach($objFields as &$field) {
-				if($customType = strpos($field, ':')) {
-					$field = substr($field, 0, $customType);
-				}
-				$field = ltrim(preg_replace('/[A-Z]+[^A-Z]/', ' $0', $field));
-			}
-			$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->data()->SortBy;
-			$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->data()->SortDir;
-			$fields->push(new DropdownField('SortBy', _t('SolrSearchPage.SORT_BY', 'Sort By'), $objFields, $sortBy));
-			$fields->push(new DropdownField('SortDir', _t('SolrSearchPage.SORT_DIR', 'Sort Direction'), $this->data()->dbObject('SortDir')->enumValues(), $sortDir));
-
-			$actions = new FieldList(new FormAction('results', _t('SolrSearchPage.DO_SEARCH', 'Search')));
-
-			$form = new Form($this, 'Form', $fields, $actions);
-			$form->addExtraClass('searchPageForm');
-			$form->setFormMethod('GET');
-			$form->disableSecurityToken();
-			return $form;
 		}
 
 		public function FacetCrumbs() {

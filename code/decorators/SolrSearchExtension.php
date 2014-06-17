@@ -21,7 +21,7 @@ class SolrSearchExtension extends Extension {
 	 */
     public function getSearchPage() {
 		// get the search page for this site, if applicable... otherwise use the default
-		return SolrSearchPage::get()->first();
+		return SearchPage::get()->first();
 	}
 
 	/**
