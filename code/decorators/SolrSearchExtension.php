@@ -17,11 +17,11 @@ class SolrSearchExtension extends Extension {
 	/**
 	 * Returns the default search page for this site
 	 *
-	 * @return SolrSearchPage
+	 * @return ExtensibleSearchPage
 	 */
     public function getSearchPage() {
 		// get the search page for this site, if applicable... otherwise use the default
-		return SearchPage::get()->first();
+		return class_exists('ExtensibleSearchPage') ? ExtensibleSearchPage::get()->first() : null;
 	}
 
 	/**

@@ -5,16 +5,16 @@
  *
  * This is an alternative encapsulation of search logic as it comprises much more than the out of the
  * box example. To use this instead of the default implementation, your search form call in Page should first
- * retrieve the SearchPage to use as its context.
+ * retrieve the ExtensibleSearchPage to use as its context.
  *
  * @author Nathan Glasl <nathan@silverstripe.com.au>
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  */
 
-if(class_exists('SearchPage')) {
+if(class_exists('ExtensibleSearchPage')) {
 
-	class SolrSearchPage extends SearchPage {
+	class SolrSearchPage extends ExtensibleSearchPage {
 
 		/**
 		 *
@@ -104,14 +104,14 @@ if(class_exists('SearchPage')) {
 		/**
 		 * Ensures that there is always a search page
 		 * by checking if there's an instance of
-		 * a base SearchPage. If there
+		 * a base ExtensibleSearchPage. If there
 		 * is not, one is created when the DB is built.
 		 */
 		function requireDefaultRecords() {
 			parent::requireDefaultRecords();
 
 			if(SiteTree::get_create_default_pages()){
-				$page = DataObject::get_one('SearchPage');
+				$page = DataObject::get_one('ExtensibleSearchPage');
 				if(!($page && $page->exists())) {
 					$page = SolrSearchPage::create();
 					$page->Title = _t('SolrSearchPage.DEFAULT_PAGE_TITLE', 'Search');
@@ -438,7 +438,7 @@ if(class_exists('SearchPage')) {
 
 	}
 
-	class SolrSearchPage_Controller extends SearchPage_Controller {
+	class SolrSearchPage_Controller extends ExtensibleSearchPage_Controller {
 
 		protected function getSolr() {
 			return $this->data()->getSolr();
