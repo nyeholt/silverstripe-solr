@@ -102,31 +102,6 @@ if(class_exists('ExtensibleSearchPage')) {
 		}
 
 		/**
-		 * Ensures that there is always a search page
-		 * by checking if there's an instance of
-		 * a base ExtensibleSearchPage. If there
-		 * is not, one is created when the DB is built.
-		 */
-		function requireDefaultRecords() {
-			parent::requireDefaultRecords();
-
-			if(SiteTree::get_create_default_pages()){
-				$page = DataObject::get_one('ExtensibleSearchPage');
-				if(!($page && $page->exists())) {
-					$page = SolrSearchPage::create();
-					$page->Title = _t('SolrSearchPage.DEFAULT_PAGE_TITLE', 'Search');
-					$page->Content = '';
-					$page->ResultsPerPage = 10;
-					$page->Status = 'New page';
-					$page->write();
-
-					DB::alteration_message('Search page created', 'created');
-				}
-			}
-
-		}
-
-		/**
 		 * Get the solr instance.
 		 *
 		 * Note that we do this as a method just in case we decide in future
