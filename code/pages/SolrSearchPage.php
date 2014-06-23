@@ -14,7 +14,7 @@
 
 if(class_exists('ExtensibleSearchPage')) {
 
-	class SolrSearchPage extends ExtensibleSearchPage {
+	class SolrSearchPage extends DataExtension {
 
 		/**
 		 *
@@ -438,7 +438,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 	}
 
-	class SolrSearchPage_Controller extends ExtensibleSearchPage_Controller {
+	class SolrSearchPage_Controller extends Extension {
 
 		protected function getSolr() {
 			return $this->data()->getSolr();
