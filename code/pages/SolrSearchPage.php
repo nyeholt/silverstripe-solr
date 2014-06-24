@@ -71,7 +71,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		public function getSelectableFields($listType = null, $excludeGeo = true) {
 			if (!$listType) {
-				$listType = $this->searchableTypes('Page');
+				$listType = $this->owner->searchableTypes('Page');
 			}
 
 			$availableFields = $this->solrSearchService->getAllSearchableFieldsFor($listType);
@@ -126,8 +126,8 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			foreach ($facetFields as $name) {
-				if ($this->$name && $ff = $this->$name->getValues()) {
-					$types = $this->searchableTypes('Page');
+				if ($this->owner->$name && $ff = $this->owner->$name->getValues()) {
+					$types = $this->owner->searchableTypes('Page');
 					foreach ($ff as $f) {
 						$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
 						if (!$fieldName) {
@@ -156,7 +156,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$query = null;
-			$builder = $this->getSolr()->getQueryBuilder($this->QueryType);
+			$builder = $this->getSolr()->getQueryBuilder($this->owner->QueryType);
 
 			if (isset($_GET['Search'])) {
 				$query = $_GET['Search'];
@@ -165,9 +165,9 @@ if(class_exists('ExtensibleSearchPage')) {
 				$builder->baseQuery($query);
 			}
 
-			$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->SortBy;
-			$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->SortDir;
-			$types = $this->searchableTypes();
+			$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->owner->SortBy;
+			$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->owner->SortDir;
+			$types = $this->owner->searchableTypes();
 			// allow user to specify specific type
 			if (isset($_GET['SearchType'])) {
 				$fixedType = $_GET['SearchType'];
@@ -204,15 +204,15 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
-			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->ResultsPerPage ? $this->ResultsPerPage : 10);
+			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->owner->ResultsPerPage ? $this->owner->ResultsPerPage : 10);
 
 			if (count($types)) {
 				$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
 				$builder->addFilter('ClassNameHierarchy_ms', implode(' OR ', $types));
 			}
 
-			if ($this->SearchTrees()->count()) {
-				$parents = $this->SearchTrees()->column('ID');
+			if ($this->owner->SearchTrees()->count()) {
+				$parents = $this->owner->SearchTrees()->column('ID');
 				$builder->addFilter('ParentsHierarchy_ms', implode(' OR ', $parents));
 			}
 
@@ -222,7 +222,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$builder->sortBy($sortBy, $sortDir);
 
-			$selectedFields = $this->SearchOnFields->getValues();
+			$selectedFields = $this->owner->SearchOnFields->getValues();
 
 			// the following serves two purposes; filter out the searched on fields to only those that
 			// are in the actually  searched on types, and to map them to relevant solr types
@@ -239,7 +239,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$builder->queryFields($mappedFields);
 			}
 
-			if ($boost = $this->BoostFields->getValues()) {
+			if ($boost = $this->owner->BoostFields->getValues()) {
 				$boostSetting = array();
 				foreach ($boost as $field => $amount) {
 					if ($amount > 0) {
@@ -249,13 +249,13 @@ if(class_exists('ExtensibleSearchPage')) {
 				$builder->boost($boostSetting);
 			}
 
-			if ($boost = $this->BoostMatchFields->getValues()) {
+			if ($boost = $this->owner->BoostMatchFields->getValues()) {
 				if (count($boost)) {
 					$builder->boostFieldValues($boost);
 				}
 			}
 
-			if ($filters = $this->FilterFields->getValues()) {
+			if ($filters = $this->owner->FilterFields->getValues()) {
 				if (count($filters)) {
 					foreach ($filters as $filter => $val) {
 						$builder->addFilter($filter, $val);
@@ -267,11 +267,11 @@ if(class_exists('ExtensibleSearchPage')) {
 				'facet' => 'true',
 				'facet.field' => $this->fieldsForFacets(),
 				'facet.limit' => 10,
-				'facet.mincount' => $this->MinFacetCount ? $this->MinFacetCount : 1,
+				'facet.mincount' => $this->owner->MinFacetCount ? $this->owner->MinFacetCount : 1,
 				'fl' => '*,score'
 			);
 
-			$fq = $this->queryFacets();
+			$fq = $this->owner->queryFacets();
 			if (count($fq)) {
 				$params['facet.query'] = array_keys($fq);
 			}
@@ -321,8 +321,8 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		protected function facetFieldMapping() {
 			$fields = array();
-			if ($this->FacetMapping && $ff = $this->FacetMapping->getValues()) {
-				$types = $this->searchableTypes('Page');
+			if ($this->owner->FacetMapping && $ff = $this->owner->FacetMapping->getValues()) {
+				$types = $this->owner->searchableTypes('Page');
 				foreach ($ff as $f => $mapped) {
 					$fieldName = $this->getSolr()->getSolrFieldName($f, $types);
 					if (!$fieldName) {
@@ -345,7 +345,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$facets = $this->getQuery()->getFacets();
-			$queryFacets = $this->queryFacets();
+			$queryFacets = $this->owner->queryFacets();
 
 			$me = $this;
 
@@ -416,20 +416,20 @@ if(class_exists('ExtensibleSearchPage')) {
 	class SolrSearchPage_Controller extends Extension {
 
 		protected function getSolr() {
-			return $this->data()->getSolr();
+			return $this->owner->data()->getSolr();
 		}
 
 		public function FacetCrumbs() {
-			$activeFacets = $this->data()->getActiveFacets();
+			$activeFacets = $this->owner->data()->getActiveFacets();
 			$parts = array();
-			$queryString = $this->data()->SearchQuery();
+			$queryString = $this->owner->data()->SearchQuery();
 			if (count($activeFacets)) {
 				foreach ($activeFacets as $facetName => $facetValues) {
 					foreach ($facetValues as $i => $v) {
 						$item = new stdClass();
 						$item->Name = $v;
 						$paramName = urlencode(SolrSearchPage::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
-						$item->RemoveLink = $this->Link('results') . '?' . str_replace($paramName, '', $queryString);
+						$item->RemoveLink = $this->owner->Link('results') . '?' . str_replace($paramName, '', $queryString);
 						$parts[] = new ArrayData($item);
 					}
 				}
@@ -442,7 +442,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		 * Process and render search results
 		 */
 		function results($data = null, $form = null){
-			$query = $this->data()->getQuery();
+			$query = $this->owner->data()->getQuery();
 
 			$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
 
@@ -465,13 +465,13 @@ if(class_exists('ExtensibleSearchPage')) {
 			$data = array(
 				'Results'		=> $results,
 				'Query'			=> Varchar::create_field('Varchar', $term),
-				'Title'			=> $this->data()->Title,
+				'Title'			=> $this->owner->data()->Title,
 				'ResultData'	=> ArrayData::create($resultData),
 				'TimeTaken'		=> $elapsed
 			);
 
-			$me = $this->class . '_results';
-			return $this->customise($data)->renderWith(array($me, 'SolrSearchPage_results', 'SolrSearchPage', 'Page'));
+			$me = $this->owner->class . '_results';
+			return $this->owner->customise($data)->renderWith(array($me, 'SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 		}
 
 		/**
@@ -479,12 +479,12 @@ if(class_exists('ExtensibleSearchPage')) {
 		 *
 		 */
 		public function TemplatedResults() {
-			$query = $this->data()->getQuery();
-			if ($this->data()->ListingTemplateID && $query) {
-				$template = DataObject::get_by_id('ListingTemplate', $this->data()->ListingTemplateID);
+			$query = $this->owner->data()->getQuery();
+			if ($this->owner->data()->ListingTemplateID && $query) {
+				$template = DataObject::get_by_id('ListingTemplate', $this->owner->data()->ListingTemplateID);
 				if ($template && $template->exists()) {
 					$items = $query ? $query->getDataObjects() : new DataObjectSet();
-					$item = $this->data()->customise(array('Items' => $items));
+					$item = $this->owner->data()->customise(array('Items' => $items));
 					$view = SSViewer::fromString($template->ItemTemplate);
 					return $view->process($item);
 				}
