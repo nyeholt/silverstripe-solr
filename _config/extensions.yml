@@ -1,0 +1,8 @@
+name: extensions
+---
+ExtensibleSearchPage:
+  extensions:
+    - 'SolrSearchPage'
+ExtensibleSearchPage_Controller:
+  extensions:
+    - 'SolrSearchPage_Controller'
