@@ -66,18 +66,6 @@ Object::add_extension('SolrSearchPage', 'SolrSearchPagePermissionIndexExtension'
 This module creates a new page of type _SolrSearchPage_ in your site's root.
 This should be published before being able to perform searches.
 
-## Add the search extension
-
-Finally, the search mechanism needs to be hooked up to your pages. This can be done
-by adding the SolrSearchExtension to your Page\_Controller class to make available
-the various template hooks
-
-```php
-Object::add_extension('Page_Controller', 'SolrSearchExtension');
-```
-
-Now, add your searchform wherever you like in your Page template using $SearchForm
-
 ## Using facets
 
 First, you need to tell the search page what you're going to be faceting on

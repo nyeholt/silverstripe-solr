@@ -276,7 +276,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$params['facet.query'] = array_keys($fq);
 			}
 
-			$this->extend('updateQueryBuilder', $builder);
+			$this->owner->extend('updateQueryBuilder', $builder);
 
 			$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 			return $this->query;
@@ -441,7 +441,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		/**
 		 * Process and render search results
 		 */
-		function results($data = null, $form = null){
+		function getSearchResults($data = null, $form = null){
 			$query = $this->owner->data()->getQuery();
 
 			$term = isset($_GET['Search']) ? Convert::raw2xml($_GET['Search']) : '';
