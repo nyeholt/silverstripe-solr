@@ -58,13 +58,8 @@ https://github.com/silverstripe-australia/silverstripe-queuedjobs
 
 ```php
 Object::add_extension('SiteTree', 'SiteTreePermissionIndexExtension');
-Object::add_extension('SolrSearchPage', 'SolrSearchPagePermissionIndexExtension');
+Object::add_extension('ExtensibleSearchPage', 'SolrSearchPagePermissionIndexExtension');
 ```
-
-## Configure your search page
-
-This module creates a new page of type _SolrSearchPage_ in your site's root.
-This should be published before being able to perform searches.
 
 ## Using facets
 

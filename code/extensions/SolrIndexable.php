@@ -126,7 +126,7 @@ class SolrIndexable extends DataExtension {
 
 		// Make sure the extension requirements have been met before enabling the custom site tree search index, since this may impact performance.
 
-		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree') && SiteTree::has_extension('SiteTreePermissionIndexExtension') && SolrSearchPage::has_extension('SolrSearchPagePermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
+		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree') && SiteTree::has_extension('SiteTreePermissionIndexExtension') && ExtensibleSearchPage::has_extension('SolrSearchPagePermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
 
 			// Queue a job to handle the recursive indexing.
 
