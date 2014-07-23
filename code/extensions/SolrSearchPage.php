@@ -63,6 +63,13 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		public $solrSearchService;
 
+		public function updateCMSFields(FieldList $fields) {
+
+			// Make sure previously existing hooks are carried across.
+
+			$this->owner->extend('updateSolrCMSFields', $fields);
+		}
+
 		/**
 		 * Return the fields that can be selected for sorting operations.
 		 *
