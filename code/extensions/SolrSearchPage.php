@@ -18,7 +18,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 		// Define the additional DB fields that are supported by solr search customisation.
 
-		private static $support = array(
+		public static $support = array(
 			'QueryType'							=> 1,
 			'BoostFields'						=> 1,
 			'BoostMatchFields'					=> 1
