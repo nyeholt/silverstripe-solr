@@ -1,9 +1,6 @@
 # Solr Search Module
 
-A module that adds the ability to index content in a Solr instances, and to then search that content.
-
-Provides a SolrSearchPage type that allows CMS authors to configure a search page within the CMS
-to display results without needing to perform code behind to determine how the search works.
+A module that extends the base functionality of the extensible search module, adding the ability to index and search content from a Solr instance.
 
 # Version Information
 
@@ -14,7 +11,6 @@ to display results without needing to perform code behind to determine how the s
 
 * Solr 4.0 installed and running (a test instance is included, but for production
 use, please install and configure)
-* The multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield
 
 # Quick Usage Overview
 
@@ -77,7 +73,7 @@ index via the searchable\_fields static.
 
 ## Template options
 
-To customise search results display, provide a SolrSearchPage\_results.ss
+To customise search results displayed, provide a SolrSearchPage\_results.ss
 file in your theme's templates directory. 
 
 # API
