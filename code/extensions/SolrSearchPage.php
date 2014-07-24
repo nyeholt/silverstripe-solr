@@ -16,6 +16,14 @@ if(class_exists('ExtensibleSearchPage')) {
 
 	class SolrSearchPage extends DataExtension {
 
+		// Define the additional DB fields that are supported by solr search customisation.
+
+		private static $support = array(
+			'QueryType'							=> 1,
+			'BoostFields'						=> 1,
+			'BoostMatchFields'					=> 1
+		);
+
 		/**
 		 *
 		 * The facets we're interested in for this search page. This will be made a little more
