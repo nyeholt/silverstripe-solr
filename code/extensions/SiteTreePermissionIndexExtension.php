@@ -23,7 +23,7 @@ class SiteTreePermissionIndexExtension extends DataExtension {
 
 		// Make sure the extension requirements have been met before enabling the custom search index.
 
-		if(SiteTree::has_extension('SolrIndexable') && ExtensibleSearchPage::has_extension('SolrSearchPagePermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
+		if(SiteTree::has_extension('SolrIndexable') && ExtensibleSearchPage::has_extension('SolrSearchPermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
 			$existing[$this->index] = true;
 		}
 		return $existing;

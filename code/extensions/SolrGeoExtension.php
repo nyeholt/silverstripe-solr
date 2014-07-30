@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Adds geospatial search to SolrSearchPage
+ * Adds geospatial search to SolrSearch
  *
  * @author <marcus@silverstripe.com.au>
  * @license BSD License http://www.silverstripe.org/bsd-license
@@ -17,23 +17,23 @@ class SolrGeoExtension extends DataExtension{
 	
 	public function updateSolrCMSFields(\FieldList $fields) {
 		// geo spatial field stuff
-		$fields->addFieldToTab('Root.Main', $geoHeader = new HeaderField('GeoHeader', _t('SolrSearchPage.GEO_HEADER', 'Geospatial Settings')), 'Content');
+		$fields->addFieldToTab('Root.Main', $geoHeader = new HeaderField('GeoHeader', _t('SolrSearch.GEO_HEADER', 'Geospatial Settings')), 'Content');
 		
 		$fields->addFieldToTab('Root.Main',
-			new GeoCoordinateField('GeoCentre', _t('SolrSearchPage.GEO_CENTRE', 'Centre for geo restriction')),
+			new GeoCoordinateField('GeoCentre', _t('SolrSearch.GEO_CENTRE', 'Centre for geo restriction')),
 			'Content'
 		);
 		
 		$geoFields = $this->getGeoSelectableFields();
 		$geoFields = array_merge(array('' => ''), $geoFields);
 		$fields->addFieldToTab('Root.Main', 
-			$geoField = new DropdownField('GeoRestrictionField', _t('SolrSearchPage.RESTRICT_BY', 'Geo field to restrict within radius'), $geoFields), 
+			$geoField = new DropdownField('GeoRestrictionField', _t('SolrSearch.RESTRICT_BY', 'Geo field to restrict within radius'), $geoFields),
 			'Content'
 		);
 		$geoField->setRightTitle('Leave the geo field blank and no geospatial restriction will be used');
 
 		$fields->addFieldToTab('Root.Main', 
-			new NumericField('GeoRadius', _t('SolrSearchPage.RESTRICT_RADIUS', 'Restrict results within radius (in km)')), 
+			new NumericField('GeoRadius', _t('SolrSearch.RESTRICT_RADIUS', 'Restrict results within radius (in km)')),
 			'Content'
 		);
 
@@ -44,7 +44,7 @@ class SolrGeoExtension extends DataExtension{
 		);
 
 		$fields->addFieldToTab('Root.Main', 
-			new DropdownField('DistanceSort', _t('SolrSearchPage.SORT_BY_DISTANCE', 'Sort by distance from point'), $distanceOpts), 
+			new DropdownField('DistanceSort', _t('SolrSearch.SORT_BY_DISTANCE', 'Sort by distance from point'), $distanceOpts),
 			'Content'
 		);
 	}

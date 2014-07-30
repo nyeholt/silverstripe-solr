@@ -54,7 +54,7 @@ https://github.com/silverstripe-australia/silverstripe-queuedjobs
 
 ```php
 Object::add_extension('SiteTree', 'SiteTreePermissionIndexExtension');
-Object::add_extension('ExtensibleSearchPage', 'SolrSearchPagePermissionIndexExtension');
+Object::add_extension('ExtensibleSearchPage', 'SolrSearchPermissionIndexExtension');
 ```
 
 ## Using facets
@@ -62,7 +62,7 @@ Object::add_extension('ExtensibleSearchPage', 'SolrSearchPagePermissionIndexExte
 First, you need to tell the search page what you're going to be faceting on
 
 ```php
-SolrSearchPage::$facets = array('MetaKeywords_ms');
+SolrSearch::$facets = array('MetaKeywords_ms');
 ```
 
 then make sure that field (MetaKeywords) is included in the list of fields to
@@ -73,7 +73,7 @@ index via the searchable\_fields static.
 
 ## Template options
 
-To customise search results displayed, provide a SolrSearchPage\_results.ss
+To customise search results displayed, provide a SolrSearch\_results.ss
 file in your theme's templates directory. 
 
 # API

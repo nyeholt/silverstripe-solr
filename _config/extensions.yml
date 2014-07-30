@@ -2,7 +2,7 @@ name: extensions
 ---
 ExtensibleSearchPage:
   extensions:
-    - 'SolrSearchPage'
+    - 'SolrSearch'
 ExtensibleSearchPage_Controller:
   extensions:
-    - 'SolrSearchPage_Controller'
+    - 'SolrSearch_Controller'
