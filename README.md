@@ -11,6 +11,14 @@ A module that extends the base functionality of the extensible search module, ad
 
 * Solr 4.0 installed and running (a test instance is included, but for production
 use, please install and configure)
+* The extensible search module.
+
+# Extensible Search Upgrade Notes
+
+If you have recently been using the solr search module prior to the extensible search upgrade, the following steps will need to be taken.
+
+* Replace most YML and code **SolrSearchPage** references with **ExtensibleSearchPage**, unless you have something which still directly depends on the new **SolrSearch** extension.
+* `/dev/tasks/SolrSearchPageMigrationTask` to update all search page references.
 
 # Quick Usage Overview
 
