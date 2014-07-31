@@ -486,7 +486,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			);
 
 			$me = $this->owner->class . '_results';
-			return $this->owner->customise($data)->renderWith(array($me, 'SolrSearch_results', 'SolrSearch', 'Page'));
+			return $this->owner->customise($data)->renderWith(array($me, 'SolrSearch_results', 'SolrSearch', 'SolrSearchPage_results', 'SolrSearchPage', 'Page'));
 		}
 
 		/**
