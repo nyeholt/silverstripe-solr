@@ -24,6 +24,8 @@ if(class_exists('ExtensibleSearchPage')) {
 			'BoostMatchFields'					=> 1
 		);
 
+		public $default_search = '*:*';
+
 		/**
 		 *
 		 * The facets we're interested in for this search page. This will be made a little more
