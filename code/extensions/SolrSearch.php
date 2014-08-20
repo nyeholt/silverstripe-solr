@@ -20,8 +20,16 @@ if(class_exists('ExtensibleSearchPage')) {
 
 		public static $support = array(
 			'QueryType'							=> 1,
+			'SearchType'						=> 1,
+			'SearchOnFields'					=> 1,
 			'BoostFields'						=> 1,
-			'BoostMatchFields'					=> 1
+			'BoostMatchFields'					=> 1,
+			'FacetFields'						=> 1,
+			'CustomFacetFields'					=> 1,
+			'FacetMapping'						=> 1,
+			'FacetQueries'						=> 1,
+			'MinFacetCount'						=> 1,
+			'FilterFields'						=> 1
 		);
 
 		public $default_search = '*:*';
