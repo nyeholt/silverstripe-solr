@@ -1,4 +1,5 @@
-name: extensions
+---
+Name: extensions
 ---
 ExtensibleSearchPage:
   extensions:
