@@ -18,7 +18,3 @@ Object::add_extension('Page_Controller', 'SolrSearchExtension');
 if (($solr_module_dir = basename(dirname(__FILE__))) != 'solr') {
 	exit("The solr module must be installed in /solr, not in $solr_module_dir");
 }
-
-if (!class_exists('ExtensibleSearchPage')) {
-	exit("The solr module requires the extensible search module");
-}
