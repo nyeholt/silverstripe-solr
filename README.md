@@ -5,7 +5,11 @@ A module that extends the base functionality of the extensible search module, ad
 # Version Information
 
 * The 2.0 branch is compatible with SilverStripe 3.0
-* The master branch is compatible with SilverStripe 3.1
+* The 3.0 branch is compatible with SilverStripe 3.1 and contains its own 
+  SearchPage implementation
+* The master branch is compatible with SilverStripe 3.1, but relies on the
+  [Extensible Search](https://github.com/nglasl/silverstripe-extensible-search)
+  module for a search page implementation
 
 # Requirements
 
@@ -17,7 +21,10 @@ use, please install and configure)
 
 If you have recently been using the solr search module prior to the extensible search upgrade, the following steps will need to be taken.
 
-* Replace most YML and code **SolrSearchPage** references with **ExtensibleSearchPage**, unless you have something which still directly depends on the new **SolrSearch** extension.
+* Add the configuration from extensions.yml.sample to your project configuration to bind the SolrSearch extension
+  to the ExtensibleSearchPage
+* Replace most YML and code **SolrSearchPage** references with **ExtensibleSearchPage**, unless you have something which 
+  still directly depends on the new **SolrSearch** extension.
 * `/dev/tasks/SolrSearchPageMigrationTask` to update all search page references.
 
 # Quick Usage Overview
