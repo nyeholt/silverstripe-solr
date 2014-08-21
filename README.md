@@ -1,9 +1,6 @@
 # Solr Search Module
 
-A module that adds the ability to index content in a Solr instances, and to then search that content.
-
-Provides a SolrSearchPage type that allows CMS authors to configure a search page within the CMS
-to display results without needing to perform code behind to determine how the search works.
+A module that extends the base functionality of the extensible search module, adding the ability to index and search content from a Solr instance.
 
 # Version Information
 
@@ -14,7 +11,14 @@ to display results without needing to perform code behind to determine how the s
 
 * Solr 4.0 installed and running (a test instance is included, but for production
 use, please install and configure)
-* The multivaluefield module from https://github.com/nyeholt/silverstripe-multivaluefield
+* The extensible search module.
+
+# Extensible Search Upgrade Notes
+
+If you have recently been using the solr search module prior to the extensible search upgrade, the following steps will need to be taken.
+
+* Replace most YML and code **SolrSearchPage** references with **ExtensibleSearchPage**, unless you have something which still directly depends on the new **SolrSearch** extension.
+* `/dev/tasks/SolrSearchPageMigrationTask` to update all search page references.
 
 # Quick Usage Overview
 
@@ -58,32 +62,15 @@ https://github.com/silverstripe-australia/silverstripe-queuedjobs
 
 ```php
 Object::add_extension('SiteTree', 'SiteTreePermissionIndexExtension');
-Object::add_extension('SolrSearchPage', 'SolrSearchPagePermissionIndexExtension');
+Object::add_extension('ExtensibleSearchPage', 'SolrSearchPermissionIndexExtension');
 ```
-
-## Configure your search page
-
-This module creates a new page of type _SolrSearchPage_ in your site's root.
-This should be published before being able to perform searches.
-
-## Add the search extension
-
-Finally, the search mechanism needs to be hooked up to your pages. This can be done
-by adding the SolrSearchExtension to your Page\_Controller class to make available
-the various template hooks
-
-```php
-Object::add_extension('Page_Controller', 'SolrSearchExtension');
-```
-
-Now, add your searchform wherever you like in your Page template using $SearchForm
 
 ## Using facets
 
 First, you need to tell the search page what you're going to be faceting on
 
 ```php
-SolrSearchPage::$facets = array('MetaKeywords_ms');
+SolrSearch::$facets = array('MetaKeywords_ms');
 ```
 
 then make sure that field (MetaKeywords) is included in the list of fields to
@@ -94,7 +81,7 @@ index via the searchable\_fields static.
 
 ## Template options
 
-To customise search results display, provide a SolrSearchPage\_results.ss
+To customise search results displayed, provide a SolrSearch\_results.ss
 file in your theme's templates directory. 
 
 # API

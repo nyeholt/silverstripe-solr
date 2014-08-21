@@ -6,7 +6,7 @@
  *	@author Nathan Glasl <nathan@silverstripe.com.au>
  */
 
-class SolrSearchPagePermissionIndexExtension extends DataExtension {
+class SolrSearchPermissionIndexExtension extends DataExtension {
 
 	/**
 	 *	Apply the current user permissions against the solr query builder.
