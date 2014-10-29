@@ -182,7 +182,7 @@ class SolrQueryBuilder {
 		$sep = '';
 		$lucene = '';
 		foreach ($this->fields as $field) {
-			$lucene .= $sep . $field . ':(';
+			$lucene .= $sep . '(' . $field . ':';
 
 			// Wrap wildcard characters around the individual terms for any "alpha only sort" fields.
 
