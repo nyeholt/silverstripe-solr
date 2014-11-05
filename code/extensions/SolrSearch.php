@@ -372,7 +372,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			$facets = $this->getQuery()->getFacets();
 			$queryFacets = $this->owner->queryFacets();
 
-			$me = $this;
+			$me = $this->owner;
 
 			$convertFacets = function ($term, $raw) use ($facets, $queryFacets, $me) {
 				$result = array();
