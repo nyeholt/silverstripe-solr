@@ -358,7 +358,21 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 			return $fields;
 		}
-
+		protected function convertFacets($term,$raw) {
+			$result = array();
+			foreach ($raw as $facetTerm) {
+				// if it's a query facet, then we may have a label for it
+				if (isset($raw[$facetTerm->Name])) {
+					$facetTerm->Name = $raw[$facetTerm->Name];
+				}
+				$sq = $this->owner->data()->SearchQuery();
+				$sep = strlen($sq) ? '&amp;' : '';
+				$facetTerm->SearchLink = $this->owner->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=$facetTerm->Query";
+				$facetTerm->QuotedSearchLink = $this->owner->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
+				$result[] = new ArrayData($facetTerm);
+			}
+			return $result;
+		}
 		/**
 		 * Get the list of facet values for the given term
 		 *
@@ -372,23 +386,6 @@ if(class_exists('ExtensibleSearchPage')) {
 			$facets = $this->getQuery()->getFacets();
 			$queryFacets = $this->owner->queryFacets();
 
-			$me = $this;
-
-			$convertFacets = function ($term, $raw) use ($facets, $queryFacets, $me) {
-				$result = array();
-				foreach ($raw as $facetTerm) {
-					// if it's a query facet, then we may have a label for it
-					if (isset($queryFacets[$facetTerm->Name])) {
-						$facetTerm->Name = $queryFacets[$facetTerm->Name];
-					}
-					$sq = $me->SearchQuery();
-					$sep = strlen($sq) ? '&amp;' : '';
-					$facetTerm->SearchLink = $me->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=$facetTerm->Query";
-					$facetTerm->QuotedSearchLink = $me->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
-					$result[] = new ArrayData($facetTerm);
-				}
-				return $result;
-			};
 
 			if ($term) {
 				// return just that term
@@ -396,14 +393,14 @@ if(class_exists('ExtensibleSearchPage')) {
 				// lets update them all and add a link parameter
 				$result = array();
 				if ($ret) {
-					$result = $convertFacets($term, $ret);
+					$result = $this->convertFacets($term, $ret);
 				}
 
 				return new ArrayList($result);
 			} else {
 				$all = array();
 				foreach ($facets as $term => $ret) {
-					$result = $convertFacets($term, $ret);
+					$result = $this->convertFacets($term, $ret);
 					$all = array_merge($all, $result);
 				}
 
