@@ -906,6 +906,7 @@ class SolrSchemaMapper {
 			}
 			case 'Double':
 			case 'Decimal':
+			case 'Currency':
 			case 'Float':
 			case 'Money': {
 				return $field . '_f';
