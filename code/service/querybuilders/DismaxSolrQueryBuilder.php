@@ -14,6 +14,8 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 	}
 
 	public function getParams() {
+		parent::getParams();
+		
 		$fields = '';
 		$sep = '';
 		foreach ($this->fields as $field) {
@@ -24,19 +26,25 @@ class DismaxSolrSearchBuilder extends SolrQueryBuilder {
 			$sep = ' ';
 		}
 		$this->params['qf'] = $fields;
-		
 		$this->params['defType'] = 'dismax';
 		
-		// AND conditionals
-		$ac = '';
+		$filterVals = isset($this->params['fq']) ? $this->params['fq'] : array();
 		
 		foreach ($this->and as $field => $valArray) {
 			foreach ($valArray as $value) {
-				$ac .= '+'.$field. ':' .$value .' ';
+				$filterVals[] = $field. ':' .$value;
 			}
 		}
+
+		$this->params['fq'] = $filterVals;
 		
-		$this->params['bq'] = $ac;
+		$bq = array();
+		foreach ($this->boostFieldValues as $field => $boost) {
+			$bq[] = "$field^$boost";
+		}
+		if (count($bq)) {
+			$this->params['bq'] = $bq;
+		}
 		
 		if ($this->sort) {
 			$this->params['sort'] = $this->sort;
