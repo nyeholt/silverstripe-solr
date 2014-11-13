@@ -196,7 +196,7 @@ class SolrSearchService {
 			}
 		}
 	}
-	
+
 	public function indexMultiple($objects, $stage = null, $fieldBoost = array()) {
 		$docs = array();
 		foreach ($objects as $object) {

@@ -233,7 +233,12 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			if (count($types)) {
 				$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
-				$builder->addFilter('ClassNameHierarchy_ms', implode(' OR ', $types));
+				$filterQ = array();
+				foreach ($types as $t) {
+					$filterQ[] = 'ClassNameHierarchy_ms:' . $t;
+				}
+				
+				$builder->addFilter(implode(' OR ', $filterQ));
 			}
 
 			if ($this->owner->SearchTrees()->count()) {
