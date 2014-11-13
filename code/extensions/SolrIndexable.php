@@ -118,7 +118,7 @@ class SolrIndexable extends DataExtension {
 		// Make sure the current data object is not orphaned.
 
 		if($this->owner->ParentID > 0) {
-			$parent = $this->owner->getParent();
+			$parent = $this->owner->Parent();
 			if(is_null($parent) || ($parent === false)) {
 				return;
 			}
