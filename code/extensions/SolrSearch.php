@@ -488,6 +488,8 @@ if(class_exists('ExtensibleSearchPage')) {
 				if($time) {
 					$elapsed = $time / 1000;
 				}
+
+				SearchRecord::record_search($term, $total, $elapsed);
 			} else {
 				$resultData = array();
 			}
