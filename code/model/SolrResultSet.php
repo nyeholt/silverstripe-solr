@@ -171,8 +171,16 @@ class SolrResultSet {
 						if (isset($doc->score)) {
 							$object->SearchScore = $doc->score;
 						}
+						
+						$canAdd = true;
+						if ($evaluatePermissions) {
+							// check if we've got a way of evaluating perms
+							if ($object->hasMethod('canView')) {
+								$canAdd = $object->canView();
+							}
+						}
 
-						if (!$evaluatePermissions || $object->canView()) {
+						if (!$evaluatePermissions || $canAdd) {
 							if ($object->hasMethod('canShowInSearch')) {
 								if ($object->canShowInSearch()) {
 									$this->dataObjects->push($object);
@@ -239,11 +247,18 @@ class SolrResultSet {
 
 		$data = array(
 			'ID'		=> str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id),
-			'Title'		=> $doc->title[0],
 		);
 
 		if (isset($doc->attr_SS_URL[0])) {
 			$data['Link'] = $doc->attr_SS_URL[0];
+		}
+		
+		if (isset($doc->title)) {
+			$data['Title'] = $doc->title;
+		}
+		
+		if (isset($doc->title_as)) {
+			$data['Title'] = $doc->title_as;
 		}
 
 		foreach ($doc as $key => $val) {
