@@ -197,7 +197,7 @@ class SolrSearchService {
 			}
 		}
 	}
-
+	
 	public function indexMultiple($objects, $stage = null, $fieldBoost = array()) {
 		$docs = array();
 		foreach ($objects as $object) {
@@ -642,6 +642,10 @@ class SolrSearchService {
 			}
 		}
 
+		if (!class_exists($sng)) {
+			return array();
+		}
+
 		if (!$sng) {
 			$sng = singleton($className);
 		}
@@ -703,6 +707,9 @@ class SolrSearchService {
 		}
 
 		foreach ($classNames as $className) {
+			if (!class_exists($className)) {
+				continue;
+			}
 			$dummy = singleton($className);
 			$fields = $this->objectToFields($dummy);
 			if ($field == 'ID') {
