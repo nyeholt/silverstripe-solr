@@ -113,10 +113,12 @@ if(class_exists('ExtensibleSearchPage')) {
 				}
 				foreach ($listType as $classType) {
 					$db = Config::inst()->get($classType, 'db');
-					foreach ($db as $name => $type) {
-						$type = current(explode("(", $type));
-						if (is_subclass_of($type, 'SolrGeoPoint') || $type == 'SolrGeoPoint') {
-							unset($objFields[$name]);
+					if ($db && count($db)) {
+						foreach ($db as $name => $type) {
+							$type = current(explode("(", $type));
+							if (is_subclass_of($type, 'SolrGeoPoint') || $type == 'SolrGeoPoint') {
+								unset($objFields[$name]);
+							}
 						}
 					}
 				}
