@@ -642,7 +642,7 @@ class SolrSearchService {
 			}
 		}
 
-		if (!class_exists($sng)) {
+		if (!class_exists($className)) {
 			return array();
 		}
 
