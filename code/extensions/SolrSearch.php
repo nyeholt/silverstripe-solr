@@ -490,8 +490,6 @@ if(class_exists('ExtensibleSearchPage')) {
 				if($time) {
 					$elapsed = $time / 1000;
 				}
-
-				SearchRecord::record_search($term, $total, $elapsed);
 			} else {
 				$resultData = array();
 			}
@@ -503,9 +501,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				'ResultData'	=> ArrayData::create($resultData),
 				'TimeTaken'		=> $elapsed
 			);
-
-			$me = $this->owner->class . '_results';
-			return $this->owner->customise($data)->renderWith(array($me, 'SolrSearch_results', 'SolrSearch', 'SolrSearchPage_results', 'SolrSearchPage', 'Page'));
+			return $data;
 		}
 
 		/**
