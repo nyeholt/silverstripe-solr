@@ -65,25 +65,23 @@ class SolrIndexable extends DataExtension {
 		if (!self::$indexing) return;
 
 		// No longer doing the 'ischanged' check to avoid problems with multivalue field NOT being indexed
-//		$changes = $this->owner->getChangedFields(true, 2);
-//		
-//		if (count($changes)) {
+		//$changes = $this->owner->getChangedFields(true, 2);
 			
-			$stage = null;
-			// if it's being written and a versionable, then save only in the draft
-			// repository. 
-			if ($this->owner->hasExtension('Versioned')) {
-				$stage = 'Stage';
-			}
+		$stage = null;
+		// if it's being written and a versionable, then save only in the draft
+		// repository. 
+		if ($this->owner->hasExtension('Versioned')) {
+			$stage = 'Stage';
+		}
 
-			if ($this->canShowInSearch()) {
-				$this->reindex($stage);
-			}
-//		}
+		if ($this->canShowInSearch()) {
+			$this->reindex($stage);
+		}
 	}
 	
 	public function canShowInSearch() {
 		if ($this->owner->hasField('ShowInSearch')) {
+			
 			return $this->owner->ShowInSearch;
 		}
 		
@@ -124,19 +122,22 @@ class SolrIndexable extends DataExtension {
 			}
 		}
 
-		// Make sure the extension requirements have been met before enabling the custom site tree search index, since this may impact performance.
+		// Make sure the extension requirements have been met before enabling the custom site tree search index,
+		// since this may impact performance.
 
-		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree') && SiteTree::has_extension('SiteTreePermissionIndexExtension') && SiteTree::has_extension('SolrSearchPermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
+		if((ClassInfo::baseDataClass($this->owner) === 'SiteTree')
+			&& SiteTree::has_extension('SiteTreePermissionIndexExtension')
+			&& SiteTree::has_extension('SolrSearchPermissionIndexExtension')
+			&& ClassInfo::exists('QueuedJob')
+		) {
 
 			// Queue a job to handle the recursive indexing.
-
 			$indexing = new SolrSiteTreePermissionIndexJob($this->owner, $stage);
 			singleton('QueuedJobService')->queueJob($indexing);
 		}
 		else {
 
 			// When the requirements haven't been met, trigger a normal index.
-
 			$this->searchService->index($this->owner, $stage);
 		}
 	}
