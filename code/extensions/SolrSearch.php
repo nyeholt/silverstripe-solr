@@ -390,8 +390,8 @@ if(class_exists('ExtensibleSearchPage')) {
 					}
 					$sq = $me->SearchQuery();
 					$sep = strlen($sq) ? '&amp;' : '';
-					$facetTerm->SearchLink = $me->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=$facetTerm->Query";
-					$facetTerm->QuotedSearchLink = $me->Link('results') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
+					$facetTerm->SearchLink = $me->Link('getForm') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=$facetTerm->Query";
+					$facetTerm->QuotedSearchLink = $me->Link('getForm') . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
 					$result[] = new ArrayData($facetTerm);
 				}
 				return $result;
@@ -461,7 +461,7 @@ if(class_exists('ExtensibleSearchPage')) {
 						$item = new stdClass();
 						$item->Name = $v;
 						$paramName = urlencode(SolrSearch::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
-						$item->RemoveLink = $this->owner->Link('results') . '?' . str_replace($paramName, '', $queryString);
+						$item->RemoveLink = $this->owner->Link('getForm') . '?' . str_replace($paramName, '', $queryString);
 						$parts[] = new ArrayData($item);
 					}
 				}
@@ -499,7 +499,8 @@ if(class_exists('ExtensibleSearchPage')) {
 				'Query'			=> Varchar::create_field('Varchar', $term),
 				'Title'			=> $this->owner->data()->Title,
 				'ResultData'	=> ArrayData::create($resultData),
-				'TimeTaken'		=> $elapsed
+				'TimeTaken'		=> $elapsed,
+				'Facets'		=> $this->owner->data()->AllFacets()
 			);
 			return $data;
 		}
