@@ -51,6 +51,26 @@ if(class_exists('ExtensibleSearchPage')) {
 		 * @var array
 		 */
 		public static $facets = array();
+		
+		/**
+		 * Boolean setting on wether to tag facets or not see
+		 * {@link https://wiki.apache.org/solr/SimpleFacetParameters#Multi-Select_Faceting_and_LocalParams}
+		 * for information on tag use in Solr searches
+		 * @var boolean
+		 */
+		public static $facetTags = false;
+		
+		/**
+		 * Sets the conjunction for multiple filters on a single column.
+		 * Typical conjunctions: AND, OR, NOT 
+		 * @var string
+		 */
+		public static $facetConjunction = 'AND';
+		
+		/**
+		 * @var SolrQueryBuilder
+		 */
+		protected $builder;
 
 		/**
 		 * A local cache of the current query the user is executing based
@@ -146,12 +166,15 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		public function fieldsForFacets() {
 			$fields = self::$facets;
-
+			
+			$tag = self::$facetTags;
+			
 			$facetFields = array('FacetFields', 'CustomFacetFields');
 			if (!$fields) {
 				$fields = array();
 			}
-
+			
+			$i = 0;
 			foreach ($facetFields as $name) {
 				if ($this->owner->$name && $ff = $this->owner->$name->getValues()) {
 					$types = $this->owner->searchableTypes('Page');
@@ -160,12 +183,46 @@ if(class_exists('ExtensibleSearchPage')) {
 						if (!$fieldName) {
 							$fieldName = $f;
 						}
-						$fields[] = $fieldName;
+						if ($tag) {
+							// @TODO Expand this to allow grouping of multiple tag/ex groups eg:
+							// {!ex=t0,t1}Fieldname an {!ex=t0,t3}OtherFieldName
+							$fields[] = '{!ex=t' . $i++ . '}' . $fieldName;
+						} else {
+							$fields[] = $fieldName;
+						}
 					}
 				}
 			}
 
 			return $fields;
+		}
+		
+		public function setFilterQuery() {
+			
+			$facetGroupList = $this->fieldsForFacets();
+			
+			$activeFacets = $this->getActiveFacets();
+			
+			$conjunction = ' ' . self::$facetConjunction . ' ';
+			
+			if (count($activeFacets)) {
+				foreach ($activeFacets as $facetName => $facetValues) {
+				// @TODO This needs improved configurability of this currently all facet are one conjunction
+				// (either 'AND'/'OR'), there will be situations where some facets should be AND and other should be OR+
+					if (array_search($facetName, $facetGroupList) !== false) {
+						$this->builder->addFilter(
+								'{!tag=t' . array_search($facetName, $facetGroupList) . '}' . $facetName,
+								"(" . implode($conjunction, $facetValues) . ")"
+							);
+					} else {
+						$this->builder->addFilter(
+							$facetName, "(" . implode($conjunction, $facetValues) . ")"
+						);
+					}
+				}
+			}
+			
+			return $this->builder;
 		}
 
 		/**
@@ -183,17 +240,18 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$query = null;
-			$builder = $this->getSolr()->getQueryBuilder($this->owner->QueryType);
+			$this->builder = $this->getSolr()->getQueryBuilder($this->owner->QueryType);
 
 			if (isset($_GET['Search'])) {
 				$query = $_GET['Search'];
 
 				// lets convert it to a base solr query
-				$builder->baseQuery($query);
+				$this->builder->baseQuery($query);
 			}
 
 			$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->owner->SortBy;
 			$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->owner->SortDir;
+			$sortDir = ($sortDir == 'Ascending') ? 'asc' : 'desc';
 			$types = $this->owner->searchableTypes();
 			// allow user to specify specific type
 			if (isset($_GET['SearchType'])) {
@@ -219,19 +277,14 @@ if(class_exists('ExtensibleSearchPage')) {
 				$sortBy = 'score';
 			}
 
-			$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
-
-			$activeFacets = $this->getActiveFacets();
-			if (count($activeFacets)) {
-				foreach ($activeFacets as $facetName => $facetValues) {
-					foreach ($facetValues as $value) {
-						$builder->addFilter($facetName, $value);
-					}
-				}
-			}
+			$this->builder->addFacetFields($this->fieldsForFacets($tag = true));
+			
+			$this->setFilterQuery();
 
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
-			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->owner->ResultsPerPage ? $this->owner->ResultsPerPage : 10);
+			$limit = isset($_GET['limit']) 
+						? $_GET['limit']
+						: ($this->owner->ResultsPerPage ? $this->owner->ResultsPerPage : 10);
 
 			if (count($types)) {
 				$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
@@ -240,19 +293,19 @@ if(class_exists('ExtensibleSearchPage')) {
 					$filterQ[] = 'ClassNameHierarchy_ms:' . $t;
 				}
 				
-				$builder->addFilter(implode(' OR ', $filterQ));
+				$this->builder->addFilter(implode(' OR ', $filterQ));
 			}
 
 			if ($this->owner->SearchTrees()->count()) {
 				$parents = $this->owner->SearchTrees()->column('ID');
-				$builder->addFilter('ParentsHierarchy_ms', implode(' OR ', $parents));
+				$this->builder->addFilter('ParentsHierarchy_ms', implode(' OR ', $parents));
 			}
 
 			if (!$sortBy) {
 				$sortBy = 'score';
 			}
 
-			$builder->sortBy($sortBy, $sortDir);
+			$this->builder->sortBy($sortBy, $sortDir);
 
 			$selectedFields = $this->owner->SearchOnFields->getValues();
 
@@ -268,7 +321,7 @@ if(class_exists('ExtensibleSearchPage')) {
 						$mappedFields[] = $mappedField;
 					}
 				}
-				$builder->queryFields($mappedFields);
+				$this->builder->queryFields($mappedFields);
 			}
 
 			if ($boost = $this->owner->BoostFields->getValues()) {
@@ -278,39 +331,35 @@ if(class_exists('ExtensibleSearchPage')) {
 						$boostSetting[$this->getSolr()->getSolrFieldName($field, $types)] = $amount;
 					}
 				}
-				$builder->boost($boostSetting);
+				$this->builder->boost($boostSetting);
 			}
 
 			if ($boost = $this->owner->BoostMatchFields->getValues()) {
 				if (count($boost)) {
-					$builder->boostFieldValues($boost);
+					$this->builder->boostFieldValues($boost);
 				}
 			}
 
 			if ($filters = $this->owner->FilterFields->getValues()) {
 				if (count($filters)) {
 					foreach ($filters as $filter => $val) {
-						$builder->addFilter($filter, $val);
+						$this->builder->addFilter($filter, $val);
 					}
 				}
 			}
 
-			$params = array(
-				'facet' => 'true',
-				'facet.field' => $this->fieldsForFacets(),
-				'facet.limit' => 10,
-				'facet.mincount' => $this->owner->MinFacetCount ? $this->owner->MinFacetCount : 1,
-				'fl' => '*,score'
-			);
-
 			$fq = $this->owner->queryFacets();
 			if (count($fq)) {
-				$params['facet.query'] = array_keys($fq);
+				$this->builder->addFacetQueries($fq);
 			}
+			
+			$params = array(
+				'facet.mincount' => $this->owner->MinFacetCount ? $this->owner->MinFacetCount : 1
+			);
+			
+			$this->owner->extend('updateQueryBuilder', $this->builder, $offset, $limit, $params);
 
-			$this->owner->extend('updateQueryBuilder', $builder);
-
-			$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
+			$this->query = $this->getSolr()->query($this->builder, $offset, $limit, $params);
 			return $this->query;
 		}
 
@@ -369,7 +418,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		/**
 		 * Get the list of facet values for the given term
 		 *
-		 * @param String $term
+		 * @param Array $term
 		 */
 		public function currentFacets($term=null) {
 			if (!$this->getQuery()) {
