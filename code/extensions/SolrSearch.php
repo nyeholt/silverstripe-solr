@@ -233,19 +233,27 @@ if(class_exists('ExtensibleSearchPage')) {
 			$offset = isset($_GET['start']) ? $_GET['start'] : 0;
 			$limit = isset($_GET['limit']) ? $_GET['limit'] : ($this->owner->ResultsPerPage ? $this->owner->ResultsPerPage : 10);
 
-			if (count($types)) {
-				$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
-				$filterQ = array();
-				foreach ($types as $t) {
-					$filterQ[] = 'ClassNameHierarchy_ms:' . $t;
-				}
-				
-				$builder->addFilter(implode(' OR ', $filterQ));
-			}
+			// Apply any hierarchy filters.
 
-			if ($this->owner->SearchTrees()->count()) {
-				$parents = $this->owner->SearchTrees()->column('ID');
-				$builder->addFilter('ParentsHierarchy_ms', implode(' OR ', $parents));
+			if(count($types)) {
+				$sortBy = $this->solrSearchService->getSortFieldName($sortBy, $types);
+				$hierarchyTypes = array();
+				$parents = $this->owner->SearchTrees()->count() ? implode(' OR ParentsHierarchy_ms:', $this->owner->SearchTrees()->column('ID')) : null;
+				foreach($types as $type) {
+
+					// Search against site tree elements with parent hierarchy restriction.
+
+					if($parents && (ClassInfo::baseDataClass($type) === 'SiteTree')) {
+						$hierarchyTypes[] = "{$type} AND ParentsHierarchy_ms:{$parents})";
+					}
+
+					// Search against other data objects without parent hierarchy restriction.
+
+					else {
+						$hierarchyTypes[] = "{$type})";
+					}
+				}
+				$builder->addFilter('(ClassNameHierarchy_ms', implode(' OR (ClassNameHierarchy_ms:', $hierarchyTypes));
 			}
 
 			if (!$sortBy) {
