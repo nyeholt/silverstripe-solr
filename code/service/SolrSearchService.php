@@ -632,29 +632,36 @@ class SolrSearchService {
 			$sng = $className;
 			$className = get_class($className);
 		}
+		
+		if (!class_exists($className)) {
+			return array();
+		}
 
 		$searchable = $this->buildSearchableFieldCache();
 		$hierarchy = array_reverse(ClassInfo::ancestry($className));
+		
+		$fieldsToSearch = null;
 
 		foreach ($hierarchy as $class) {
 			if (isset($searchable[$class])) {
-				return $searchable[$class];
+				$fieldsToSearch = $searchable[$class];
 			}
-		}
-
-		if (!class_exists($className)) {
-			return array();
 		}
 
 		if (!$sng) {
 			$sng = singleton($className);
 		}
 
-		if($sng->hasMethod('getSolrSearchableFields')) {
-			return $sng->getSolrSearchableFields();
-		} else {
-			return $sng->searchableFields();
+		if (!$fieldsToSearch) {
+			if($sng->hasMethod('getSolrSearchableFields')) {
+				$fieldsToSearch = $sng->getSolrSearchableFields();
+			} else {
+				$fieldsToSearch = $sng->searchableFields();
+			}
 		}
+		
+		$sng->extend('updateSolrSearchableFields', $fieldsToSearch);
+		return $fieldsToSearch;
 	}
 	
 	/**

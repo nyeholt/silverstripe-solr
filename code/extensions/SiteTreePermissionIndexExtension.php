@@ -17,16 +17,11 @@ class SiteTreePermissionIndexExtension extends DataExtension {
 	 *	@return array
 	 */
 
-	public function getSolrSearchableFields() {
-
-		$existing = $this->owner->searchableFields();
-
+	public function updateSolrSearchableFields(&$fields) {
 		// Make sure the extension requirements have been met before enabling the custom search index.
-
-		if(SiteTree::has_extension('SolrIndexable') && SiteTree::has_extension('SolrSearchPermissionIndexExtension') && ClassInfo::exists('QueuedJob')) {
-			$existing[$this->index] = true;
+		if(ClassInfo::exists('QueuedJob')) {
+			$fields[$this->index] = true;
 		}
-		return $existing;
 	}
 
 	/**
