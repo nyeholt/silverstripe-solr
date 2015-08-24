@@ -469,7 +469,7 @@ if(class_exists('ExtensibleSearchPage')) {
 						$item = new stdClass();
 						$item->Name = $v;
 						$paramName = urlencode(SolrSearch::$filter_param . '[' . $facetName . '][' . $i . ']') .'='. urlencode($item->Name);
-						$item->RemoveLink = $this->owner->Link(self::RESULTS_ACTION) . '?' . str_replace($paramName, '', $queryString);
+						$item->RemoveLink = $this->owner->Link(SolrSearch::RESULTS_ACTION) . '?' . str_replace($paramName, '', $queryString);
 						$parts[] = new ArrayData($item);
 					}
 				}
