@@ -28,9 +28,12 @@ class SolrSearchPageMigrationTask extends BuildTask {
 		// Retrieve the search tree relationships to migrate.
 
 		$relationships = array();
-		foreach(DB::query('SELECT * FROM SolrSearchPage_SearchTrees') as $relationship) {
-			$relationships[$relationship['SolrSearchPageID']] = $relationship['PageID'];
+		if (DB::getConn()->hasTable('SolrSearchPage_SearchTrees')) {
+			foreach(DB::query('SELECT * FROM SolrSearchPage_SearchTrees') as $relationship) {
+				$relationships[$relationship['SolrSearchPageID']] = $relationship['PageID'];
+			}
 		}
+		
 
 		// Store the current live page migration state to avoid duplicates.
 
@@ -47,31 +50,20 @@ class SolrSearchPageMigrationTask extends BuildTask {
 
 			// Migrate the key site tree and solr search fields across.
 
-			$searchPage->ParentID = $results['ParentID'];
-			$searchPage->URLSegment = $results['URLSegment'];
-			$searchPage->Title = $results['Title'];
-			$searchPage->MenuTitle = $results['MenuTitle'];
-			$searchPage->Content = $results['Content'];
-			$searchPage->ShowInMenus = $results['ShowInMenus'];
-			$searchPage->ShowInSearch = $results['ShowInSearch'];
-			$searchPage->Sort = $results['Sort'];
-
-			$searchPage->ResultsPerPage = $results['ResultsPerPage'];
-			$searchPage->SortBy = $results['SortBy'];
-			$searchPage->SortDir = $results['SortDir'];
-			$searchPage->QueryType = $results['QueryType'];
-			$searchPage->StartWithListing = $results['StartWithListing'];
-			$searchPage->SearchTypeValue = $results['SearchTypeValue'];
-			$searchPage->SearchOnFieldsValue = $results['SearchOnFieldsValue'];
-			$searchPage->BoostFieldsValue = $results['BoostFieldsValue'];
-			$searchPage->BoostMatchFieldsValue = $results['BoostMatchFieldsValue'];
-			$searchPage->FacetFieldsValue = $results['FacetFieldsValue'];
-			$searchPage->CustomFacetFieldsValue = $results['CustomFacetFieldsValue'];
-			$searchPage->FacetMappingValue = $results['FacetMappingValue'];
-			$searchPage->FacetQueriesValue = $results['FacetQueriesValue'];
-			$searchPage->MinFacetCount = $results['MinFacetCount'];
-			$searchPage->FilterFieldsValue = $results['FilterFieldsValue'];
-			$searchPage->ListingTemplateID = $results['ListingTemplateID'];
+			$fields = array('ParentID', 'URLSegment', 'Title', 
+				'MenuTitle', 'Content', 'ShowInMenus', 'ShowInSearch', 'Sort', 
+				'ResultsPerPage', 'SortBy', 'BoostFieldsValue', 'SearchOnFieldsValue', 'SearchTypeValue', 'StartWithListing', 'QueryType', 'SortDir',
+				'ListingTemplateID', 'FilterFieldsValue', 'MinFacetCount', 'FacetQueriesValue', 'FacetMappingValue', 'CustomFacetFieldsValue', 'FacetFieldsValue', 'BoostMatchFieldsValue',
+				
+			);
+			
+			foreach ($fields as $fname) {
+				if (isset($results[$fname])) {
+					$searchPage->$fname = $results[$fname];
+				}
+				
+			}
+			
 			if(isset($relationships[$results['ID']])) {
 				$searchPage->SearchTrees()->add($relationships[$results['ID']]);
 			}
