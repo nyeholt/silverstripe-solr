@@ -40,19 +40,19 @@
  */
 class Apache_Solr_Service_TestAll extends PHPUnit_Framework_TestSuite
 {
-	/**
-	 * Create the test suite instance
-	 *
-	 * @return PHPUnit_Framework_TestSuite
-	 */
-	public static function suite()
-	{
-		// create test suite
-		$suite = new Apache_Solr_Service_TestAll('Run all Service Balancer tests');
+    /**
+     * Create the test suite instance
+     *
+     * @return PHPUnit_Framework_TestSuite
+     */
+    public static function suite()
+    {
+        // create test suite
+        $suite = new Apache_Solr_Service_TestAll('Run all Service Balancer tests');
 
-		// individual test cases under Apache/Solr/Service
-		$suite->addTestSuite('Apache_Solr_Service_BalancerTest');
+        // individual test cases under Apache/Solr/Service
+        $suite->addTestSuite('Apache_Solr_Service_BalancerTest');
 
-		return $suite;
-	}
+        return $suite;
+    }
 }

@@ -6,114 +6,118 @@
  * @author marcus@silverstripe.com.au
  * @license BSD License http://silverstripe.org/bsd-license/
  */
-class SolrAdminController extends ModelAdmin {
-	public static $menu_title = 'Solr';
-	public static $url_segment = 'solr';
-	
-	public static $managed_models = array(
-		'SolrTypeConfiguration'
-	);
+class SolrAdminController extends ModelAdmin
+{
+    public static $menu_title = 'Solr';
+    public static $url_segment = 'solr';
+    
+    public static $managed_models = array(
+        'SolrTypeConfiguration'
+    );
 
-	public static $allowed_actions = array(
-		'ReindexForm',
-		'EditForm',
-	);
-	
-	public static $dependencies = array(
-		'searchService' => '%$SolrSearchService',
-	);
+    public static $allowed_actions = array(
+        'ReindexForm',
+        'EditForm',
+    );
+    
+    public static $dependencies = array(
+        'searchService' => '%$SolrSearchService',
+    );
 
-	public function init() {
-		parent::init();
-		
-		Requirements::javascript('solr/javascript/solr.js');
-	}
-	
-	/**
-	 *
-	 * @param SS_Request $request
-	 * @return Form 
-	 */
-	public function getEditForm($id = null, $fields = null) {
-		$form = parent::getEditForm($id, $fields);
-		
-		
-		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-//			return $form;
-		}
-		
-		if (!Permission::check('ADMIN')) {
-			return $form;
-		}
+    public function init()
+    {
+        parent::init();
+        
+        Requirements::javascript('solr/javascript/solr.js');
+    }
+    
+    /**
+     *
+     * @param SS_Request $request
+     * @return Form 
+     */
+    public function getEditForm($id = null, $fields = null)
+    {
+        $form = parent::getEditForm($id, $fields);
+        
+        
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            //			return $form;
+        }
+        
+        if (!Permission::check('ADMIN')) {
+            return $form;
+        }
 
-		$fields = $form->Fields();
+        $fields = $form->Fields();
 
-		$config = $this->searchService->localEngineConfig();
-		$allow = $config ? $config->RunLocal : null;
-		
-		$fields->push(new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
-		
-		if ($allow) {
-			$status = $this->searchService->localEngineStatus();
+        $config = $this->searchService->localEngineConfig();
+        $allow = $config ? $config->RunLocal : null;
+        
+        $fields->push(new CheckboxField('RunLocal', _t('SolrAdmin.RUN_LOCAL', 'Run local Jetty instance of Solr?'), $allow));
+        
+        if ($allow) {
+            $status = $this->searchService->localEngineStatus();
 
-			if (!$status) {
-				$fields->push(new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
-			} else {
-				$fields->push(new CheckboxField('Kill', _t('SolrAdmin.Kill', 'Kill Solr process (' . $status . ')')));
-			}
+            if (!$status) {
+                $fields->push(new CheckboxField('Start', _t('SolrAdmin.START', 'Start Solr')));
+            } else {
+                $fields->push(new CheckboxField('Kill', _t('SolrAdmin.Kill', 'Kill Solr process (' . $status . ')')));
+            }
 
-			$log = $this->searchService->getLogData(100);
-			$log = array_reverse($log);
-			
-			$fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log')));
-			
-			$logtxt->setColumns(20)->setRows(15)->setValue(implode($log));
-		}
+            $log = $this->searchService->getLogData(100);
+            $log = array_reverse($log);
+            
+            $fields->push($logtxt = new TextareaField('Log', _t('SolrAdmin.LOG', 'Log')));
+            
+            $logtxt->setColumns(20)->setRows(15)->setValue(implode($log));
+        }
 
-		
-		$form->Actions()->push(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
-		
-		$form->Actions()->push(new FormAction('reindex', _t('SolrAdmin.REINDEX', 'Reindex')));
-		
+        
+        $form->Actions()->push(new FormAction('saveconfig', _t('SolrAdmin.SAVE', 'Save')));
+        
+        $form->Actions()->push(new FormAction('reindex', _t('SolrAdmin.REINDEX', 'Reindex')));
+        
 //		$actions = new FieldSet();
 //		$form = new Form($this, 'EditForm', $fields, $actions);
-		return $form;
-	}
+        return $form;
+    }
 
-	public function saveconfig($data, $form, $request) {
-		if (!Permission::check('ADMIN')) {
-			return false;
-		}
+    public function saveconfig($data, $form, $request)
+    {
+        if (!Permission::check('ADMIN')) {
+            return false;
+        }
 
-		$config = $this->searchService->localEngineConfig();
-		$config->RunLocal = $data['RunLocal'];
-		$this->searchService->saveEngineConfig($config);
-		
-		if (isset($data['Start']) && $data['Start']) {
-			$this->searchService->startSolr();
-			sleep(2);
-		} else if (isset($data['Kill']) && $data['Kill']) {
-			$this->searchService->stopSolr();
-			sleep(2);
-		}
-		if (Director::is_ajax()) {
-			return $this->getResponseNegotiator()->respond($this->request);
-		} else {
-			$this->redirectBack();
-		}
-		
-	}
-	
-	public function reindex($data, Form $form) {
-		$task = singleton('SolrReindexTask');
-		if ($task) {
-			$task->run($this->request);
-		}
+        $config = $this->searchService->localEngineConfig();
+        $config->RunLocal = $data['RunLocal'];
+        $this->searchService->saveEngineConfig($config);
+        
+        if (isset($data['Start']) && $data['Start']) {
+            $this->searchService->startSolr();
+            sleep(2);
+        } elseif (isset($data['Kill']) && $data['Kill']) {
+            $this->searchService->stopSolr();
+            sleep(2);
+        }
+        if (Director::is_ajax()) {
+            return $this->getResponseNegotiator()->respond($this->request);
+        } else {
+            $this->redirectBack();
+        }
+    }
+    
+    public function reindex($data, Form $form)
+    {
+        $task = singleton('SolrReindexTask');
+        if ($task) {
+            $task->run($this->request);
+        }
 
-		if (Director::is_ajax()) {
-			return $this->getResponseNegotiator()->respond($this->request);
-		} else {
-			$this->redirectBack();
-		}
-	}
+        if (Director::is_ajax()) {
+            return $this->getResponseNegotiator()->respond($this->request);
+        } else {
+            $this->redirectBack();
+        }
+    }
 }

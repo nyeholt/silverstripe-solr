@@ -40,8 +40,8 @@
  */
 class Apache_Solr_Service_BalancerTest extends Apache_Solr_ServiceAbstractTest
 {
-	public function getFixture()
-	{
-		return new Apache_Solr_Service_Balancer();
-	}
+    public function getFixture()
+    {
+        return new Apache_Solr_Service_Balancer();
+    }
 }

@@ -40,19 +40,19 @@
  */
 class Apache_Solr_HttpTransportExceptionTest extends PHPUnit_Framework_TestCase
 {
-	/**
-	 * @expectedException PHPUnit_Framework_Error
-	 */
-	public function testConstructorRequiresResponse()
-	{
-		$fixture = new Apache_Solr_HttpTransportException();
-	}
-	
-	public function testGetResponse()
-	{
-		$response = Apache_Solr_ResponseTest::get0Response();
-		$fixture = new Apache_Solr_HttpTransportException($response);
-		
-		$this->assertEquals($response, $fixture->getResponse());
-	}
+    /**
+     * @expectedException PHPUnit_Framework_Error
+     */
+    public function testConstructorRequiresResponse()
+    {
+        $fixture = new Apache_Solr_HttpTransportException();
+    }
+    
+    public function testGetResponse()
+    {
+        $response = Apache_Solr_ResponseTest::get0Response();
+        $fixture = new Apache_Solr_HttpTransportException($response);
+        
+        $this->assertEquals($response, $fixture->getResponse());
+    }
 }
