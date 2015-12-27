@@ -40,14 +40,13 @@
  */
 class Apache_Solr_HttpTransport_CurlNoReuseTest extends Apache_Solr_HttpTransport_AbstractTest
 {
-	public function getFixture()
-	{
-		// ensure curl is enabled
-		if (!extension_loaded('curl'))
-		{
-			$this->markTestSkipped("curl module is not enabled");
-		}
-		
-		return new Apache_Solr_HttpTransport_CurlNoReuse();
-	}
+    public function getFixture()
+    {
+        // ensure curl is enabled
+        if (!extension_loaded('curl')) {
+            $this->markTestSkipped("curl module is not enabled");
+        }
+        
+        return new Apache_Solr_HttpTransport_CurlNoReuse();
+    }
 }
