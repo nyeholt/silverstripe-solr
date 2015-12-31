@@ -40,24 +40,24 @@
  */
 class Apache_Solr_TestAll extends PHPUnit_Framework_TestSuite
 {
-	/**
-	 * Create the test suite instance
-	 *
-	 * @return PHPUnit_Framework_TestSuite
-	 */
-	public static function suite()
-	{
-		// create test suite
-		$suite = new Apache_Solr_TestAll('Run all PHP Solr Client tests');
+    /**
+     * Create the test suite instance
+     *
+     * @return PHPUnit_Framework_TestSuite
+     */
+    public static function suite()
+    {
+        // create test suite
+        $suite = new Apache_Solr_TestAll('Run all PHP Solr Client tests');
 
-		// individual test cases under Apache/Solr
-		$suite->addTestSuite('Apache_Solr_DocumentTest');
-		$suite->addTestSuite('Apache_Solr_ResponseTest');
-		//$suite->addTestSuite('Apache_Solr_ServiceTest');
+        // individual test cases under Apache/Solr
+        $suite->addTestSuite('Apache_Solr_DocumentTest');
+        $suite->addTestSuite('Apache_Solr_ResponseTest');
+        //$suite->addTestSuite('Apache_Solr_ServiceTest');
 
-		// test suites under Apache/Solr/Service
-		//$suite->addTest(Apache_Solr_Service_TestAll::suite());
+        // test suites under Apache/Solr/Service
+        //$suite->addTest(Apache_Solr_Service_TestAll::suite());
 
-		return $suite;
-	}
+        return $suite;
+    }
 }

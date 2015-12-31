@@ -40,14 +40,13 @@
  */
 class Apache_Solr_HttpTransport_FileGetContentsTest extends Apache_Solr_HttpTransport_AbstractTest
 {
-	public function getFixture()
-	{
-		// make sure allow_url_fopen is on
-		if (!ini_get("allow_url_fopen"))
-		{
-			$this->markTestSkipped("allow_url_fopen is not enabled");
-		}
-		
-		return new Apache_Solr_HttpTransport_FileGetContents();
-	}
+    public function getFixture()
+    {
+        // make sure allow_url_fopen is on
+        if (!ini_get("allow_url_fopen")) {
+            $this->markTestSkipped("allow_url_fopen is not enabled");
+        }
+        
+        return new Apache_Solr_HttpTransport_FileGetContents();
+    }
 }

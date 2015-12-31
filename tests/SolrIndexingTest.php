@@ -23,220 +23,219 @@ OF SUCH DAMAGE.
  
 class SolrIndexingTest extends SapphireTest
 {
-	static $fixture_file = 'solr/tests/SolrTest.yml';
+    public static $fixture_file = 'solr/tests/SolrTest.yml';
 
-	public function setUpOnce() {
-		DataObject::add_extension('SiteTree', 'SolrIndexable');
-		parent::setUpOnce();
-	}
+    public function setUpOnce()
+    {
+        DataObject::add_extension('SiteTree', 'SolrIndexable');
+        parent::setUpOnce();
+    }
 
-	public function tearDownOnce() {
-		DataObject::remove_extension('SiteTree', 'SolrIndexable');
-		parent::tearDownOnce();
-	}
-	
-	public function testSolrIndexableItem()
-	{
-		$item = $this->objFromFixture('Page','page1');
-		
-		$indexFields = array(
-			'Title' => array(
-				'Type' => 'Varchar', 
-				'Value' => 'Page 1'
-			),
-			'Content' => array(
-				'Type' => 'HTMLText',
-				'Value' => 'Text content in the page',
-			),
-			'ID' => 1,
-			'ClassName' => 'Page'
-		);
+    public function tearDownOnce()
+    {
+        DataObject::remove_extension('SiteTree', 'SolrIndexable');
+        parent::tearDownOnce();
+    }
+    
+    public function testSolrIndexableItem()
+    {
+        $item = $this->objFromFixture('Page', 'page1');
+        
+        $indexFields = array(
+            'Title' => array(
+                'Type' => 'Varchar',
+                'Value' => 'Page 1'
+            ),
+            'Content' => array(
+                'Type' => 'HTMLText',
+                'Value' => 'Text content in the page',
+            ),
+            'ID' => 1,
+            'ClassName' => 'Page'
+        );
 
-		// call onAfterPublish, we expect the 
-		$searchService = $this->getMock('SolrSearchService', array('index'));
-		$searchService->expects($this->once())
-			->method('index');
-			// ->with($this->equalTo($indexFields));
-			
-		Injector::inst()->registerService($searchService, 'SolrSearchService');
-		
-		// now save the item and hope it gets indexed
-		$item->extend('onAfterPublish', $item);
-	}
-	
-	public function testIndexObject() {
-		$search = new SolrSearchService;
+        // call onAfterPublish, we expect the 
+        $searchService = $this->getMock('SolrSearchService', array('index'));
+        $searchService->expects($this->once())
+            ->method('index');
+            // ->with($this->equalTo($indexFields));
 
-		$converted = $search->convertObjectToDocument(array(
-			'ID'		=> 1,
-			'Title'		=> 'This document',
-			'Category'	=> 'Docs',
-			'Tags'		=> array('green', 'food')
-		));
-	}
+        Injector::inst()->registerService($searchService, 'SolrSearchService');
+        
+        // now save the item and hope it gets indexed
+        $item->extend('onAfterPublish', $item);
+    }
+    
+    public function testIndexObject()
+    {
+        $search = new SolrSearchService;
 
-	public function testStoreIndexAndQuery()
-	{
-		
-		Injector::inst()->registerService(new SolrSearchService());
+        $converted = $search->convertObjectToDocument(array(
+            'ID'        => 1,
+            'Title'        => 'This document',
+            'Category'    => 'Docs',
+            'Tags'        => array('green', 'food')
+        ));
+    }
 
-		// we should be able to perform a query for documents with 'text content'
-		// and receive back some valid data
-		$search = singleton('SolrSearchService');
-		if (!$search->isConnected()) {
-			return;
-		}
-		// clear everything out, then index content
+    public function testStoreIndexAndQuery()
+    {
+        Injector::inst()->registerService(new SolrSearchService());
 
-		/* @var $search SolrSearchService */
-		$search->getSolr()->deleteByQuery('*:*');
-		
-		$item = $this->objFromFixture('Page','page1');
-		$item->extend('onAfterPublish', $item);
-		$results = $search->query('text:"Text Content"');
-		$results = $results->getResult()->response;
-		$this->assertNotNull($results->docs);
-		$this->assertEquals(1, count($results->docs));
-		$this->assertEquals('Page_1_Live', $results->docs[0]->id);
-		
-		
-		
-	}
+        // we should be able to perform a query for documents with 'text content'
+        // and receive back some valid data
+        $search = singleton('SolrSearchService');
+        if (!$search->isConnected()) {
+            return;
+        }
+        // clear everything out, then index content
 
-	public function testQueryForObjects()
-	{
-		Injector::inst()->registerService(new SolrSearchService());
-		// we should be able to perform a query for documents with 'text content'
-		// and receive back some valid data
-		$search = singleton('SolrSearchService');
-		if (!$search->isConnected()) {
-			return;
-		}
-		// clear everything out, then index content
-		/* @var $search SolrSearchService */
-		$search->getSolr()->deleteByQuery('*:*');
+        /* @var $search SolrSearchService */
+        $search->getSolr()->deleteByQuery('*:*');
+        
+        $item = $this->objFromFixture('Page', 'page1');
+        $item->extend('onAfterPublish', $item);
+        $results = $search->query('text:"Text Content"');
+        $results = $results->getResult()->response;
+        $this->assertNotNull($results->docs);
+        $this->assertEquals(1, count($results->docs));
+        $this->assertEquals('Page_1_Live', $results->docs[0]->id);
+    }
 
-		$item = $this->objFromFixture('Page','page1');
-		$item->extend('onAfterPublish', $item);
-		$results = $search->query('text:"Text Content"');
-		$results = $results->getDataObjects();
-		
-		$this->assertTrue($results instanceof SS_List);
-		$this->assertEquals(1, $results->count());
-		$item = $results->First();
-		$this->assertEquals('Page', $item->ClassName);
-		$this->assertEquals(1, $item->ID);
-		
-		$search->unindex($item);
-		
-		$results = $search->query('text:"Text Content"');
-		$results = $results->getDataObjects();
-		
-		$this->assertTrue($results instanceof SS_List);
-		$this->assertEquals(0, $results->count());
-		
-	}
+    public function testQueryForObjects()
+    {
+        Injector::inst()->registerService(new SolrSearchService());
+        // we should be able to perform a query for documents with 'text content'
+        // and receive back some valid data
+        $search = singleton('SolrSearchService');
+        if (!$search->isConnected()) {
+            return;
+        }
+        // clear everything out, then index content
+        /* @var $search SolrSearchService */
+        $search->getSolr()->deleteByQuery('*:*');
 
-	public function testFacetQuery()
-	{
-		Injector::inst()->registerService(new SolrSearchService());
-		// we should be able to perform a query for documents with 'text content'
-		// and receive back some valid data
-		$search = singleton('SolrSearchService');
-		if (!$search->isConnected()) {
-			return;
-		}
-		// clear everything out, then index content
+        $item = $this->objFromFixture('Page', 'page1');
+        $item->extend('onAfterPublish', $item);
+        $results = $search->query('text:"Text Content"');
+        $results = $results->getDataObjects();
+        
+        $this->assertTrue($results instanceof SS_List);
+        $this->assertEquals(1, $results->count());
+        $item = $results->First();
+        $this->assertEquals('Page', $item->ClassName);
+        $this->assertEquals(1, $item->ID);
+        
+        $search->unindex($item);
+        
+        $results = $search->query('text:"Text Content"');
+        $results = $results->getDataObjects();
+        
+        $this->assertTrue($results instanceof SS_List);
+        $this->assertEquals(0, $results->count());
+    }
 
-		/* @var $search SolrSearchService */
-		$search->getSolr()->deleteByQuery('*:*');
-		
-		$item = $this->objFromFixture('Page','page1');
-		$item->extend('onAfterPublish', $item);
-		
-		$item = $this->objFromFixture('Page','page2');
-		$item->extend('onAfterPublish', $item);
-		
-		$item = $this->objFromFixture('Page','page3');
-		$item->extend('onAfterPublish', $item);
-		
-		$item = $this->objFromFixture('Page','page4');
-		$item->extend('onAfterPublish', $item);
-		
-		$results = $search->getFacetsForFields('text');
-		$facets = $results->getFacets();
-		$this->assertNotNull($facets);
-		$this->assertEquals(1, count($facets));
-		$this->assertTrue(isset($facets['text']));
-		$this->assertEquals(4, count($facets['text']));
-	}
+    public function testFacetQuery()
+    {
+        Injector::inst()->registerService(new SolrSearchService());
+        // we should be able to perform a query for documents with 'text content'
+        // and receive back some valid data
+        $search = singleton('SolrSearchService');
+        if (!$search->isConnected()) {
+            return;
+        }
+        // clear everything out, then index content
 
-	public function testMultipleFacetQuery()
-	{
-		Injector::inst()->registerService(new SolrSearchService());
-		// we should be able to perform a query for documents with 'text content'
-		// and receive back some valid data
-		$search = singleton('SolrSearchService');
-		if (!$search->isConnected()) {
-			return;
-		}
-		// clear everything out, then index content
+        /* @var $search SolrSearchService */
+        $search->getSolr()->deleteByQuery('*:*');
+        
+        $item = $this->objFromFixture('Page', 'page1');
+        $item->extend('onAfterPublish', $item);
+        
+        $item = $this->objFromFixture('Page', 'page2');
+        $item->extend('onAfterPublish', $item);
+        
+        $item = $this->objFromFixture('Page', 'page3');
+        $item->extend('onAfterPublish', $item);
+        
+        $item = $this->objFromFixture('Page', 'page4');
+        $item->extend('onAfterPublish', $item);
+        
+        $results = $search->getFacetsForFields('text');
+        $facets = $results->getFacets();
+        $this->assertNotNull($facets);
+        $this->assertEquals(1, count($facets));
+        $this->assertTrue(isset($facets['text']));
+        $this->assertEquals(4, count($facets['text']));
+    }
 
-		/* @var $search SolrSearchService */
-		$search->getSolr()->deleteByQuery('*:*');
+    public function testMultipleFacetQuery()
+    {
+        Injector::inst()->registerService(new SolrSearchService());
+        // we should be able to perform a query for documents with 'text content'
+        // and receive back some valid data
+        $search = singleton('SolrSearchService');
+        if (!$search->isConnected()) {
+            return;
+        }
+        // clear everything out, then index content
 
-		$item = $this->objFromFixture('Page','page1');
-		$item->extend('onAfterPublish', $item);
+        /* @var $search SolrSearchService */
+        $search->getSolr()->deleteByQuery('*:*');
 
-		$item = $this->objFromFixture('Page','page2');
-		$item->extend('onAfterPublish', $item);
+        $item = $this->objFromFixture('Page', 'page1');
+        $item->extend('onAfterPublish', $item);
 
-		$item = $this->objFromFixture('Page','page3');
-		$item->extend('onAfterPublish', $item);
+        $item = $this->objFromFixture('Page', 'page2');
+        $item->extend('onAfterPublish', $item);
 
-		$item = $this->objFromFixture('Page','page4');
-		$item->extend('onAfterPublish', $item);
+        $item = $this->objFromFixture('Page', 'page3');
+        $item->extend('onAfterPublish', $item);
 
-		$results = $search->getFacetsForFields(array('text', 'title'));
-		$facets = $results->getFacets();
+        $item = $this->objFromFixture('Page', 'page4');
+        $item->extend('onAfterPublish', $item);
 
-		$this->assertNotNull($facets);
-		$this->assertEquals(2, count($facets));
-		$this->assertTrue(isset($facets['title']));
-		$this->assertTrue(isset($facets['text']));
+        $results = $search->getFacetsForFields(array('text', 'title'));
+        $facets = $results->getFacets();
 
-		$this->assertEquals(4, count($facets['title']));
-		$this->assertEquals(4, count($facets['text']));
-	}
+        $this->assertNotNull($facets);
+        $this->assertEquals(2, count($facets));
+        $this->assertTrue(isset($facets['title']));
+        $this->assertTrue(isset($facets['text']));
 
-	public function testStageQuerying() {
-		Injector::inst()->registerService(new SolrSearchService());
-		// we should be able to perform a query for documents with 'text content'
-		// and receive back some valid data
-		$search = singleton('SolrSearchService');
-		if (!$search->isConnected()) {
-			return;
-		}
-		// clear everything out, then index content
+        $this->assertEquals(4, count($facets['title']));
+        $this->assertEquals(4, count($facets['text']));
+    }
 
-		/* @var $search SolrSearchService */
-		$search->getSolr()->deleteByQuery('*:*');
+    public function testStageQuerying()
+    {
+        Injector::inst()->registerService(new SolrSearchService());
+        // we should be able to perform a query for documents with 'text content'
+        // and receive back some valid data
+        $search = singleton('SolrSearchService');
+        if (!$search->isConnected()) {
+            return;
+        }
+        // clear everything out, then index content
 
-		$item = $this->objFromFixture('Page','home');
-		$item->write();
-		$item->doPublish();
+        /* @var $search SolrSearchService */
+        $search->getSolr()->deleteByQuery('*:*');
 
-		$results = $search->query('title:home');
-		$objects = $results->getDataObjects();
+        $item = $this->objFromFixture('Page', 'home');
+        $item->write();
+        $item->doPublish();
 
-		// there should actually be two results; one for each stage.
-		$this->assertEquals(2, $objects->count());
+        $results = $search->query('title:home');
+        $objects = $results->getDataObjects();
 
-		// now set a stage
-		Versioned::choose_site_stage();
+        // there should actually be two results; one for each stage.
+        $this->assertEquals(2, $objects->count());
 
-		$results = $search->query('title:home');
-		$objects = $results->getDataObjects();
-		$this->assertEquals(1, $objects->count());
-	}
+        // now set a stage
+        Versioned::choose_site_stage();
+
+        $results = $search->query('title:home');
+        $objects = $results->getDataObjects();
+        $this->assertEquals(1, $objects->count());
+    }
 }

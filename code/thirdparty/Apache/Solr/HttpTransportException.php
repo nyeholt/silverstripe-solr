@@ -37,42 +37,42 @@
 
 class Apache_Solr_HttpTransportException extends Apache_Solr_Exception
 {
-	/**
-	 * SVN Revision meta data for this class
-	 */
-	const SVN_REVISION = '$Revision$';
+    /**
+     * SVN Revision meta data for this class
+     */
+    const SVN_REVISION = '$Revision$';
 
-	/**
-	 * SVN ID meta data for this class
-	 */
-	const SVN_ID = '$Id$';
+    /**
+     * SVN ID meta data for this class
+     */
+    const SVN_ID = '$Id$';
 
-	/**
-	 * Response for which exception was generated
-	 *
-	 * @var Apache_Solr_Response
-	 */
-	private $_response;
+    /**
+     * Response for which exception was generated
+     *
+     * @var Apache_Solr_Response
+     */
+    private $_response;
 
-	/**
-	 * HttpTransportException Constructor
-	 *
-	 * @param Apache_Solr_Response $response
-	 */
-	public function __construct(Apache_Solr_Response $response)
-	{
-		parent::__construct("'{$response->getHttpStatus()}' Status: {$response->getHttpStatusMessage()}", $response->getHttpStatus());
+    /**
+     * HttpTransportException Constructor
+     *
+     * @param Apache_Solr_Response $response
+     */
+    public function __construct(Apache_Solr_Response $response)
+    {
+        parent::__construct("'{$response->getHttpStatus()}' Status: {$response->getHttpStatusMessage()}", $response->getHttpStatus());
 
-		$this->_response = $response;
-	}
+        $this->_response = $response;
+    }
 
-	/**
-	 * Get the response for which this exception was generated
-	 *
-	 * @return Apache_Solr_Response
-	 */
-	public function getResponse()
-	{
-		return $this->_response;
-	}
+    /**
+     * Get the response for which this exception was generated
+     *
+     * @return Apache_Solr_Response
+     */
+    public function getResponse()
+    {
+        return $this->_response;
+    }
 }

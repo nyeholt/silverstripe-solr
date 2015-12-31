@@ -37,13 +37,13 @@
 
 class Apache_Solr_ParserException extends Apache_Solr_Exception
 {
-	/**
-	 * SVN Revision meta data for this class
-	 */
-	const SVN_REVISION = '$Revision$';
+    /**
+     * SVN Revision meta data for this class
+     */
+    const SVN_REVISION = '$Revision$';
 
-	/**
-	 * SVN ID meta data for this class
-	 */
-	const SVN_ID = '$Id$';
+    /**
+     * SVN ID meta data for this class
+     */
+    const SVN_ID = '$Id$';
 }
