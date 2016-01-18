@@ -16,23 +16,24 @@ if(class_exists('ExtensibleSearchPage')) {
 
 	class SolrSearch extends DataExtension {
 		const RESULTS_ACTION = 'results';
-		
-		// Define the additional DB fields that are supported by solr search customisation.
-		public static $support = array(
-			'QueryType'							=> 1,
-			'SearchType'						=> 1,
-			'SearchOnFields'					=> 1,
-			'BoostFields'						=> 1,
-			'BoostMatchFields'					=> 1,
-			'FacetFields'						=> 1,
-			'CustomFacetFields'					=> 1,
-			'FacetMapping'						=> 1,
-			'FacetQueries'						=> 1,
-			'MinFacetCount'						=> 1,
-			'FilterFields'						=> 1
+
+		private static $db = array(
+			'QueryType' => 'Varchar',
+			'SearchType' => 'MultiValueField',	// types that a user can search within
+			'SearchOnFields' => 'MultiValueField',
+			'BoostFields' => 'MultiValueField',
+			'BoostMatchFields' => 'MultiValueField',
+			// faceting fields
+			'FacetFields' => 'MultiValueField',
+			'CustomFacetFields' => 'MultiValueField',
+			'FacetMapping' => 'MultiValueField',
+			'FacetQueries' => 'MultiValueField',
+			'MinFacetCount' => 'Int',
+			// filter fields (not used for relevance, just for restricting data set)
+			'FilterFields' => 'MultiValueField'
 		);
 
-		public $default_search = '*:*';
+		public static $supports_hierarchy = true;
 
 		/**
 		 *
@@ -76,12 +77,107 @@ if(class_exists('ExtensibleSearchPage')) {
 			'solrSearchService'			=> '%$SolrSearchService',
 		);
 
+		public static $additional_search_types = array();
+
 		/**
 		 * @var SolrSearchService
 		 */
 		public $solrSearchService;
 
-		public function updateCMSFields(FieldList $fields) {
+		public function updateExtensibleSearchPageCMSFields(FieldList $fields) {
+
+			if($this->owner->SearchEngine === get_class()) {
+				$types = SiteTree::page_type_classes();
+				$source = array_combine($types, $types);
+
+				// add in any explicitly configured
+				asort($source);
+				$source = $this->owner->updateSource($source);
+
+				$parsers = $this->owner->getQueryBuilders();
+				$options = array();
+				foreach ($parsers as $key => $objCls) {
+					$obj = new $objCls;
+					$options[$key] = $obj->title;
+				}
+				$fields->addFieldToTab('Root.Main', new DropdownField('QueryType', _t('ExtensibleSearchPage.QUERY_TYPE', 'Query Type'), $options), 'Content');
+
+				ksort($source);
+				$source = array_merge($source, self::$additional_search_types);
+				$types = new MultiValueDropdownField('SearchType', _t('ExtensibleSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
+				$fields->addFieldToTab('Root.Main', $types, 'Content');
+
+				$objFields = $this->owner->getSelectableFields();
+				$sortFields = $objFields;
+
+				// Remove content and groups from being sortable (as they are not relevant).
+
+				unset($sortFields['Content']);
+				unset($sortFields['Groups']);
+				$fields->replaceField('SortBy', new DropdownField('SortBy', _t('ExtensibleSearchPage.SORT_BY', 'Sort By'), $sortFields));
+				$fields->addFieldToTab('Root.Main', new MultiValueDropdownField('SearchOnFields', _t('ExtensibleSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
+
+				$boostVals = array();
+				for ($i = 1; $i <= 5; $i++) {
+					$boostVals[$i] = $i;
+				}
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					new KeyValueField('BoostFields', _t('ExtensibleSearchPage.BOOST_FIELDS', 'Boost values'), $objFields, $boostVals),
+					'Content'
+				);
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					$f = new KeyValueField('BoostMatchFields', _t('ExtensibleSearchPage.BOOST_MATCH_FIELDS', 'Boost fields with field/value matches'), array(), $boostVals),
+					'Content'
+				);
+				$f->setRightTitle('Enter a field name, followed by the value to boost if found in the result set, eg "title:Home" ');
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					$kv = new KeyValueField('FilterFields', _t('ExtensibleSearchPage.FILTER_FIELDS', 'Fields to filter by')),
+					'Content'
+				);
+
+				$fields->addFieldToTab('Root.Main', new HeaderField('FacetHeader', _t('ExtensibleSearchPage.FACET_HEADER', 'Facet Settings')), 'Content');
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					new MultiValueDropdownField('FacetFields', _t('ExtensibleSearchPage.FACET_FIELDS', 'Fields to create facets for'), $objFields),
+					'Content'
+				);
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					new MultiValueTextField('CustomFacetFields', _t('ExtensibleSearchPage.CUSTOM_FACET_FIELDS', 'Additional fields to create facets for')),
+					'Content'
+				);
+
+				$facetMappingFields = $objFields;
+				if ($this->owner->CustomFacetFields && ($cff = $this->owner->CustomFacetFields->getValues())) {
+					foreach ($cff as $facetField) {
+						$facetMappingFields[$facetField] = $facetField;
+					}
+				}
+				$fields->addFieldToTab(
+					'Root.Main',
+					new KeyValueField('FacetMapping', _t('ExtensibleSearchPage.FACET_MAPPING', 'Mapping of facet title to nice title'), $facetMappingFields),
+					'Content'
+				);
+
+				$fields->addFieldToTab(
+					'Root.Main',
+					new KeyValueField('FacetQueries', _t('ExtensibleSearchPage.FACET_QUERIES', 'Fields to create query facets for')),
+					'Content'
+				);
+
+				$fields->addFieldToTab('Root.Main',
+					new NumericField('MinFacetCount', _t('ExtensibleSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2),
+					'Content'
+				);
+			}
 
 			// Make sure previously existing hooks are carried across.
 
@@ -126,6 +222,17 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			ksort($objFields);
 			return $objFields;
+		}
+
+		/**
+		 * get the list of types that we've selected to search on
+		 */
+		public function searchableTypes($default = null) {
+			$listType = $this->owner->SearchType ? $this->owner->SearchType->getValues() : null;
+			if (!$listType) {
+				$listType = $default ? array($default) : null;
+			}
+			return $listType;
 		}
 
 		/**
@@ -193,7 +300,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$sortBy = isset($_GET['SortBy']) ? $_GET['SortBy'] : $this->owner->SortBy;
-			$sortDir = isset($_GET['SortDir']) ? $_GET['SortDir'] : $this->owner->SortDir;
+			$sortDir = isset($_GET['SortDirection']) ? $_GET['SortDirection'] : $this->owner->SortDirection;
 			$types = $this->owner->searchableTypes();
 			// allow user to specify specific type
 			if (isset($_GET['SearchType'])) {
@@ -219,8 +326,6 @@ if(class_exists('ExtensibleSearchPage')) {
 				$sortBy = 'score';
 			}
 
-			$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
-
 			$activeFacets = $this->getActiveFacets();
 			if (count($activeFacets)) {
 				foreach ($activeFacets as $facetName => $facetValues) {
@@ -244,7 +349,7 @@ if(class_exists('ExtensibleSearchPage')) {
 					// Search against site tree elements with parent hierarchy restriction.
 
 					if($parents && (ClassInfo::baseDataClass($type) === 'SiteTree')) {
-						$hierarchyTypes[] = "{$type} AND ParentsHierarchy_ms:{$parents})";
+						$hierarchyTypes[] = "{$type} AND (ParentsHierarchy_ms:{$parents}))";
 					}
 
 					// Search against other data objects without parent hierarchy restriction.
@@ -433,13 +538,14 @@ if(class_exists('ExtensibleSearchPage')) {
 		 *
 		 * @param array $source
 		 */
-		public function updateSource(&$source) {
+		public function updateSource($source) {
 			$objects = DataObject::get('SolrTypeConfiguration');
 			if ($objects) {
 				foreach ($objects as $obj) {
 					$source[$obj->Title] = $obj->Title;
 				}
 			}
+			return $source;
 		}
 
 		/**
@@ -449,6 +555,44 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		public function getQueryBuilders() {
 			return $this->solrSearchService->getQueryBuilders();
+		}
+
+		/**
+		 * Get the list of field -> query items to be used for faceting by query
+		 */
+		public function queryFacets() {
+			$fields = array();
+			if ($this->owner->FacetQueries && $fq = $this->owner->FacetQueries->getValues()) {
+				$fields = array_flip($fq);
+			}
+			return $fields;
+		}
+
+		/**
+		 * Returns a url parameter string that was just used to execute the current query.
+		 *
+		 * This is useful for ensuring the parameters used in the search can be passed on again
+		 * for subsequent queries.
+		 *
+		 * @param array $exclusions
+		 *			A list of elements that should be excluded from the final query string
+		 *
+		 * @return String
+		 */
+		function SearchQuery() {
+			$parts = parse_url($_SERVER['REQUEST_URI']);
+			if(!$parts) {
+				throw new InvalidArgumentException("Can't parse URL: " . $uri);
+			}
+
+			// Parse params and add new variable
+			$params = array();
+			if(isset($parts['query'])) {
+				parse_str($parts['query'], $params);
+				if (count($params)) {
+					return http_build_query($params);
+				}
+			}
 		}
 
 	}

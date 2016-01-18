@@ -46,13 +46,13 @@ class SolrSearchPageMigrationTask extends BuildTask {
 		$writeCount = 0;
 		foreach($query as $results) {
 			$searchPage = ExtensibleSearchPage::create();
-			$searchPage->SearchEngine = 'Solr';
+			$searchPage->SearchEngine = 'SolrSearch';
 
 			// Migrate the key site tree and solr search fields across.
 
 			$fields = array('ParentID', 'URLSegment', 'Title', 
 				'MenuTitle', 'Content', 'ShowInMenus', 'ShowInSearch', 'Sort', 
-				'ResultsPerPage', 'SortBy', 'BoostFieldsValue', 'SearchOnFieldsValue', 'SearchTypeValue', 'StartWithListing', 'QueryType', 'SortDir',
+				'ResultsPerPage', 'SortBy', 'BoostFieldsValue', 'SearchOnFieldsValue', 'SearchTypeValue', 'StartWithListing', 'QueryType',
 				'ListingTemplateID', 'FilterFieldsValue', 'MinFacetCount', 'FacetQueriesValue', 'FacetMappingValue', 'CustomFacetFieldsValue', 'FacetFieldsValue', 'BoostMatchFieldsValue',
 				
 			);
@@ -62,6 +62,12 @@ class SolrSearchPageMigrationTask extends BuildTask {
 					$searchPage->$fname = $results[$fname];
 				}
 				
+			}
+
+			// This field name no longer matches the original.
+
+			if($results['SortDir']) {
+				$searchPage->SortDirection = $results['SortDir'];
 			}
 			
 			if(isset($relationships[$results['ID']])) {
@@ -93,7 +99,7 @@ class SolrSearchPageMigrationTask extends BuildTask {
 
 			if(!in_array($results['ID'], $created)) {
 				$searchPage = ExtensibleSearchPage::create();
-				$searchPage->SearchEngine = 'Solr';
+				$searchPage->SearchEngine = 'SolrSearch';
 
 				// Migrate the key site tree and solr search fields across.
 
@@ -108,7 +114,7 @@ class SolrSearchPageMigrationTask extends BuildTask {
 
 				$searchPage->ResultsPerPage = $results['ResultsPerPage'];
 				$searchPage->SortBy = $results['SortBy'];
-				$searchPage->SortDir = $results['SortDir'];
+				$searchPage->SortDirection = $results['SortDir'];
 				$searchPage->QueryType = $results['QueryType'];
 				$searchPage->StartWithListing = $results['StartWithListing'];
 				$searchPage->SearchTypeValue = $results['SearchTypeValue'];
