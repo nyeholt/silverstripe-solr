@@ -349,7 +349,7 @@ if(class_exists('ExtensibleSearchPage')) {
 					// Search against site tree elements with parent hierarchy restriction.
 
 					if($parents && (ClassInfo::baseDataClass($type) === 'SiteTree')) {
-						$hierarchyTypes[] = "{$type} AND ParentsHierarchy_ms:{$parents})";
+						$hierarchyTypes[] = "{$type} AND (ParentsHierarchy_ms:{$parents}))";
 					}
 
 					// Search against other data objects without parent hierarchy restriction.
