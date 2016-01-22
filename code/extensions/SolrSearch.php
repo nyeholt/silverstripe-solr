@@ -650,9 +650,10 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$elapsed = '< 0.001';
 
+			$count = ($query && ($total = $query->getTotalResults())) ? $total : 0;
 			if ($query) {
 				$resultData = array(
-					'TotalResults' => (($total = $query->getTotalResults()) ? $total : 0)
+					'TotalResults' => $count
 				);
 				$time = $query->getTimeTaken();
 				if($time) {
@@ -664,6 +665,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$data = array(
 				'Results'		=> $results,
+				'Count'			=> $count,
 				'Query'			=> Varchar::create_field('Varchar', $term),
 				'Title'			=> $this->owner->data()->Title,
 				'ResultData'	=> ArrayData::create($resultData),
