@@ -77,7 +77,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			'solrSearchService'			=> '%$SolrSearchService',
 		);
 
-		public static $additional_search_types = array();
+		private static $additional_search_types = array();
 
 		/**
 		 * @var SolrSearchService
@@ -103,7 +103,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$fields->addFieldToTab('Root.Main', new DropdownField('QueryType', _t('ExtensibleSearchPage.QUERY_TYPE', 'Query Type'), $options), 'Content');
 
 				ksort($source);
-				$source = array_merge($source, self::$additional_search_types);
+				$source = array_merge($source, ExtensibleSearchPage::config()->additional_search_types);
 				$types = new MultiValueDropdownField('SearchType', _t('ExtensibleSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
 				$fields->addFieldToTab('Root.Main', $types, 'Content');
 
@@ -220,8 +220,24 @@ if(class_exists('ExtensibleSearchPage')) {
 				}
 			}
 
-			ksort($objFields);
-			return $objFields;
+			// Remove any custom field types and display the sortable options nicely to the user.
+
+			$objFieldsNice = array();
+			foreach($objFields as $key => $value) {
+				if($customType = strpos($value, ':')) {
+					$value = substr($value, 0, $customType);
+				}
+
+				// Add spaces between words, other characters and numbers.
+
+				$objFieldsNice[$key] = ltrim(preg_replace(array(
+					'/([A-Z][a-z]+)/',
+					'/([A-Z]{2,})/',
+					'/([_.0-9]+)/'
+				), ' $0', $value));
+			}
+			ksort($objFieldsNice);
+			return $objFieldsNice;
 		}
 
 		/**
@@ -634,9 +650,10 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$elapsed = '< 0.001';
 
+			$count = ($query && ($total = $query->getTotalResults())) ? $total : 0;
 			if ($query) {
 				$resultData = array(
-					'TotalResults' => (($total = $query->getTotalResults()) ? $total : 0)
+					'TotalResults' => $count
 				);
 				$time = $query->getTimeTaken();
 				if($time) {
@@ -648,6 +665,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$data = array(
 				'Results'		=> $results,
+				'Count'			=> $count,
 				'Query'			=> Varchar::create_field('Varchar', $term),
 				'Title'			=> $this->owner->data()->Title,
 				'ResultData'	=> ArrayData::create($resultData),
