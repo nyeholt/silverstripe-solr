@@ -17,6 +17,7 @@ class SolrTypeConfiguration extends DataObject {
 		array_shift($types);
 		asort($types);
 		$source = array_combine($types, $types);
+		$source = array_merge($source, ExtensibleSearchPage::config()->additional_search_types);
 
 		$fields->replaceField('Title', new DropdownField('Title', _t('Solr.TYPE_CONFIG_TITLE', 'Data type'), $source));
 
@@ -38,9 +39,13 @@ class SolrTypeConfiguration extends DataObject {
 	
 	protected function getFieldsFor($type) {
 		
-		$objFields = array();
+		$dbFields = $objFields = array();
 		
-		$dbFields = array_keys(Config::inst()->get($type, 'db'));
+		$db = Config::inst()->get($type, 'db');
+		if ($db) {
+			$dbFields = array_keys($db);
+		}
+		
 		$objFields = array_combine($dbFields, $dbFields);
 		
 		asort($objFields);
