@@ -21,6 +21,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			'QueryType' => 'Varchar',
 			'SearchType' => 'MultiValueField',	// types that a user can search within
 			'SearchOnFields' => 'MultiValueField',
+			'ExtraSearchFields'	=> 'MultiValueField',
 			'BoostFields' => 'MultiValueField',
 			'BoostMatchFields' => 'MultiValueField',
 			// faceting fields
@@ -115,8 +116,9 @@ if(class_exists('ExtensibleSearchPage')) {
 				unset($sortFields['Content']);
 				unset($sortFields['Groups']);
 				$fields->replaceField('SortBy', new DropdownField('SortBy', _t('ExtensibleSearchPage.SORT_BY', 'Sort By'), $sortFields));
-				$fields->addFieldToTab('Root.Main', new MultiValueDropdownField('SearchOnFields', _t('ExtensibleSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
-
+				$fields->addFieldToTab('Root.Main', MultiValueDropdownField::create('SearchOnFields', _t('ExtensibleSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
+				$fields->addFieldToTab('Root.Main', MultiValueTextField::create('ExtraSearchFields', _t('SolrSearch.EXTRA_FIELDS', 'Custom solr fields to search')), 'Content');
+				
 				$boostVals = array();
 				for ($i = 1; $i <= 5; $i++) {
 					$boostVals[$i] = $i;
@@ -384,6 +386,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			$builder->sortBy($sortBy, $sortDir);
 
 			$selectedFields = $this->owner->SearchOnFields->getValues();
+			$extraFields = $this->owner->ExtraSearchFields->getValues();
 
 			// the following serves two purposes; filter out the searched on fields to only those that
 			// are in the actually  searched on types, and to map them to relevant solr types
@@ -397,6 +400,11 @@ if(class_exists('ExtensibleSearchPage')) {
 						$mappedFields[] = $mappedField;
 					}
 				}
+
+				if ($extraFields && count($extraFields)) {
+					$mappedFields = array_merge($mappedFields, $extraFields);
+				}
+				
 				$builder->queryFields($mappedFields);
 			}
 
