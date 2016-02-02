@@ -75,6 +75,15 @@ class SolrQueryBuilder {
 		return $this;
 	}
 	
+	/**
+	 * Retrieve the current set of fields being queried
+	 * 
+	 * @return array
+	 */
+	public function currentFields() {
+		return $this->fields;
+	}
+	
 	public function sortBy($field, $direction) {
 		$this->sort = "$field $direction";
 		return $this;
