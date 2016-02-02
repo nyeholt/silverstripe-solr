@@ -365,7 +365,7 @@ class SolrSearchService {
 	protected function getParentsHierarchyField($dataObject) {
 		
 		// see if we've got Parent values
-		if ($dataObject->hasField('ParentID')) {
+		if (is_object($dataObject) && method_exists($dataObject, 'hasField') && $dataObject->hasField('ParentID')) {
 			$parentsField = array('Type' => '', 'Value' => null);
 			$parents = array();
 			
@@ -409,7 +409,7 @@ class SolrSearchService {
 			// Just index everything; the query can figure out what to exclude... !
 			$value = $dataObject->$name;
 
-			if ($type == 'MultiValueField') {
+			if ($type == 'MultiValueField' && $value instanceof MultiValueField) {
 				$value = $value->getValues();
 			}
 

@@ -144,7 +144,7 @@ class SolrResultSet {
 					}
 					
 					if (!$type || !$id) {
-						singleton('SolrUtils')->log("Invalid solr document ID $doc->id", SS_Log::WARN);
+						error_log("Invalid solr document ID $doc->id");
 						continue;
 					}
 
@@ -192,7 +192,7 @@ class SolrResultSet {
 
 						$totalAdded++;
 					} else {
-						singleton('SolrUtils')->log("Object $doc->id is no longer in the system, removing from index", SS_Log::WARN);
+						error_log("Object $doc->id is no longer in the system, removing from index");
 						$this->solr->unindex($type, $id);
 					}
 				}
