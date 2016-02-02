@@ -382,6 +382,8 @@ if(class_exists('ExtensibleSearchPage')) {
 			if (!$sortBy) {
 				$sortBy = 'score';
 			}
+			
+			$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
 			$builder->sortBy($sortBy, $sortDir);
 
