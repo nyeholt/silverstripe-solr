@@ -104,7 +104,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 				ksort($source);
 				$source = array_merge($source, ExtensibleSearchPage::config()->additional_search_types);
-				$types = new MultiValueDropdownField('SearchType', _t('ExtensibleSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
+				$types = MultiValueDropdownField::create('SearchType', _t('ExtensibleSearchPage.SEARCH_ITEM_TYPE', 'Search items of type'), $source);
 				$fields->addFieldToTab('Root.Main', $types, 'Content');
 
 				$objFields = $this->owner->getSelectableFields();

@@ -1,13 +1,11 @@
 <?php
 
 /**
- * Description of SolrTypeConfiguration
- *
  * @author marcus@silverstripe.com.au
  * @license BSD License http://silverstripe.org/bsd-license/
  */
 class SolrTypeConfiguration extends DataObject {
-	public static $db = array(
+	private static $db = array(
 		'Title'			=> 'Varchar',
 		'FieldMappings'	=> 'MultiValueField',
 	);
