@@ -292,8 +292,11 @@ class SolrSearchService {
 		unset($object['ID']);
 
 		// a special type hierarchy 
-		if ($classType) {
+		if ($classType && !isset($object['ClassNameHierarchy'])) {
 			$classes = array_values(ClassInfo::ancestry($classType));
+			if (!$classes) {
+				$classes = array($classType);
+			}
 			$object['ClassNameHierarchy'] = array(
 				'Type' => 'MultiValueField',
 				'Value' => $classes,
@@ -565,7 +568,7 @@ class SolrSearchService {
 					$response = $this->getSolr()->search($query, $offset, $limit, $params);
 				}
 				catch(Exception $e) {
-					SS_Log::log($e, SS_Log::NOTICE);
+					SS_Log::log($e, SS_Log::WARN);
 				}
 			}
 		}
