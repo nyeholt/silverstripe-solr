@@ -10,6 +10,8 @@ class SolrAdminController extends ModelAdmin {
 	public static $menu_title = 'Solr';
 	public static $url_segment = 'solr';
 	
+	private static $menu_icon = 'solr/images/solr-icon.png';
+	
 	public static $managed_models = array(
 		'SolrTypeConfiguration'
 	);
