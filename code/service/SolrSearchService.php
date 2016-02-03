@@ -355,7 +355,10 @@ class SolrSearchService {
 			}
 		}
 
-		$document->id = $classType ? $classType . '_' . $id : SolrSearchService::RAW_DATA_KEY . $id;
+		if (strpos($id, SolrSearchService::RAW_DATA_KEY) === false) {
+			$id = $classType ? $classType . '_' . $id : SolrSearchService::RAW_DATA_KEY . $id;
+		}
+		$document->id = $id;
 
 		return $document;
 	}
