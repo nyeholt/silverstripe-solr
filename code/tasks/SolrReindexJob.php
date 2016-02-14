@@ -11,7 +11,7 @@ if (class_exists('AbstractQueuedJob')) {
 	class SolrReindexJob extends AbstractQueuedJob {
 
 		static $at_a_time = 100;
-		
+
 		public function __construct($type = null) {
 			if (!$type && isset($_GET['type'])) {
 				$type = $_GET['type'];
@@ -41,7 +41,7 @@ if (class_exists('AbstractQueuedJob')) {
 			}
 
 			$pages = DataObject::get($this->reindexType, '"' . $this->reindexType.'"."ID" > ' . $this->lastIndexedID, 'ID ASC', '', '0, ' . self::$at_a_time);
-			
+
 			if (ClassInfo::exists('Subsite')) {
 				Subsite::$disable_subsite_filter = false;
 			}
@@ -50,17 +50,17 @@ if (class_exists('AbstractQueuedJob')) {
 				$this->isComplete = true;
 				return;
 			}
-			
+
 			$mode = Versioned::get_reading_mode();
 			Versioned::reading_stage('Stage');
 
 			// index away
 			$service = singleton('SolrSearchService');
-			
+
 			$live = array();
 			$stage = array();
 			$all = array();
-			
+
 			foreach ($pages as $page) {
 
 				// Make sure the current page is not orphaned.
@@ -76,7 +76,7 @@ if (class_exists('AbstractQueuedJob')) {
 
 				if ($page->hasExtension('Versioned')) {
 					$stage[] = $page;
-					
+
 					$base = $page->baseTable();
 					$idField = '"' . $base . '_Live"."ID"';
 					$livePage = Versioned::get_one_by_stage($page->ClassName, 'Live', $idField . ' = ' . $page->ID);
@@ -87,14 +87,14 @@ if (class_exists('AbstractQueuedJob')) {
 				} else {
 					$all[] = $page;
 				}
-				
+
 				$this->lastIndexedID = $page->ID;
 			}
 
 			if (count($all)) {
 				$service->indexMultiple($all);
 			}
-			
+
 			if (count($stage)) {
 				$service->indexMultiple($stage, 'Stage');
 			}
@@ -102,7 +102,7 @@ if (class_exists('AbstractQueuedJob')) {
 			if (count($live)) {
 				$service->indexMultiple($live, 'Live');
 			}
-			
+
 
 			Versioned::set_reading_mode($mode);
 

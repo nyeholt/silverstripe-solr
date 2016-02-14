@@ -9,7 +9,7 @@
 
 	$Content
 	$Form
-	
+
 	<% if Results %>
 		<% if ListingTemplateID %>
 		$TemplatedResults
@@ -51,7 +51,7 @@
 	          <% end_if %>
 	        <% end_loop %>
 	      </span>
-      
+
 	    </div>
 	 <% end_if %>
 </div>

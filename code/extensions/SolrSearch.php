@@ -118,7 +118,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$fields->replaceField('SortBy', new DropdownField('SortBy', _t('ExtensibleSearchPage.SORT_BY', 'Sort By'), $sortFields));
 				$fields->addFieldToTab('Root.Main', MultiValueDropdownField::create('SearchOnFields', _t('ExtensibleSearchPage.INCLUDE_FIELDS', 'Search On Fields'), $objFields), 'Content');
 				$fields->addFieldToTab('Root.Main', MultiValueTextField::create('ExtraSearchFields', _t('SolrSearch.EXTRA_FIELDS', 'Custom solr fields to search')), 'Content');
-				
+
 				$boostVals = array();
 				for ($i = 1; $i <= 5; $i++) {
 					$boostVals[$i] = $i;
@@ -382,7 +382,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			if (!$sortBy) {
 				$sortBy = 'score';
 			}
-			
+
 			$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
 			$builder->sortBy($sortBy, $sortDir);
@@ -406,7 +406,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				if ($extraFields && count($extraFields)) {
 					$mappedFields = array_merge($mappedFields, $extraFields);
 				}
-				
+
 				$builder->queryFields($mappedFields);
 			}
 

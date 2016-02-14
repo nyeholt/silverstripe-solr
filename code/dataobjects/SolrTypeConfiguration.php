@@ -9,10 +9,10 @@ class SolrTypeConfiguration extends DataObject {
 		'Title'			=> 'Varchar',
 		'FieldMappings'	=> 'MultiValueField',
 	);
-	
+
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
-		
+
 		$types = ClassInfo::dataClassesFor('DataObject');
 		array_shift($types);
 		asort($types);
@@ -33,21 +33,21 @@ class SolrTypeConfiguration extends DataObject {
 		} else {
 			$fields->removeByName('FieldMappings');
 		}
-		
+
 		return $fields;
 	}
-	
+
 	protected function getFieldsFor($type) {
-		
+
 		$dbFields = $objFields = array();
-		
+
 		$db = Config::inst()->get($type, 'db');
 		if ($db) {
 			$dbFields = array_keys($db);
 		}
-		
+
 		$objFields = array_combine($dbFields, $dbFields);
-		
+
 		asort($objFields);
 		return $objFields;
 	}

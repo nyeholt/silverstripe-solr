@@ -1,31 +1,31 @@
 <?php
 /**
  * Copyright (c) 2007-2013, PTC Inc.
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions are met: 
- * 
- *  - Redistributions of source code must retain the above copyright notice, 
- *    this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *  - Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *  - Neither the name of PTC Inc. nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
- *    specific prior written permission. 
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- * POSSIBILITY OF SUCH DAMAGE. 
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *
  * @copyright Copyright 2007-2013 PTC Inc. (http://ptc.com)
  * @license https://raw.github.com/PTCInc/solr-php-client/master/COPYING 3-Clause BSD
@@ -52,23 +52,23 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 	 * SVN ID meta data for this class
 	 */
 	const SVN_ID = '$Id:  $';
-		
+
 	/**
 	 * Reusable stream context resources for GET and POST operations
 	 *
 	 * @var resource
 	 */
 	private $_getContext, $_headContext, $_postContext;
-	
+
 	/**
 	 * For POST operations, we're already using the Header context value for
 	 * specifying the content type too, so we have to keep our computed
 	 * authorization header around
-	 * 
+	 *
 	 * @var string
 	 */
 	private $_authHeader = "";
-	
+
 	/**
 	 * Initializes our reuseable get and post stream contexts
 	 */
@@ -78,16 +78,16 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 		$this->_headContext = stream_context_create();
 		$this->_postContext = stream_context_create();
 	}
-	
+
 	public function setAuthenticationCredentials($username, $password)
 	{
 		// compute the Authorization header
 		$this->_authHeader = "Authorization: Basic " . base64_encode($username . ":" . $password);
-		
+
 		// set it now for get and head contexts
 		stream_context_set_option($this->_getContext, 'http', 'header', $this->_authHeader);
 		stream_context_set_option($this->_headContext, 'http', 'header', $this->_authHeader);
-		
+
 		// for post, it'll be set each time, so add an \r\n so it can be concatenated
 		// with the Content-Type
 		$this->_authHeader .= "\r\n";
@@ -109,13 +109,13 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 			// use the default timeout pulled from default_socket_timeout otherwise
 			stream_context_set_option($this->_getContext, 'http', 'timeout', $this->getDefaultTimeout());
 		}
-		
+
 		// $http_response_headers will be updated by the call to file_get_contents later
 		// see http://us.php.net/manual/en/wrappers.http.php for documentation
 		// Unfortunately, it will still create a notice in analyzers if we don't set it here
 		$http_response_header = null;
 		$responseBody = @file_get_contents($url, false, $this->_getContext);
-		
+
 		return $this->_getResponseFromParts($responseBody, $http_response_header);
 	}
 
@@ -141,7 +141,7 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 
 			stream_context_set_option($this->_headContext, 'http', 'timeout', $timeout);
 		}
-		
+
 		// $http_response_headers will be updated by the call to file_get_contents later
 		// see http://us.php.net/manual/en/wrappers.http.php for documentation
 		// Unfortunately, it will still create a notice in analyzers if we don't set it here
@@ -150,7 +150,7 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 
 		return $this->_getResponseFromParts($responseBody, $http_response_header);
 	}
-	
+
 	public function performPostRequest($url, $rawPost, $contentType, $timeout = false)
 	{
 		stream_context_set_option($this->_postContext, array(
@@ -185,13 +185,13 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 		// Unfortunately, it will still create a notice in analyzers if we don't set it here
 		$http_response_header = null;
 		$responseBody = @file_get_contents($url, false, $this->_postContext);
-		
+
 		// reset content of post context to reclaim memory
 		stream_context_set_option($this->_postContext, 'http', 'content', '');
-		
+
 		return $this->_getResponseFromParts($responseBody, $http_response_header);
 	}
-	
+
 	private function _getResponseFromParts($rawResponse, $httpHeaders)
 	{
 		//Assume 0, false as defaults
@@ -232,7 +232,7 @@ class Apache_Solr_HttpTransport_FileGetContents extends Apache_Solr_HttpTranspor
 				}
 			}
 		}
-		
+
 		return new Apache_Solr_HttpTransport_Response($status, $contentType, $rawResponse);
 	}
 }

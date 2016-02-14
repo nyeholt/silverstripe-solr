@@ -10,7 +10,7 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 
 	/**
 	 * SRID - Spatial Reference Identifier
-	 * 
+	 *
 	 * @see http://en.wikipedia.org/wiki/SRID
 	 *
 	 * @var string
@@ -27,7 +27,7 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 
 	/**
 	 * Well-known text identifier of the subclass, e.g. POINT
-	 * 
+	 *
 	 * @var string
 	 */
 	protected static $wkt_name;
@@ -49,13 +49,13 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 	public function requireField() {}
 
 	/**
-	 * 
+	 *
 	 * @param SQLQuery $query
 	 */
 	function addToQuery(&$query) {
 		parent::addToQuery($query);
 		$query->selectField("AsText({$this->name})", "{$this->name}");
-		
+
 		// $query->addSelect("AsText({$this->name}) AS {$this->name}_AsText");
 		// $query->select[] = "AsText({$this->name}) AS {$this->name}_AsText";
 	}
@@ -120,7 +120,7 @@ abstract class SolrGeoDBField extends DBField implements CompositeDBField {
 	 * Determines if the passed string is in valid "Well-known Text" format.
 	 * For increased security and accuracy you should overload
 	 * this method in the specific subclasses.
-	 * 
+	 *
 	 * @param string $wktString
 	 */
 	public static function is_valid_wkt($wktString) {

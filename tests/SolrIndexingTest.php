@@ -7,20 +7,20 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the 
+    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software 
+    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
- 
+
 */
- 
+
 class SolrIndexingTest extends SapphireTest
 {
 	static $fixture_file = 'solr/tests/SolrTest.yml';
@@ -34,14 +34,14 @@ class SolrIndexingTest extends SapphireTest
 		DataObject::remove_extension('SiteTree', 'SolrIndexable');
 		parent::tearDownOnce();
 	}
-	
+
 	public function testSolrIndexableItem()
 	{
 		$item = $this->objFromFixture('Page','page1');
-		
+
 		$indexFields = array(
 			'Title' => array(
-				'Type' => 'Varchar', 
+				'Type' => 'Varchar',
 				'Value' => 'Page 1'
 			),
 			'Content' => array(
@@ -52,18 +52,18 @@ class SolrIndexingTest extends SapphireTest
 			'ClassName' => 'Page'
 		);
 
-		// call onAfterPublish, we expect the 
+		// call onAfterPublish, we expect the
 		$searchService = $this->getMock('SolrSearchService', array('index'));
 		$searchService->expects($this->once())
 			->method('index');
 			// ->with($this->equalTo($indexFields));
-			
+
 		Injector::inst()->registerService($searchService, 'SolrSearchService');
-		
+
 		// now save the item and hope it gets indexed
 		$item->extend('onAfterPublish', $item);
 	}
-	
+
 	public function testIndexObject() {
 		$search = new SolrSearchService;
 
@@ -77,7 +77,7 @@ class SolrIndexingTest extends SapphireTest
 
 	public function testStoreIndexAndQuery()
 	{
-		
+
 		Injector::inst()->registerService(new SolrSearchService());
 
 		// we should be able to perform a query for documents with 'text content'
@@ -90,7 +90,7 @@ class SolrIndexingTest extends SapphireTest
 
 		/* @var $search SolrSearchService */
 		$search->getSolr()->deleteByQuery('*:*');
-		
+
 		$item = $this->objFromFixture('Page','page1');
 		$item->extend('onAfterPublish', $item);
 		$results = $search->query('text:"Text Content"');
@@ -98,9 +98,9 @@ class SolrIndexingTest extends SapphireTest
 		$this->assertNotNull($results->docs);
 		$this->assertEquals(1, count($results->docs));
 		$this->assertEquals('Page_1_Live', $results->docs[0]->id);
-		
-		
-		
+
+
+
 	}
 
 	public function testQueryForObjects()
@@ -120,21 +120,21 @@ class SolrIndexingTest extends SapphireTest
 		$item->extend('onAfterPublish', $item);
 		$results = $search->query('text:"Text Content"');
 		$results = $results->getDataObjects();
-		
+
 		$this->assertTrue($results instanceof SS_List);
 		$this->assertEquals(1, $results->count());
 		$item = $results->First();
 		$this->assertEquals('Page', $item->ClassName);
 		$this->assertEquals(1, $item->ID);
-		
+
 		$search->unindex($item);
-		
+
 		$results = $search->query('text:"Text Content"');
 		$results = $results->getDataObjects();
-		
+
 		$this->assertTrue($results instanceof SS_List);
 		$this->assertEquals(0, $results->count());
-		
+
 	}
 
 	public function testFacetQuery()
@@ -150,19 +150,19 @@ class SolrIndexingTest extends SapphireTest
 
 		/* @var $search SolrSearchService */
 		$search->getSolr()->deleteByQuery('*:*');
-		
+
 		$item = $this->objFromFixture('Page','page1');
 		$item->extend('onAfterPublish', $item);
-		
+
 		$item = $this->objFromFixture('Page','page2');
 		$item->extend('onAfterPublish', $item);
-		
+
 		$item = $this->objFromFixture('Page','page3');
 		$item->extend('onAfterPublish', $item);
-		
+
 		$item = $this->objFromFixture('Page','page4');
 		$item->extend('onAfterPublish', $item);
-		
+
 		$results = $search->getFacetsForFields('text');
 		$facets = $results->getFacets();
 		$this->assertNotNull($facets);

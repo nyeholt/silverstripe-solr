@@ -13,7 +13,7 @@ class SolrResultSet {
 	 * A list of solr field type suffixes to look for and swap out
 	 */
 	static $solr_attrs = array('as', 'ms', 's', 't', 'i', 'dt', 'f', 'p');
-	
+
 	/**
 	 * The raw lucene query issued to solr
 	 * @var String
@@ -74,7 +74,7 @@ class SolrResultSet {
 	}
 
 	public function getErrors() {
-		
+
 	}
 
 	/**
@@ -142,7 +142,7 @@ class SolrResultSet {
 						list($type, $id) = $bits;
 						$stage = Versioned::current_stage();
 					}
-					
+
 					if (!$type || !$id) {
 						error_log("Invalid solr document ID $doc->id");
 						continue;
@@ -156,7 +156,7 @@ class SolrResultSet {
 						if (!class_exists($type)) {
 							continue;
 						}
-						// a double sanity check for the stage here. 
+						// a double sanity check for the stage here.
 						if ($currentStage = Versioned::current_stage()) {
 							if ($currentStage != $stage) {
 								continue;
@@ -171,7 +171,7 @@ class SolrResultSet {
 						if (isset($doc->score)) {
 							$object->SearchScore = $doc->score;
 						}
-						
+
 						$canAdd = true;
 						if ($evaluatePermissions) {
 							// check if we've got a way of evaluating perms
@@ -197,16 +197,16 @@ class SolrResultSet {
 					}
 				}
 				$this->totalResults = $documents->numFound;
-				
+
 				// update the dos with stats about this query
-				
+
 				$this->dataObjects = PaginatedList::create($this->dataObjects);
-				
+
 				$this->dataObjects->setPageLength($this->queryParameters->limit)
 						->setPageStart($documents->start)
 						->setTotalItems($documents->numFound)
 						->setLimitItems(false);
-				
+
 //				$paginatedSet->setPaginationFromQuery($set->dataQuery()->query());
 				// $this->dataObjects->setPageLimits($documents->start, $this->queryParameters->limit, $documents->numFound);
 			}
@@ -215,19 +215,19 @@ class SolrResultSet {
 
 		return $this->dataObjects;
 	}
-	
+
 	/**
 	 * Inflate a raw result into an object of a particular type
-	 * 
+	 *
 	 * If the raw result has a SolrSearchService::SERIALIZED_OBJECT field,
 	 * and convertToObject is true, that serialized data will be used to create
 	 * a new object of type $doc['SS_TYPE']
-	 * 
+	 *
 	 * @param array $doc
 	 * @param boolean $convertToObject
 	 */
 	protected function inflateRawResult($doc, $convertToObject = true) {
-		
+
 		$field = SolrSearchService::SERIALIZED_OBJECT . '_t';
 		if (isset($doc->$field) && $convertToObject) {
 			$raw = unserialize($doc->$field);
@@ -236,12 +236,12 @@ class SolrResultSet {
 
 				$object = Injector::inst()->create($class);
 				$object->update($raw);
-				
+
 				$object->ID = str_replace(SolrSearchService::RAW_DATA_KEY, '', $doc->id);
-				
+
 				return $object;
-			} 
-			
+			}
+
 			return ArrayData::create($raw);
 		}
 
@@ -252,11 +252,11 @@ class SolrResultSet {
 		if (isset($doc->attr_SS_URL[0])) {
 			$data['Link'] = $doc->attr_SS_URL[0];
 		}
-		
+
 		if (isset($doc->title)) {
 			$data['Title'] = $doc->title;
 		}
-		
+
 		if (isset($doc->title_as)) {
 			$data['Title'] = $doc->title_as;
 		}
@@ -278,12 +278,12 @@ class SolrResultSet {
 				}
 			}
 		}
-		
+
 		return ArrayData::create($data);
 	}
 
 	protected $returnedFacets;
-	
+
 	/**
 	 * Gets the details about facets found in this query
 	 *
@@ -300,7 +300,7 @@ class SolrResultSet {
 		if ($this->returnedFacets) {
 			return $this->returnedFacets;
 		}
-		
+
 		$result = $this->getResult();
 		if (!isset($result->facet_counts)) {
 			return;
@@ -310,9 +310,9 @@ class SolrResultSet {
 			// $this->logger->error($result->facet_counts->exception)
 			return array();
 		}
-		
+
 		$elems = $result->facet_counts->facet_fields;
-		
+
 		$facets = array();
 		foreach ($elems as $field => $values) {
 			$elemVals = array();
@@ -328,7 +328,7 @@ class SolrResultSet {
 			}
 			$facets[$field] = $elemVals;
 		}
-		
+
 		// see if there's any query facets for things too
 		$query_elems = $result->facet_counts->facet_queries;
 		if ($query_elems) {
@@ -336,7 +336,7 @@ class SolrResultSet {
 				if ($vname == '_empty_') {
 					continue;
 				}
-				
+
 				list($field, $query) = explode(':', $vname);
 
 				$r = new stdClass;
@@ -344,13 +344,13 @@ class SolrResultSet {
 				$r->Name = $vname;
 				$r->Query = $query;
 				$r->Count = $count;
-				
+
 				$existing = isset($facets[$field]) ? $facets[$field] : array();
 				$existing[] = $r;
 				$facets[$field] = $existing;
 			}
 		}
-		
+
 		$this->returnedFacets = $facets;
 		return $this->returnedFacets;
 	}

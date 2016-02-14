@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ *
  *
  * @author <marcus@silverstripe.com.au>
  * @license BSD License http://www.silverstripe.org/bsd-license
@@ -68,7 +68,7 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 	/**
 	 * Setting as "Well-known Text" with x/y or lng/lat.
 	 * @example "POINT(-174.9999 4.9923)"
-	 * 
+	 *
 	 * @param string $wktString
 	 */
 	function setAsWKT($wktString) {
@@ -85,16 +85,16 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 
 	/**
 	 * Set the value as an array. Accepts different formats:
-	 * 
+	 *
 	 * Format: x/y
 	 * <example>array('x'=>-174.9999,'y'=>4.9923)</example>
-	 * 
+	 *
 	 * Format: lng/lat
 	 * <example>array('lng'=>-174.9999,'lat'=>4.9923)</example>
 	 *
 	 * Format: Numeric array with x=0/y=1
 	 * <example>array(-174.9999,4.9923)</example>
-	 * 
+	 *
 	 * @param array
 	 */
 	function setAsArray($arr) {
@@ -108,23 +108,23 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 			$this->x = (float)$arr[0];
 			$this->y = (float)$arr[1];
 		} else {
-			user_error("{$this->class}::setAsArray() - Bad array " . var_export($arr, true), E_USER_ERROR);		
+			user_error("{$this->class}::setAsArray() - Bad array " . var_export($arr, true), E_USER_ERROR);
 		}
 	}
 
 
 	/**
 	 * Returns an associative array with the X/Y and lat/lng coordinates.
-	 * 
+	 *
 	 * <example>
 	 * array('x'=>4.9923,'y'=>-174.9999,'lat'=>-174.9999,'lng'=>4.9923)
 	 * </example>
-	 * 
+	 *
 	 * @return array
 	 */
 	function getCoords() {
 		return array(
-			'x' => $this->x, 
+			'x' => $this->x,
 			'y' => $this->y,
 			'lng' => $this->x,
 			'lat' => $this->y,
@@ -156,7 +156,7 @@ class SolrGeoPoint extends SolrGeoDBField implements CompositeDBField {
 	function getLng() {
 		return $this->x;
 	}
-	
+
 	public function latLon() {
 		if ($this->x && $this->y) {
 			return "{$this->getLat()},{$this->getLng()}";
