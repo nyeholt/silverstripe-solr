@@ -86,8 +86,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		public $solrSearchService;
 
 		public function updateExtensibleSearchPageCMSFields(FieldList $fields) {
-
-			if($this->owner->SearchEngine === get_class()) {
+			if($this->owner->SearchEngine === get_class($this)) {
 				$types = SiteTree::page_type_classes();
 				$source = array_combine($types, $types);
 
