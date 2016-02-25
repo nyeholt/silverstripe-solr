@@ -52,7 +52,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		 *
 		 * @var array
 		 */
-		public static $facets = array();
+		private static $facets = array();
 
 		/**
 		 * A local cache of the current query the user is executing based
@@ -72,7 +72,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		 *
 		 * @var String
 		 */
-		public static $filter_param = 'filter';
+		private static $filter_param = 'filter';
 
 		public static $dependencies = array(
 			'solrSearchService'			=> '%$SolrSearchService',
@@ -108,6 +108,8 @@ if(class_exists('ExtensibleSearchPage')) {
 				$fields->addFieldToTab('Root.Main', $types, 'Content');
 
 				$objFields = $this->owner->getSelectableFields();
+                
+                
 				$sortFields = $objFields;
 
 				// Remove content and groups from being sortable (as they are not relevant).
@@ -269,7 +271,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		 * Figures out the list of fields to use in faceting, based on configured / defaults
 		 */
 		public function fieldsForFacets() {
-			$fields = self::$facets;
+			$fields = Config::inst()->get('SolrSearch', 'facets');
 
 			$facetFields = array('FacetFields', 'CustomFacetFields');
 			if (!$fields) {
