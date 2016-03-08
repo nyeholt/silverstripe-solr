@@ -15,6 +15,9 @@
 if(class_exists('ExtensibleSearchPage')) {
 
 	class SolrSearch extends DataExtension {
+        
+        const BOOST_MAX = 10;
+        
 		const RESULTS_ACTION = 'results';
 
 		private static $db = array(
@@ -121,7 +124,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$fields->addFieldToTab('Root.Main', MultiValueTextField::create('ExtraSearchFields', _t('SolrSearch.EXTRA_FIELDS', 'Custom solr fields to search')), 'Content');
 				
 				$boostVals = array();
-				for ($i = 1; $i <= 5; $i++) {
+				for ($i = 1; $i <= static::BOOST_MAX; $i++) {
 					$boostVals[$i] = $i;
 				}
 
