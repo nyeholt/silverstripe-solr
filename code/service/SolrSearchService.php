@@ -915,6 +915,7 @@ class SolrSchemaMapper {
 			case 'HTMLText': {
 					return $field . '_t';
 			}
+			case 'Date':
 			case 'SS_Datetime': {
 					return $field . '_dt';
 			}
