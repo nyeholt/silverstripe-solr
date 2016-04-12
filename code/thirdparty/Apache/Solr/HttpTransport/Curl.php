@@ -119,6 +119,9 @@ class Apache_Solr_HttpTransport_Curl extends Apache_Solr_HttpTransport_Abstract
 			// set the URL
 			CURLOPT_URL => $url,
 
+			// set the content type to blank
+			CURLOPT_HTTPHEADER => array(),
+
 			// set the timeout
 			CURLOPT_TIMEOUT => $timeout
 		));
@@ -149,6 +152,9 @@ class Apache_Solr_HttpTransport_Curl extends Apache_Solr_HttpTransport_Abstract
 
 			// set the URL
 			CURLOPT_URL => $url,
+
+			// set the content type to blank
+			CURLOPT_HTTPHEADER => array(),
 
 			// set the timeout
 			CURLOPT_TIMEOUT => $timeout
