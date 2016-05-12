@@ -7,9 +7,9 @@
  * @license BSD License http://silverstripe.org/bsd-license/
  */
 class SolrQueryBuilder {
-	
+
 	public $title = 'Default Solr';
-	
+
 	protected $userQuery = '';
 	protected $fields = array('title_as', 'text');
 	protected $and = array();
@@ -28,36 +28,36 @@ class SolrQueryBuilder {
 	 * @var array
 	 */
 	protected $boost = array();
-	
+
 	/**
 	 * Field:value => boost amount
 	 *
 	 * @var array
 	 */
 	protected $boostFieldValues = array();
-	
+
 	protected $sort;
-	
+
 	/**
 	 *
 	 * @var array
 	 */
 	protected $facets = array('fields' => array(), 'queries' => array());
-	
+
 	/**
 	 * Per-field facet limits
 	 *
 	 * @var array
 	 */
 	protected $facetFieldLimits = array();
-	
+
 	/**
 	 * Number of facets to return
 	 *
 	 * @var int
 	 */
 	protected $facetLimit = 50;
-	
+
 	/**
 	 * Number of items with faces to be included
 	 *
@@ -69,26 +69,26 @@ class SolrQueryBuilder {
 		$this->userQuery = $query;
 		return $this;
 	}
-	
+
 	public function queryFields($fields) {
 		$this->fields = $fields;
 		return $this;
 	}
-	
+
 	/**
 	 * Retrieve the current set of fields being queried
-	 * 
+	 *
 	 * @return array
 	 */
 	public function currentFields() {
 		return $this->fields;
 	}
-	
+
 	public function sortBy($field, $direction) {
 		$this->sort = "$field $direction";
 		return $this;
 	}
-	
+
 	public function andWith($field, $value) {
 		$existing = array();
 		if (isset($this->and[$field])) {
@@ -109,7 +109,7 @@ class SolrQueryBuilder {
 		$this->params = $params;
 		return $this;
 	}
-	
+
 	public function addFacetFields($fields, $limit = 0) {
 		$a = array_merge($this->facets['fields'], $fields);
 		$this->facets['fields'] = array_unique(array_merge($this->facets['fields'], $fields));
@@ -119,20 +119,20 @@ class SolrQueryBuilder {
 		}
 		return $this;
 	}
-	
+
 	public function addFacetQueries($queries, $limit = 0) {
 		$this->facets['queries'] = array_unique(array_merge($this->facets['queries'], $queries));
 		if ($limit) {
 			$this->facetLimit = $limit;
 		}
-		
+
 		return $this;
 	}
-	
+
 	public function addFacetFieldLimit($field, $limit) {
 		$this->facetFieldLimits[$field] = $limit;
 	}
-	
+
 	public function getParams() {
 		if (count($this->filters)) {
 			$this->params['fq'] = array_values($this->filters);
@@ -145,32 +145,32 @@ class SolrQueryBuilder {
 
 		return $this->params;
 	}
-	
+
 	/**
 	 * Return the base search term
-	 * 
+	 *
 	 * @return string
 	 */
 	public function getUserQuery() {
 		return $this->userQuery;
 	}
-	
+
 	protected function facetParams() {
 		if (isset($this->facets['fields']) && count($this->facets['fields'])) {
 			$this->params['facet'] = 'true';
-			
+
 			$this->params['facet.field'] = array_values($this->facets['fields']);
 		}
-		
+
 		if (isset($this->facets['queries']) && count($this->facets['queries'])) {
 			$this->params['facet'] = 'true';
 			$this->params['facet.query'] = $this->facets['queries'];
 		}
-		
+
 		if ($this->facetLimit) {
 			$this->params['facet.limit'] = $this->facetLimit;
 		}
-		
+
 		if (count($this->facetFieldLimits)) {
 			foreach ($this->facetFieldLimits as $field => $limit) {
 				$this->params['f.' . $field . '.facet.limit'] = $limit;
@@ -178,8 +178,8 @@ class SolrQueryBuilder {
 		}
 
 		$this->params['facet.mincount'] = $this->facetCount ? $this->facetCount : 1;
-		
-		
+
+
 	}
 
 	public function parse($string) {
@@ -266,24 +266,24 @@ class SolrQueryBuilder {
 		}
 		return implode(' ', $terms);
 	}
-	
+
 	public function boost($boost) {
 		$this->boost = $boost;
 	}
-	
+
 	public function boostFieldValues($boost) {
 		$this->boostFieldValues = $boost;
 	}
 
 	public function toString() {
 		$rawQuery = $this->userQuery ? '(' . $this->parse($this->userQuery).')' : '';
-		
+
 		// add in all the clauses;
 		$sep = '';
 		if ($rawQuery) {
 			$sep = ' AND ';
 		}
-		
+
 		foreach ($this->and as $field => $valArray) {
 			$innerSep = '';
 			$innerQuery = '';
@@ -296,7 +296,7 @@ class SolrQueryBuilder {
 				$sep = ' AND ';
 			}
 		}
-		
+
 		$sep = '';
 		if ($rawQuery) {
 			$sep = ' OR ';
@@ -308,12 +308,12 @@ class SolrQueryBuilder {
 
 		return $rawQuery;
 	}
-	
+
 	/**
-	 * Add a filter query clause. 
-	 * 
+	 * Add a filter query clause.
+	 *
 	 * Filter queries simply restrict the result set without affecting the score of results
-	 * 
+	 *
 	 * @param string $query
 	 */
 	public function addFilter($query, $value = null) {
@@ -323,10 +323,10 @@ class SolrQueryBuilder {
 		$this->filters[$query] = $query;
 		return $this;
 	}
-	
+
 	/**
 	 * Remove a filter in place on this query
-	 * 
+	 *
 	 * @param string $query
 	 * @param mixed $value
 	 */
@@ -340,15 +340,15 @@ class SolrQueryBuilder {
 
 	/**
 	 * Apply a geo field restriction around a particular point
-	 * 
-	 * @param string $point 
+	 *
+	 * @param string $point
 	 *					The point in "lat,lon" format
 	 * @param string $field
 	 * @param float $radius
 	 */
 	public function restrictNearPoint($point, $field, $radius) {
 		$this->addFilter("{!geofilt}");
-		
+
 		$this->params['sfield'] = $field;
 		$this->params['pt'] = $point;
 		$this->params['d'] = $radius;

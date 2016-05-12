@@ -1,8 +1,8 @@
 <?php
- 
+
 /**
  * A decorator that adds the ability to index a DataObject in Solr
- * 
+ *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  * @license http://silverstripe.org/bsd-license/
  *
@@ -10,7 +10,7 @@
 class SolrIndexable extends DataExtension {
 	/**
 	 * We might not want to index, eg during a data load
-	 * 
+	 *
 	 * @var boolean
 	 */
 	public static $indexing = true;
@@ -21,18 +21,18 @@ class SolrIndexable extends DataExtension {
 	 * @var boolean
 	 */
 	public static $index_draft = true;
-	
+
 	/**
 	 * @var array
 	 */
 	public static $dependencies = array(
 		'searchService'		=> '%$SolrSearchService',
 	);
-	
+
 	public static $db = array(
 		'ResultBoost'		=> 'Int',
 	);
-	
+
 	protected function createIndexJob($item, $stage = null, $mode = 'index') {
 		$job = new SolrIndexItemJob($item, $stage, $mode);
 		Injector::inst()->get('QueuedJobService')->queueJob($job);
@@ -51,7 +51,7 @@ class SolrIndexable extends DataExtension {
 
 	public function onBeforeWrite() {
 		parent::onBeforeWrite();
-		
+
 		// immediately unindex any stuff that shouldn't be show in search
 		if ($this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
 			$this->searchService->unindex($this->owner);
@@ -66,10 +66,10 @@ class SolrIndexable extends DataExtension {
 
 		// No longer doing the 'ischanged' check to avoid problems with multivalue field NOT being indexed
 		//$changes = $this->owner->getChangedFields(true, 2);
-			
+
 		$stage = null;
 		// if it's being written and a versionable, then save only in the draft
-		// repository. 
+		// repository.
 		if ($this->owner->hasExtension('Versioned')) {
 			$stage = 'Stage';
 		}
@@ -78,21 +78,21 @@ class SolrIndexable extends DataExtension {
 			$this->reindex($stage);
 		}
 	}
-	
+
 	public function canShowInSearch() {
 		if ($this->owner->hasField('ShowInSearch')) {
-			
+
 			return $this->owner->ShowInSearch;
 		}
-		
+
 		return true;
 	}
 
 	/**
-	 * If unpublished, we delete from the index then reindex the 'stage' version of the 
+	 * If unpublished, we delete from the index then reindex the 'stage' version of the
 	 * content
 	 *
-	 * @return 
+	 * @return
 	 */
 	function onAfterUnpublish() {
 		if (!self::$indexing) return;

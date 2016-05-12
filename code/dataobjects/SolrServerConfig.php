@@ -11,17 +11,17 @@ class SolrServerConfig extends DataObject {
 		'InstanceID'	=> 'Varchar(64)',
 		'LogPath'		=> 'Varchar(128)',
 	);
-	
+
 	static $defaults = array(
 		'LogPath' => '/solr/solr/logs'
 	);
-	
+
 	public function onBeforeWrite() {
 		parent::onBeforeWrite();
 		if (!$this->InstanceID) {
 			$this->InstanceID = md5(mt_rand(0, 1000) . time());
 		}
-		
+
 		if (!$this->LogPath) {
 			$this->LogPath = self::$defaults['LogPath'];
 		}
@@ -29,7 +29,7 @@ class SolrServerConfig extends DataObject {
 
 	public function requireDefaultRecords() {
 		parent::requireDefaultRecords();
-		
+
 		$conf = DataObject::get_one('SolrServerConfig');
 		if (!$conf || !$conf->ID) {
 			$conf = new SolrServerConfig();
@@ -44,7 +44,7 @@ class SolrServerConfig extends DataObject {
 		if (!$this->LogPath) {
 			$logFile = self::$defaults['LogPath'];
 		}
-		
+
 		$logFile = Director::baseFolder().$logFile . '/solr-' . $this->InstanceID . '.log';
 		return $logFile;
 	}

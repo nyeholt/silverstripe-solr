@@ -11,9 +11,9 @@ class SolrReindexTask extends BuildTask
 	protected $title = "Reindex all content within Solr";
 
 	protected $description = "Iterates through all content within the system, re-indexing it in solr";
-	
+
 	protected $types = array();
-	
+
 	public function __construct($types = array()) {
 		parent::__construct();
 		$this->types = $types;
@@ -35,18 +35,18 @@ class SolrReindexTask extends BuildTask
 		}
 
 		$search = singleton('SolrSearchService');
-		
+
 		if (isset($_GET['delete_all'])) {
 			$search->getSolr()->deleteByQuery('*:*');
 			$search->getSolr()->commit();
 		}
-		
+
 		$count = 0;
-		
+
 		foreach ($this->types as $type) {
 			$search->getSolr()->deleteByQuery('ClassNameHierarchy_ms:' . $type);
 			$search->getSolr()->commit();
-			
+
 			if (ClassInfo::exists('QueuedJob') && !isset($_GET['direct'])) {
 				$job = new SolrReindexJob($type);
 				$svc = singleton('QueuedJobService');
@@ -77,7 +77,7 @@ class SolrReindexTask extends BuildTask
 
 					if ($page->hasExtension('Versioned')) {
 						$search->index($page, 'Stage');
-						
+
 						$baseTable = $page->baseTable();
 						$live = Versioned::get_one_by_stage($page->ClassName, 'Live', "\"$baseTable\".\"ID\" = $page->ID");
 						if ($live) {
@@ -93,11 +93,11 @@ class SolrReindexTask extends BuildTask
 						$count ++;
 					}
 				}
-				
+
 				Versioned::set_reading_mode($mode);
 			}
 		}
-		
+
 		echo "Reindex complete, $count objects re-indexed<br/>";
 	}
 }

@@ -2,9 +2,9 @@
 
 /**
  * A coordinate field
- * 
+ *
  * Taken from the silverstripe-gis module which hasn't been updated for SS3
- * 
+ *
  * https://github.com/sminnee/silverstripe-gis/blob/master/code/forms/GeoPointField.php
  *
  * @author <marcus@silverstripe.com.au>
@@ -23,8 +23,8 @@ class GeoCoordinateField extends FormField {
 
 	function Field($properties = array()) {
 		return "<div class=\"fieldgroup\">" .
-			"<div class=\"fieldgroupField\">" . $this->yField->SmallFieldHolder() . "</div>" . 
-			"<div class=\"fieldgroupField\">" . $this->xField->SmallFieldHolder() . "</div>" . 
+			"<div class=\"fieldgroupField\">" . $this->yField->SmallFieldHolder() . "</div>" .
+			"<div class=\"fieldgroupField\">" . $this->xField->SmallFieldHolder() . "</div>" .
 		"</div>";
 	}
 
@@ -39,7 +39,7 @@ class GeoCoordinateField extends FormField {
 
 	function saveInto(DataObjectInterface $record) {
 		$fieldName = $this->name;
-		$record->$fieldName->X = $this->xField->Value(); 
+		$record->$fieldName->X = $this->xField->Value();
 		$record->$fieldName->Y = $this->yField->Value();
 	}
 

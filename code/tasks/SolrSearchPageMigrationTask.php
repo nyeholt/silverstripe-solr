@@ -33,7 +33,7 @@ class SolrSearchPageMigrationTask extends BuildTask {
 				$relationships[$relationship['SolrSearchPageID']] = $relationship['PageID'];
 			}
 		}
-		
+
 
 		// Store the current live page migration state to avoid duplicates.
 
@@ -50,18 +50,18 @@ class SolrSearchPageMigrationTask extends BuildTask {
 
 			// Migrate the key site tree and solr search fields across.
 
-			$fields = array('ParentID', 'URLSegment', 'Title', 
-				'MenuTitle', 'Content', 'ShowInMenus', 'ShowInSearch', 'Sort', 
+			$fields = array('ParentID', 'URLSegment', 'Title',
+				'MenuTitle', 'Content', 'ShowInMenus', 'ShowInSearch', 'Sort',
 				'ResultsPerPage', 'SortBy', 'BoostFieldsValue', 'SearchOnFieldsValue', 'SearchTypeValue', 'StartWithListing', 'QueryType',
 				'ListingTemplateID', 'FilterFieldsValue', 'MinFacetCount', 'FacetQueriesValue', 'FacetMappingValue', 'CustomFacetFieldsValue', 'FacetFieldsValue', 'BoostMatchFieldsValue',
-				
+
 			);
-			
+
 			foreach ($fields as $fname) {
 				if (isset($results[$fname])) {
 					$searchPage->$fname = $results[$fname];
 				}
-				
+
 			}
 
 			// This field name no longer matches the original.
@@ -69,7 +69,7 @@ class SolrSearchPageMigrationTask extends BuildTask {
 			if($results['SortDir']) {
 				$searchPage->SortDirection = $results['SortDir'];
 			}
-			
+
 			if(isset($relationships[$results['ID']])) {
 				$searchPage->SearchTrees()->add($relationships[$results['ID']]);
 			}
