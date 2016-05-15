@@ -709,12 +709,15 @@ class SolrSearchService {
 	 * @param String $field
 	 * 				The field name to get the Solr type for.
 	 * @param String $classNames
-	 * 				A list of data object class name. Defaults to 'page'. 
+	 * 				A list of data object class name.
 	 *
 	 * @return String
 	 *
 	 */
-	public function getSolrFieldName($field, $classNames = array('Page')) {
+	public function getSolrFieldName($field, $classNames = null) {
+		if (!$classNames) {
+			$classNames = Config::inst()->get('SolrSearch', 'default_searchable_types');
+		}
 		if (!is_array($classNames)) {
 			$classNames = array($classNames);
 		}
@@ -746,10 +749,7 @@ class SolrSearchService {
 	 * @param String $classNames
 	 * 				A list of potential class types that the field may exist in (ie if searching in multiple types)
 	 */
-	public function getSortFieldName($field, $classNames = array('Page')) {
-		if (!is_array($classNames)) {
-			$classNames = array($classNames);
-		}
+	public function getSortFieldName($field, $classNames = null) {
 		return $this->getSolrFieldName($field, $classNames);
 	}
 

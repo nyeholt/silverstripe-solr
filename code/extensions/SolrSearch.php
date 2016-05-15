@@ -77,6 +77,13 @@ if(class_exists('ExtensibleSearchPage')) {
 		 */
 		private static $filter_param = 'filter';
 
+		/**
+		 * The default classes to search on.
+		 *
+		 * @var array
+		 */
+		private static $default_searchable_types = array('SiteTree');
+
 		public static $dependencies = array(
 			'solrSearchService'			=> '%$SolrSearchService',
 		);
@@ -341,7 +348,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			// overly much
 			if (!count($types) && $sortBy) {
 				// default to page
-				$types = array('Page');
+				$types = Config::inst()->get(__CLASS__, 'default_searchable_types');
 			}
 
 			if (!isset($fields[$sortBy])) {
