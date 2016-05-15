@@ -149,6 +149,9 @@ class Apache_Solr_HttpTransport_Curl extends Apache_Solr_HttpTransport_Abstract
 
 			// set the URL
 			CURLOPT_URL => $url,
+	
+			// unset the content type, could be left over from previous request
+			CURLOPT_HTTPHEADER => array("Content-Type:"),
 
 			// set the timeout
 			CURLOPT_TIMEOUT => $timeout
