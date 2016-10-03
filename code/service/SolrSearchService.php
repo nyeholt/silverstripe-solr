@@ -432,7 +432,7 @@ class SolrSearchService {
 		}
 		
 		if ($dataObject->hasMethod('additionalSolrValues')) {
-			$extras = $dataObject->extend('additionalSolrValues');
+			$extras = $dataObject->invokeWithExtensions('additionalSolrValues');
 			if ($extras && is_array($extras)) {
 				foreach ($extras as $add) {
 					foreach ($add as $k => $v) {
