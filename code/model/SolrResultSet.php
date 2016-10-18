@@ -193,7 +193,10 @@ class SolrResultSet {
 						$totalAdded++;
 					} else {
 						error_log("Object $doc->id is no longer in the system, removing from index");
-						$this->solr->unindex($type, $id);
+                        $tmpObj = new stdClass();
+                        $tmpObj->class = $type;
+                        $tmpObj->ID = $id;
+						$this->solr->unindex($tmpObj);
 					}
 				}
 				$this->totalResults = $documents->numFound;
