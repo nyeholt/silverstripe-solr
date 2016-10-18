@@ -485,6 +485,9 @@ if(class_exists('ExtensibleSearchPage')) {
 			$facets = $this->getQuery()->getFacets();
 			$result = array();
 			$mapping = $this->facetFieldMapping();
+            if (!is_array($facets)) {
+                return ArrayList::create($result);
+            }
 			foreach ($facets as $title => $items) {
 				$object = new ViewableData();
 				$object->Items = $this->currentFacets($title);
