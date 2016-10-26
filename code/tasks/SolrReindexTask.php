@@ -51,17 +51,20 @@ class SolrReindexTask extends BuildTask
 				$job = new SolrReindexJob($type);
 				$svc = singleton('QueuedJobService');
 				$svc->queueJob($job);
-				echo "<p>Reindexing job for $type has been queued</p>";
+				$this->log("Reindexing job for $type has been queued");
 			} else {
 
 				$mode = Versioned::get_reading_mode();
 				Versioned::reading_stage('Stage');
 
 				// get the holders first, see if we have any that AREN'T in the root (ie we've already partitioned everything...)
-				$pages = DataObject::get($type);
+				$pages = $type::get();
+				$pages = $pages->filter(array('ClassName' => $type));
 
 				/* @var $search SolrSearchService */
-
+				$this->log("------------------------------");
+				$this->log("Start reindexing job for $type (Count: ".$pages->count()."):");
+				$this->log("------------------------------");
 				foreach ($pages as $page) {
 
 					// Make sure the current page is not orphaned.
@@ -82,14 +85,14 @@ class SolrReindexTask extends BuildTask
 						$live = Versioned::get_one_by_stage($page->ClassName, 'Live', "\"$baseTable\".\"ID\" = $page->ID");
 						if ($live) {
 							$search->index($live, 'Live');
-							echo "<p>Reindexed Live version of $live->Title</p>\n";
+							$this->log("Reindexed Live version of $live->Title");
 						}
 
-						echo "<p>Reindexed (#$page->ID) $page->Title</p>\n";
+						$this->log("Reindexed (#$page->ID) $page->Title");
 						$count ++;
 					} else {
 						$search->index($page);
-						echo "<p>Reindexed $type ID#$page->ID</p>\n";
+						$this->log("Reindexed $type ID#$page->ID");
 						$count ++;
 					}
 				}
@@ -98,6 +101,12 @@ class SolrReindexTask extends BuildTask
 			}
 		}
 		
-		echo "Reindex complete, $count objects re-indexed<br/>";
+		$this->log("------------------------------");
+		$this->log("Reindex complete, $count objects re-indexed");
+		$this->log("------------------------------");
+	}
+
+	protected function log($message) {
+		DB::alteration_message($message);
 	}
 }
