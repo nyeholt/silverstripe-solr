@@ -301,10 +301,13 @@ class SolrQueryBuilder {
 		if ($rawQuery) {
 			$sep = ' OR ';
 		}
+        $boostFieldVals = array();
 		foreach ($this->boostFieldValues as $field => $boost) {
-			$rawQuery .= $sep . $field . '^' . $boost;
-			$sep = ' OR ';
+			$boostFieldVals[] = $field . '^' . $boost;
 		}
+        if (count($boostFieldVals)) {
+            $rawQuery .= $sep . ' (' . implode(' OR ', $boostFieldVals) .')';
+        }
 
 		return $rawQuery;
 	}
