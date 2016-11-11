@@ -529,7 +529,7 @@ class SolrSearchService {
 		}
 
 		if(!isset($params['ignore_stage']) || !$params['ignore_stage']) {
-			$query->andWith('SS_Stage_ms', $stage);
+			$query->addFilter('SS_Stage_ms', $stage);
 		}
 
 		if($andWith) {
