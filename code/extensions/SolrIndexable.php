@@ -75,6 +75,8 @@ class SolrIndexable extends DataExtension {
 		}
 
 		if ($this->canShowInSearch()) {
+            // DataObject::write() does _not_ set LastEdited until _after_ onAfterWrite completes
+            $this->owner->LastEdited = date('Y-m-d H:i:s');
 			$this->reindex($stage);
 		}
 	}
