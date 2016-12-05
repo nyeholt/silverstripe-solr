@@ -393,9 +393,8 @@ if(class_exists('ExtensibleSearchPage')) {
 			if (!$sortBy) {
 				$sortBy = 'score';
 			}
-			
-			$sortDir = $sortDir == 'Ascending' ? 'asc' : 'desc';
 
+			$sortDir = in_array($sortDir, array('ASC', 'asc', 'Ascending')) ? 'ASC' : 'DESC';
 			$builder->sortBy($sortBy, $sortDir);
 
 			$selectedFields = $this->owner->SearchOnFields->getValues();
