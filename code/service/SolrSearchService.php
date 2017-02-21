@@ -1007,7 +1007,7 @@ class SolrSchemaMapper {
 						// strtotime will correctly re-convert this to the correct
 						// timestamp, but this is how Solr wants things.
 						// If we don't have a full DateTime stamp we won't remove any hours
-						$hoursToRemove = (strlen($value) == 10) ? 0 : date('Z');
+                        $hoursToRemove = date('Z');
 						$ts = strtotime($value);
 						$tsHTR = $ts - $hoursToRemove;
 						$date = date('Y-m-d\TH:i:s\Z', $tsHTR);
