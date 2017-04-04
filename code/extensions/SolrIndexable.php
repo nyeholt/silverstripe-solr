@@ -70,7 +70,7 @@ class SolrIndexable extends DataExtension {
 		$stage = null;
 		// if it's being written and a versionable, then save only in the draft
 		// repository. 
-		if ($this->owner->hasExtension('Versioned')) {
+		if ($this->owner->hasMethod('canBeVersioned') && $this->owner->canBeVersioned()) {
             $stage = Versioned::current_stage();
 		}
 
