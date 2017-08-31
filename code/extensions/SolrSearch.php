@@ -35,7 +35,8 @@ if(class_exists('ExtensibleSearchPage')) {
 			'MinFacetCount' => 'Int',
 			'ExcludeFilterCounts' => 'Boolean',
 			// filter fields (not used for relevance, just for restricting data set)
-			'FilterFields' => 'MultiValueField'
+			'FilterFields' => 'MultiValueField',
+            'BoostFunction' => 'Varchar(255)',
 		);
 
 		public static $supports_hierarchy = true;
@@ -148,6 +149,14 @@ if(class_exists('ExtensibleSearchPage')) {
 					'Content'
 				);
 				$f->setRightTitle('Enter a field name, followed by the value to boost if found in the result set, eg "title:Home" ');
+
+                $fields->addFieldToTab(
+                    'Root.Main',
+                    $f = TextField::create('BoostFunction', _t('SolrSearch.BOOST_FUNCTION', 'Boost function')),
+                    'Content'
+                );
+                $f->setRightTitle('Only applies on dismax query types');
+
 
 				$fields->addFieldToTab(
 					'Root.Main',
@@ -475,6 +484,12 @@ if(class_exists('ExtensibleSearchPage')) {
 			if (count($fq)) {
 				$params['facet.query'] = array_keys($fq);
 			}
+
+            if ($this->owner->BoostFunction) {
+                if ($builder instanceof DismaxSolrSearchBuilder || $builder instanceof EDismaxSolrSearchBuilder) {
+                    $builder->addParam('bf', $this->owner->BoostFunction);
+                }
+            }
 
             $this->owner->extend('updateQueryBuilder', $builder);
 
