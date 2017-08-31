@@ -123,7 +123,10 @@ class Apache_Solr_HttpTransport_Curl extends Apache_Solr_HttpTransport_Abstract
 			CURLOPT_HTTPHEADER => array("Content-Type:"),
 
 			// set the timeout
-			CURLOPT_TIMEOUT => $timeout
+			CURLOPT_TIMEOUT => $timeout,
+
+			// this corrects communication issues where blank responses would sometimes come back, ONLY through PHP
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0
 		));
 
 		// make the request
@@ -157,7 +160,10 @@ class Apache_Solr_HttpTransport_Curl extends Apache_Solr_HttpTransport_Abstract
 			CURLOPT_HTTPHEADER => array("Content-Type:"),
 
 			// set the timeout
-			CURLOPT_TIMEOUT => $timeout
+			CURLOPT_TIMEOUT => $timeout,
+
+			// this corrects communication issues where blank responses would sometimes come back, ONLY through PHP
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0
 		));
 
 		// make the request
