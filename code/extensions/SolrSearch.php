@@ -18,7 +18,7 @@ if(class_exists('ExtensibleSearchPage')) {
         
         const BOOST_MAX = 10;
         
-		const RESULTS_ACTION = 'results';
+		const RESULTS_ACTION = 'getSearchResults';
 
 		private static $db = array(
 			'QueryType' => 'Varchar',
@@ -33,6 +33,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			'FacetMapping' => 'MultiValueField',
 			'FacetQueries' => 'MultiValueField',
 			'MinFacetCount' => 'Int',
+			'ExcludeFilterCounts' => 'Boolean',
 			// filter fields (not used for relevance, just for restricting data set)
 			'FilterFields' => 'MultiValueField'
 		);
@@ -190,6 +191,11 @@ if(class_exists('ExtensibleSearchPage')) {
 					new NumericField('MinFacetCount', _t('ExtensibleSearchPage.MIN_FACET_COUNT', 'Minimum facet count for inclusion in facet results'), 2),
 					'Content'
 				);
+
+				$fields->addFieldToTab('Root.Main',
+					CheckboxField::create('ExcludeFilterCounts', "Don't filter facets counts by searched on facets results"),
+					'Content'
+				);
 			}
 
 			// Make sure previously existing hooks are carried across.
@@ -280,7 +286,7 @@ if(class_exists('ExtensibleSearchPage')) {
 		/**
 		 * Figures out the list of fields to use in faceting, based on configured / defaults
 		 */
-		public function fieldsForFacets() {
+		public function fieldsForFacets($tags = false) {
 			$fields = Config::inst()->get('SolrSearch', 'facets');
 
 			$facetFields = array('FacetFields', 'CustomFacetFields');
@@ -288,6 +294,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$fields = array();
 			}
 
+			$i = 0;
 			foreach ($facetFields as $name) {
 				if ($this->owner->$name && $ff = $this->owner->$name->getValues()) {
 					$types = $this->owner->searchableTypes('Page');
@@ -296,7 +303,7 @@ if(class_exists('ExtensibleSearchPage')) {
 						if (!$fieldName) {
 							$fieldName = $f;
 						}
-						$fields[] = $fieldName;
+						$fields[] = ($tags) ? '{!ex=t' . $i++ . '}' . $fieldName : $fieldName;
 					}
 				}
 			}
@@ -356,10 +363,22 @@ if(class_exists('ExtensibleSearchPage')) {
 			}
 
 			$activeFacets = $this->getActiveFacets();
+			$facetGroupList = $this->fieldsForFacets();
 			if (count($activeFacets)) {
 				foreach ($activeFacets as $facetName => $facetValues) {
-					foreach ($facetValues as $value) {
-						$builder->addFilter($facetName, $value);
+
+					array_walk($facetValues, function(&$value) {
+						$value = '"' . $value . '"'; // Add quotes
+					});
+
+					if (array_search($facetName, $facetGroupList) !== false && $this->owner->ExcludeFilterCounts) {
+						$builder->addFilter(
+							'{!tag=t' . array_search($facetName, $facetGroupList) . '}' . $facetName, "(" . implode(' OR ', $facetValues) . ")"
+						);
+					} else {
+						$builder->addFilter(
+							$facetName, "(" . implode(' OR ', $facetValues) . ")"
+						);
 					}
 				}
 			}
@@ -446,7 +465,7 @@ if(class_exists('ExtensibleSearchPage')) {
 
 			$params = array(
 				'facet' => 'true',
-				'facet.field' => $this->fieldsForFacets(),
+				'facet.field' => $this->fieldsForFacets($this->owner->ExcludeFilterCounts),
 				'facet.limit' => 10,
 				'facet.mincount' => $this->owner->MinFacetCount ? $this->owner->MinFacetCount : 1,
 				'fl' => '*,score'
@@ -457,7 +476,7 @@ if(class_exists('ExtensibleSearchPage')) {
 				$params['facet.query'] = array_keys($fq);
 			}
 
-			$this->owner->extend('updateQueryBuilder', $builder);
+            $this->owner->extend('updateQueryBuilder', $builder);
 
 			$this->query = $this->getSolr()->query($builder, $offset, $limit, $params);
 			return $this->query;
@@ -490,6 +509,7 @@ if(class_exists('ExtensibleSearchPage')) {
 			foreach ($facets as $title => $items) {
 				$object = new ViewableData();
 				$object->Items = $this->currentFacets($title);
+				$object->Name = $title;
 				$title = isset($mapping[$title]) ? $mapping[$title] : $title;
 				$object->Title = Varchar::create_field('Varchar', $title);
 				$result[] = $object;
@@ -540,11 +560,19 @@ if(class_exists('ExtensibleSearchPage')) {
 					if (isset($queryFacets[$facetTerm->Name])) {
 						$facetTerm->Name = $queryFacets[$facetTerm->Name];
 					}
-					$sq = $me->SearchQuery();
-					$sep = strlen($sq) ? '&amp;' : '';
-					$facetTerm->SearchLink = $me->Link(self::RESULTS_ACTION) . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=$facetTerm->Query";
-					$facetTerm->QuotedSearchLink = $me->Link(self::RESULTS_ACTION) . '?' . $sq .$sep. SolrSearch::$filter_param . "[$term][]=&quot;$facetTerm->Query&quot;";
-					$result[] = new ArrayData($facetTerm);
+					$parts = parse_url($_SERVER['REQUEST_URI']);
+					if(isset($parts['query'])) {
+						parse_str($parts['query'], $params);
+						if(isset($params['Search'])) {
+							$sq = urlencode($params['Search']);
+							$sep = strlen($sq) ? '&amp;' : '';
+							$facetTerm->Active = (isset($params['filter']) && isset($params['filter'][$term]) && in_array($facetTerm->Query, $params['filter'][$term]));
+							$facetTermQuery = urlencode($facetTerm->Query);
+							$facetTerm->SearchLink = $me->Link(self::RESULTS_ACTION) . "?Search={$sq}{$sep}" . SolrSearch::$filter_param . "[{$term}][]={$facetTermQuery}";
+							$facetTerm->QuotedSearchLink = $me->Link(self::RESULTS_ACTION) . "?Search={$sq}{$sep}" . SolrSearch::$filter_param . "[$term][]=&quot;$facetTermQuery&quot;";
+							$result[] = new ArrayData($facetTerm);
+						}
+					}
 				}
 				return $result;
 			};
