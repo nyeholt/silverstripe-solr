@@ -109,6 +109,11 @@ class SolrQueryBuilder {
 		$this->params = $params;
 		return $this;
 	}
+
+    public function addParam($name, $value) {
+        $this->params[$name] = $value;
+        return $this;
+    }
 	
 	public function addFacetFields($fields, $limit = 0) {
 		$a = array_merge($this->facets['fields'], $fields);
