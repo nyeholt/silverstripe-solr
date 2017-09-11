@@ -66,7 +66,7 @@ class SolrQueryBuilder {
 	protected $facetCount = 1;
 
 	public function baseQuery($query) {
-		$this->userQuery = $query;
+		$this->userQuery = $query ?: '*:*';
 		return $this;
 	}
 	
