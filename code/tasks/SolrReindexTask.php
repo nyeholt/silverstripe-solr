@@ -78,7 +78,7 @@ class SolrReindexTask extends BuildTask
 
 					// Appropriately index the current page, taking versioning into account.
 
-					if ($page->hasExtension('Versioned')) {
+					if ($page->hasMethod('publish')) {
 						$search->index($page, 'Stage');
 						
 						$baseTable = $page->baseTable();
