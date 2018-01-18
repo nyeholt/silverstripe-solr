@@ -78,7 +78,7 @@ if (class_exists('AbstractQueuedJob')) {
 
 				// Appropriately index the current page, taking versioning into account.
 
-				if ($page->hasExtension('Versioned')) {
+				if ($page->hasMethod('publish')) {
 					$stage[] = $page;
 					
 					$base = $page->baseTable();
