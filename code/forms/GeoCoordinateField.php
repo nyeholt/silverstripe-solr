@@ -51,4 +51,8 @@ class GeoCoordinateField extends FormField {
 		$clone->setReadonly(true);
 		return $clone;
 	}
+	
+	public function scalarValueOnly() {
+        	return false;
+    	}
 }
